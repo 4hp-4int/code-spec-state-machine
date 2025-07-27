@@ -5,7 +5,7 @@ metadata:
   - base-coding-standards
   created: '2025-07-26T21:50:58.598766'
   version: '1.0'
-  status: draft
+  status: implemented
   parent_spec_id: null
   child_spec_ids:
   - 2dfb5982
