@@ -126,3 +126,43 @@
 2025-07-26 20:50:00,369 - agentic_spec - INFO - Specification saved to specs\2025-07-26-af652a45.yaml
 2025-07-26 20:50:02,292 - agentic_spec - INFO - Review notes added to specification
 2025-07-26 20:58:42,131 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:08:36,175 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:08:36,753 - agentic_spec - CRITICAL - Unexpected error: 'str' object has no attribute 'mkdir'
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 965, in main
+    app()
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 341, in __call__
+    raise e
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 324, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 757, in main
+    return _main(
+           ^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 195, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1830, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 699, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 459, in show_graph
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 111, in print_spec_graph
+    generator = SpecGenerator(Path("templates"), specs_dir)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 43, in __init__
+    self.specs_dir.mkdir(parents=True, exist_ok=True)
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'mkdir'
