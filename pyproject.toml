@@ -19,6 +19,7 @@ dependencies = [
     "jinja2>=3.1.0",
     "typer>=0.12.0",
     "pytest-cov>=6.2.1",
+    "aiosqlite>=0.21.0",
 ]
 
 [project.scripts]
@@ -28,7 +29,7 @@ agentic-spec = "agentic_spec.cli:main"
 where = ["."]
 
 [tool.setuptools.package-data]
-agentic_spec = ["templates/*.yaml"]
+agentic_spec = ["templates/*.yaml", "templates/*.html"]
 
 [dependency-groups]
 dev = [

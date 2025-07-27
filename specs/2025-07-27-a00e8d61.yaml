@@ -1,0 +1,146 @@
+metadata:
+  id: a00e8d61
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T11:14:50.191847'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 1cbfdd28
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation and task tracking
+  dependencies: []
+  files_involved:
+  - agentic_spec/core.py
+requirements:
+  functional:
+  - Track and update task status with timestamps for each status change.
+  - Record completion notes and associate them with the relevant task.
+  - Store and manage approval metadata, including approver identity, approval timestamp,
+    and any comments.
+  - 'Enforce strict mode: prevent progression to the next task until current task
+    is approved.'
+  - Implement an override mechanism that allows bypassing approval with explicit logging
+    of the override event.
+  non_functional:
+  - Ensure all progress and approval actions are logged with sufficient detail for
+    auditability.
+  - Provide clear and informative error messages for all workflow violations (e.g.,
+    attempting to progress without approval in strict mode).
+  - Maintain compatibility with existing file-based storage and data models.
+  constraints:
+  - All logic must reside in agentic_spec/core.py.
+  - 'Follow established coding standards: use dataclasses/Pydantic for data, async/await
+    where appropriate, and comprehensive error handling.'
+  - No new dependencies may be introduced.
+  - Implementation must be covered by unit tests (to be specified separately).
+implementation:
+- task: Extend task data model to support progress tracking and approval metadata
+  details: Add fields for status, status change timestamps, completion notes, approval
+    metadata (approver, approval timestamp, comments), and override flag to the task
+    data structure. Ensure compatibility with existing YAML serialization.
+  files:
+  - agentic_spec/core.py
+  acceptance: Task model supports all required fields and can be serialized/deserialized
+    without data loss.
+  estimated_effort: medium
+  step_id: a00e8d61:0
+  sub_spec_id: null
+  decomposition_hint: composite:may require changes to both data model and serialization
+    logic
+  progress: null
+  approvals: null
+- task: Implement core logic to update task status and record timestamps
+  details: Create functions/methods to update task status, automatically record the
+    timestamp of each status change, and validate allowed status transitions.
+  files:
+  - agentic_spec/core.py
+  acceptance: Status changes update both the status and the corresponding timestamp;
+    invalid transitions raise informative errors.
+  estimated_effort: medium
+  step_id: a00e8d61:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add support for recording and storing completion notes
+  details: Implement logic to attach completion notes to a task upon marking it as
+    complete. Ensure notes are persisted and retrievable.
+  files:
+  - agentic_spec/core.py
+  acceptance: Completion notes are correctly stored and associated with the completed
+    task.
+  estimated_effort: low
+  step_id: a00e8d61:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement approval workflow logic and metadata management
+  details: Add functions to record approval actions, including approver identity,
+    approval timestamp, and optional comments. Ensure approval status is reflected
+    in the task metadata.
+  files:
+  - agentic_spec/core.py
+  acceptance: Approval actions update task metadata and are logged for auditability.
+  estimated_effort: medium
+  step_id: a00e8d61:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: 'Enforce strict mode: prevent progression to next task until approval is granted'
+  details: Implement logic to block status progression (e.g., from 'in_review' to
+    'done') unless the task is explicitly approved when strict mode is enabled. Provide
+    clear error messages if progression is attempted prematurely.
+  files:
+  - agentic_spec/core.py
+  acceptance: Progression is blocked in strict mode until approval; violations raise
+    clear errors.
+  estimated_effort: medium
+  step_id: a00e8d61:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement override mechanism with explicit logging
+  details: Allow authorized users to override the approval requirement, forcing progression
+    to the next task. Log all override events with user identity, timestamp, and reason
+    for audit purposes.
+  files:
+  - agentic_spec/core.py
+  acceptance: Overrides are possible, logged with all required metadata, and clearly
+    marked in task history.
+  estimated_effort: medium
+  step_id: a00e8d61:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not specify the allowed status values
+  or valid status transitions, which are critical for implementing status validation
+  and error handling. Define these explicitly before coding.'
+- 'Technical Gotchas: YAML serialization/deserialization of nested or complex metadata
+  (e.g., approval history, override logs) can be tricky with dataclasses or Pydantic.
+  Test round-trip serialization early to avoid silent data loss or schema drift.'
+- 'Integration Points: If the existing codebase uses plain dataclasses, introducing
+  Pydantic models (or vice versa) could cause subtle incompatibilities, especially
+  with custom serialization logic. Stick to one approach for all models in core.py.'
+- 'Current Best Practices: No new dependencies are allowed, so use the standard library''s
+  datetime for timestamps and ensure all logging/audit trails are handled via structured
+  data fields, not print/log statements.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

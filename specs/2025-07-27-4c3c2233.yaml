@@ -1,0 +1,150 @@
+metadata:
+  id: 4c3c2233
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T11:14:06.993312'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 1cbfdd28
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation and task tracking
+  dependencies:
+  - name: pydantic
+    description: Data validation and settings management using Python type annotations
+  - name: datetime
+    description: Standard library for timestamp handling
+  files_involved:
+  - agentic_spec/models.py
+  - tests/test_models.py
+requirements:
+  functional:
+  - Represent task progress status (e.g., not started, in progress, completed, blocked)
+  - Track timestamps for task creation, updates, and completion
+  - Store completion notes and comments for each task
+  - Model approval metadata including approver identity, approval level, timestamp,
+    and optional notes
+  - Support multiple approval levels (e.g., peer, lead, override)
+  - Track override actions with responsible party and rationale
+  non_functional:
+  - Models must be fully type-annotated and use Pydantic for validation
+  - All fields must have clear, human-readable docstrings
+  - Error handling for invalid status or approval transitions
+  constraints:
+  - All models must reside in agentic_spec/models.py
+  - No external database dependencies; models are in-memory/data-structure only
+  - Must be compatible with Python 3.12+
+  - Follow existing codebase conventions for dataclasses and Pydantic models
+  - Unit tests required for all new models and validation logic
+implementation:
+- task: Define TaskStatus enumeration
+  details: Create a Python Enum or Pydantic-compatible Literal for valid task progress
+    states (e.g., NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED). Ensure string representation
+    and validation.
+  files:
+  - agentic_spec/models.py
+  acceptance: Enum is defined, validated by Pydantic, and used in subsequent models.
+    Unit tests cover all valid/invalid values.
+  estimated_effort: low
+  step_id: 4c3c2233:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement TaskProgressModel with timestamps and notes
+  details: Create a Pydantic model to represent task progress, including status (using
+    TaskStatus), created_at, updated_at, completed_at (all as datetime), and completion_notes
+    (optional str). Ensure auto-update of timestamps on status change.
+  files:
+  - agentic_spec/models.py
+  acceptance: Model supports all required fields, enforces type validation, and updates
+    timestamps appropriately. Unit tests verify correct behavior and edge cases.
+  estimated_effort: medium
+  step_id: 4c3c2233:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: includes both data modeling and timestamp logic'
+  progress: null
+  approvals: null
+- task: Define ApprovalMetadata model with multi-level support
+  details: 'Create a Pydantic model for approval metadata: approver (str), approval_level
+    (enum or str), approved_at (datetime), approval_notes (optional str). Support
+    multiple approval levels (e.g., peer, lead, override) and allow for a list of
+    approvals per task.'
+  files:
+  - agentic_spec/models.py
+  acceptance: Model supports multiple approval levels, enforces type validation, and
+    allows multiple approvals per task. Unit tests verify correct structure and validation.
+  estimated_effort: medium
+  step_id: 4c3c2233:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers both single and multi-level approval logic'
+  progress: null
+  approvals: null
+- task: Implement OverrideTracking model
+  details: 'Create a Pydantic model to track override actions: overrider (str), override_level
+    (str or enum), override_reason (str), override_at (datetime). Integrate with approval
+    metadata to flag overrides distinctly.'
+  files:
+  - agentic_spec/models.py
+  acceptance: Override model is defined, integrated with approval metadata, and unit
+    tests verify override tracking and validation.
+  estimated_effort: low
+  step_id: 4c3c2233:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Integrate models for composite TaskTracking structure
+  details: Compose a higher-level Pydantic model that aggregates TaskProgressModel,
+    a list of ApprovalMetadata, and optional OverrideTracking. Ensure all relationships
+    are validated and documented.
+  files:
+  - agentic_spec/models.py
+  acceptance: Composite model is defined, relationships are validated, and docstrings
+    clarify usage. Unit tests cover model composition and edge cases.
+  estimated_effort: medium
+  step_id: 4c3c2233:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: aggregates previously defined models'
+  progress: null
+  approvals: null
+- task: Write comprehensive unit tests for all models and logic
+  details: Implement pytest-based unit tests for all new models, covering valid/invalid
+    data, status transitions, approval flows, and override scenarios. Ensure 100%
+    branch coverage.
+  files:
+  - tests/test_models.py
+  acceptance: All models are fully tested with edge cases and error handling. Tests
+    pass and coverage is reported.
+  estimated_effort: medium
+  step_id: 4c3c2233:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers all new models and their interactions'
+  progress: null
+  approvals: null
+review_notes:
+- Pydantic v2 introduced significant API changes; confirm you are using v2 syntax
+  (e.g., use pydantic.BaseModel, not pydantic.v1.BaseModel, and update field validation
+  patterns accordingly).
+- Auto-updating timestamps (e.g., updated_at on status change) is non-trivial with
+  Pydantic models; consider using model validators or custom setters, and document
+  any limitations (e.g., direct attribute assignment won't trigger updates).
+- For enums and approval levels, prefer Python's Enum class over Literal for extensibility
+  and better integration with Pydantic validation and doc generation.
+- Composing models (e.g., TaskTracking) requires careful handling of nested validation
+  and optional fields; ensure you use Pydantic's root_validator or model_validate
+  to enforce cross-field constraints, especially for override logic.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

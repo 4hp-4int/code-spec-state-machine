@@ -1,9 +1,20 @@
 """Prompt template loading and rendering system."""
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import jinja2
+
+
+@dataclass
+class TemplateMetadata:
+    """Metadata for a prompt template."""
+
+    name: str
+    description: str
+    use_case: str
+    file_path: Path
 
 
 class PromptTemplateLoader:
@@ -97,3 +108,118 @@ class PromptTemplateLoader:
 
         template_path = self.prompt_templates_dir / template_name
         return template_path.exists()
+
+    def get_template_metadata(self, template_name: str) -> TemplateMetadata:
+        """Extract metadata from a prompt template.
+
+        Args:
+            template_name: Name of template (without .md extension)
+
+        Returns:
+            Template metadata object
+
+        Raises:
+            FileNotFoundError: If template doesn't exist
+        """
+        if not template_name.endswith(".md"):
+            template_name += ".md"
+
+        template_path = self.prompt_templates_dir / template_name
+        if not template_path.exists():
+            raise FileNotFoundError(f"Template not found: {template_name}")
+
+        # Read template content to extract description
+        content = template_path.read_text(encoding="utf-8")
+
+        # Extract description from first few lines or use predefined mappings
+        description, use_case = self._extract_template_info(template_path.stem, content)
+
+        return TemplateMetadata(
+            name=template_path.stem,
+            description=description,
+            use_case=use_case,
+            file_path=template_path,
+        )
+
+    def list_template_metadata(self) -> list[TemplateMetadata]:
+        """List all available prompt templates with metadata.
+
+        Returns:
+            List of template metadata objects
+        """
+        if not self.prompt_templates_dir.exists():
+            return []
+
+        metadata_list = []
+        for file_path in self.prompt_templates_dir.glob("*.md"):
+            try:
+                metadata = self.get_template_metadata(file_path.stem)
+                metadata_list.append(metadata)
+            except Exception:
+                # Skip malformed templates
+                continue
+
+        return sorted(metadata_list, key=lambda x: x.name)
+
+    def _extract_template_info(
+        self, template_name: str, content: str
+    ) -> tuple[str, str]:
+        """Extract description and use case from template content.
+
+        Args:
+            template_name: Name of the template
+            content: Template file content
+
+        Returns:
+            Tuple of (description, use_case)
+        """
+        # Predefined metadata for known templates
+        template_info = {
+            "basic-specification": (
+                "Comprehensive specification generation with balanced detail and practicality",
+                "Use for general programming tasks requiring complete coverage of all aspects",
+            ),
+            "feature-addition": (
+                "Surgical feature integration with focus on clean architectural alignment",
+                "Use when adding new functionality while maintaining existing patterns and quality",
+            ),
+            "bug-fix": (
+                "Minimal-scope bug fixes with maximum safety and regression prevention",
+                "Use when fixing specific issues without introducing new problems or feature creep",
+            ),
+            "refactoring": (
+                "Safe incremental code improvements without functional changes",
+                "Use when enhancing code quality, structure, or performance while preserving behavior",
+            ),
+            "specification-generation": (
+                "Primary template for AI-powered specification generation",
+                "Internal template used by the AI system (not typically user-selected)",
+            ),
+            "specification-review": (
+                "Template for AI-powered specification reviews and feedback",
+                "Internal template used for generating review feedback",
+            ),
+            "step-expansion": (
+                "Template for expanding implementation steps into sub-specifications",
+                "Internal template used for sub-specification generation",
+            ),
+            "context-enhancement": (
+                "Template for adding contextual information to prompts",
+                "Internal template used for context-aware prompt building",
+            ),
+        }
+
+        if template_name in template_info:
+            return template_info[template_name]
+
+        # Fallback: extract description from content
+        lines = content.strip().split("\n")
+        first_line = lines[0] if lines else ""
+
+        # Try to extract a meaningful description from the first line
+        if first_line.startswith("You are"):
+            description = first_line
+        else:
+            description = f"Custom template: {template_name}"
+
+        return description, "Custom template for specific use cases"

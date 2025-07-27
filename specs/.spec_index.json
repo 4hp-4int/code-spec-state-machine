@@ -1,0 +1,296 @@
+{
+  "specs": {
+    "1d8de70e": {
+      "file": "2025-07-26-1d8de70e.yaml",
+      "title": "Specification 1d8de70e",
+      "status": "implemented",
+      "created": "2025-07-26T21:33:32.492738",
+      "parent_spec_id": null,
+      "child_spec_ids": [
+        "e68aa0fe",
+        "ad423bc2"
+      ]
+    },
+    "480cb906": {
+      "file": "2025-07-26-480cb906.yaml",
+      "title": "Specification 480cb906",
+      "status": "implemented",
+      "created": "2025-07-26T21:35:34.443552",
+      "parent_spec_id": "1d8de70e",
+      "child_spec_ids": null
+    },
+    "4bce15f2": {
+      "file": "2025-07-26-4bce15f2.yaml",
+      "title": "Specification 4bce15f2",
+      "status": "implemented",
+      "created": "2025-07-26T20:12:41.758312",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "4f77ed39": {
+      "file": "2025-07-26-4f77ed39.yaml",
+      "title": "Specification 4f77ed39",
+      "status": "implemented",
+      "created": "2025-07-26T21:35:39.713447",
+      "parent_spec_id": "1d8de70e",
+      "child_spec_ids": null
+    },
+    "59529c8f": {
+      "file": "2025-07-26-59529c8f.yaml",
+      "title": "Specification 59529c8f",
+      "status": "implemented",
+      "created": "2025-07-26T21:41:56.176432",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "930a1e10": {
+      "file": "2025-07-26-930a1e10.yaml",
+      "title": "Specification 930a1e10",
+      "status": "implemented",
+      "created": "2025-07-26T20:20:58.385174",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "9e035edb": {
+      "file": "2025-07-26-9e035edb.yaml",
+      "title": "Specification 9e035edb",
+      "status": "implemented",
+      "created": "2025-07-26T21:44:06.618586",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "a8694939": {
+      "file": "2025-07-26-a8694939.yaml",
+      "title": "Specification a8694939",
+      "status": "implemented",
+      "created": "2025-07-26T21:45:07.975951",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "ad423bc2": {
+      "file": "2025-07-26-ad423bc2.yaml",
+      "title": "Specification ad423bc2",
+      "status": "implemented",
+      "created": "2025-07-26T21:35:40.559178",
+      "parent_spec_id": "1d8de70e",
+      "child_spec_ids": null
+    },
+    "af652a45": {
+      "file": "2025-07-26-af652a45.yaml",
+      "title": "Specification af652a45",
+      "status": "implemented",
+      "created": "2025-07-26T20:50:00.363659",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "c70dc73f": {
+      "file": "2025-07-26-c70dc73f.yaml",
+      "title": "Specification c70dc73f",
+      "status": "implemented",
+      "created": "2025-07-26T21:50:58.598766",
+      "parent_spec_id": null,
+      "child_spec_ids": [
+        "2dfb5982",
+        "8925776c"
+      ]
+    },
+    "d0d26085": {
+      "file": "2025-07-26-d0d26085.yaml",
+      "title": "Specification d0d26085",
+      "status": "implemented",
+      "created": "2025-07-26T19:52:05.768939",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "d5b80439": {
+      "file": "2025-07-26-d5b80439.yaml",
+      "title": "Specification d5b80439",
+      "status": "implemented",
+      "created": "2025-07-26T18:13:48.036575",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "e68aa0fe": {
+      "file": "2025-07-26-e68aa0fe.yaml",
+      "title": "Specification e68aa0fe",
+      "status": "implemented",
+      "created": "2025-07-26T21:34:38.784239",
+      "parent_spec_id": "1d8de70e",
+      "child_spec_ids": null
+    },
+    "f96e2544": {
+      "file": "2025-07-26-f96e2544.yaml",
+      "title": "Specification f96e2544",
+      "status": "implemented",
+      "created": "2025-07-26T19:36:35.139656",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "0c415583": {
+      "file": "2025-07-27-0c415583.yaml",
+      "title": "Specification 0c415583",
+      "status": "implemented",
+      "created": "2025-07-27T06:16:01.671875",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "0f2cc667": {
+      "file": "2025-07-27-0f2cc667.yaml",
+      "title": "Specification 0f2cc667",
+      "status": "implemented",
+      "created": "2025-07-27T06:01:26.046314",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "1cbfdd28": {
+      "file": "2025-07-27-1cbfdd28.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T10:51:30.332017",
+      "parent_spec_id": "3a16acfa",
+      "child_spec_ids": [
+        "4c3c2233",
+        "5fe71618",
+        "a00e8d61"
+      ]
+    },
+    "21e8eb92": {
+      "file": "2025-07-27-21e8eb92.yaml",
+      "title": "A user-friendly interface for selecting and using prompt templates during spe...",
+      "status": "draft",
+      "created": "2025-07-27T08:10:27.805937",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "2a65633c": {
+      "file": "2025-07-27-2a65633c.yaml",
+      "title": "Specification 2a65633c",
+      "status": "implemented",
+      "created": "2025-07-27T06:34:10.820476",
+      "parent_spec_id": null,
+      "child_spec_ids": [
+        "72ef1b41",
+        "4f9bf153"
+      ]
+    },
+    "2a695a8f": {
+      "file": "2025-07-27-2a695a8f.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T10:50:32.099090",
+      "parent_spec_id": "3a16acfa",
+      "child_spec_ids": null
+    },
+    "3a16acfa": {
+      "file": "2025-07-27-3a16acfa.yaml",
+      "title": "Transform agentic-spec into a database-backed task tracking system with persi...",
+      "status": "draft",
+      "created": "2025-07-27T10:50:02.305450",
+      "parent_spec_id": null,
+      "child_spec_ids": [
+        "2a695a8f",
+        "d4fe1cd2",
+        "1cbfdd28"
+      ]
+    },
+    "3f81bb4a": {
+      "file": "2025-07-27-3f81bb4a.yaml",
+      "title": "Specification 3f81bb4a",
+      "status": "implemented",
+      "created": "2025-07-27T05:42:54.253847",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "4c3c2233": {
+      "file": "2025-07-27-4c3c2233.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T11:14:06.993312",
+      "parent_spec_id": "1cbfdd28",
+      "child_spec_ids": null
+    },
+    "4f9bf153": {
+      "file": "2025-07-27-4f9bf153.yaml",
+      "title": "Specification 4f9bf153",
+      "status": "implemented",
+      "created": "2025-07-27T06:37:02.068170",
+      "parent_spec_id": "2a65633c",
+      "child_spec_ids": null
+    },
+    "5fe71618": {
+      "file": "2025-07-27-5fe71618.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T11:14:27.683130",
+      "parent_spec_id": "1cbfdd28",
+      "child_spec_ids": null
+    },
+    "6c381f30": {
+      "file": "2025-07-27-6c381f30.yaml",
+      "title": "Prompt editing functionality that allows users to edit prompts using their sy...",
+      "status": "implemented",
+      "created": "2025-07-27T06:51:40.897935",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "6cc32ed8": {
+      "file": "2025-07-27-6cc32ed8.yaml",
+      "title": "Unify prompt editing system with specification templates and improve naming c...",
+      "status": "implemented",
+      "created": "2025-07-27T07:00:57.989759",
+      "parent_spec_id": null,
+      "child_spec_ids": [
+        "b26432ae"
+      ]
+    },
+    "72ef1b41": {
+      "file": "2025-07-27-72ef1b41.yaml",
+      "title": "Specification 72ef1b41",
+      "status": "implemented",
+      "created": "2025-07-27T06:36:38.408528",
+      "parent_spec_id": "2a65633c",
+      "child_spec_ids": null
+    },
+    "81798921": {
+      "file": "2025-07-27-81798921.yaml",
+      "title": "Update the project's documentation to provide comprehensive user-facing summa...",
+      "status": "implemented",
+      "created": "2025-07-27T07:56:48.033834",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "a00e8d61": {
+      "file": "2025-07-27-a00e8d61.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T11:14:50.191847",
+      "parent_spec_id": "1cbfdd28",
+      "child_spec_ids": null
+    },
+    "cff0c970": {
+      "file": "2025-07-27-cff0c970.yaml",
+      "title": "Specification cff0c970",
+      "status": "implemented",
+      "created": "2025-07-27T05:52:38.448374",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    },
+    "d4fe1cd2": {
+      "file": "2025-07-27-d4fe1cd2.yaml",
+      "title": "Expand this implementation step into a detailed sub-specification:\n\nParent Sp...",
+      "status": "draft",
+      "created": "2025-07-27T10:51:02.893610",
+      "parent_spec_id": "3a16acfa",
+      "child_spec_ids": null
+    },
+    "e59de6d2": {
+      "file": "2025-07-27-e59de6d2.yaml",
+      "title": "Test the AI provider abstraction",
+      "status": "implemented",
+      "created": "2025-07-27T06:44:30.457930",
+      "parent_spec_id": null,
+      "child_spec_ids": null
+    }
+  },
+  "last_updated": "2025-07-27T11:20:16.038631"
+}

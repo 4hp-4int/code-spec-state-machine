@@ -32,3 +32,15 @@ class FileSystemError(AgenticSpecError):
 
 class ValidationError(AgenticSpecError):
     """Exception raised for data validation errors."""
+
+
+class DatabaseError(AgenticSpecError):
+    """Exception raised for database operation errors."""
+
+
+class ConnectionError(DatabaseError):
+    """Exception raised for database connection errors."""
+
+
+class TransactionError(DatabaseError):
+    """Exception raised for database transaction errors."""

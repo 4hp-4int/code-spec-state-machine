@@ -48,7 +48,39 @@ agentic-spec generate
 # Type your multi-line prompt, then press Ctrl+D (Unix) or Ctrl+Z (Windows)
 ```
 
-### 2. Template Inheritance
+### 2. Using Prompt Templates
+
+Agentic-spec includes specialized prompt templates that tailor the AI's approach for different types of development tasks.
+
+**Browse available templates**:
+```bash
+agentic-spec browse-templates
+```
+
+**Preview a specific template**:
+```bash
+agentic-spec preview-template feature-addition
+```
+
+**Generate with a specific template**:
+```bash
+# Use template directly
+agentic-spec generate --template feature-addition "Add JWT authentication"
+
+# Interactive template selection (if no --template provided)
+agentic-spec generate "Add user management system"
+# Will show template menu for selection
+```
+
+**Available template types**:
+- `basic-specification` - Comprehensive specification generation with balanced detail and practicality
+- `feature-addition` - Surgical feature integration with focus on clean architectural alignment
+- `bug-fix` - Minimal-scope bug fixes with maximum safety and regression prevention
+- `refactoring` - Safe incremental code improvements without functional changes
+
+Templates provide context-aware prompts that help the AI understand the specific nature of your task, resulting in more targeted and relevant specifications.
+
+### 3. Template Inheritance
 
 **Using single template**:
 ```bash
@@ -66,7 +98,7 @@ agentic-spec generate "Create admin dashboard" \
 agentic-spec template list
 ```
 
-### 3. Sub-specification Expansion
+### 4. Sub-specification Expansion
 
 **List specifications**:
 ```bash
@@ -84,7 +116,7 @@ agentic-spec expand abc12345:2
 agentic-spec graph
 ```
 
-### 4. Configuration Management
+### 5. Configuration Management
 
 **Show current configuration**:
 ```bash

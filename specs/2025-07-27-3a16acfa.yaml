@@ -1,0 +1,236 @@
+metadata:
+  id: 3a16acfa
+  title: Transform agentic-spec into a database-backed task tracking system with persi...
+  inherits: []
+  created: '2025-07-27T10:50:02.305450'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids:
+  - 2a695a8f
+  - d4fe1cd2
+  - 1cbfdd28
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation and task tracking
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - agentic_spec/exceptions.py
+  - agentic_spec/db.py
+  - agentic_spec/migrations/
+  - tests/
+requirements:
+  functional:
+  - Convert specifications from YAML files to database-backed objects while preserving
+    all metadata.
+  - Design a data model for specifications, tasks, and work history with support for
+    querying and reporting.
+  - Track task progress, including status, timestamps, completion notes, and approval
+    metadata.
+  - 'Implement strict mode enforcement: require task approval before proceeding, with
+    override mechanisms.'
+  - 'Support multiple approval levels: self, peer, AI.'
+  - Enable querying and reporting of work history, including time tracking and export
+    in markdown, CSV, and JSON.
+  - Integrate database-backed tracking with existing CLI and workflows, maintaining
+    backwards compatibility.
+  - Provide API endpoints and CLI commands for all database operations.
+  - Support optional git commit integration for dual tracking.
+  non_functional:
+  - Maintain file-based YAML workflow as a fallback for progressive enhancement.
+  - Ensure performance and responsiveness for database queries.
+  - Provide clear, informative feedback on task progress and approval status.
+  - Support data backup and recovery.
+  - Maintain Windows compatibility and cross-platform support.
+  - Comprehensive error handling and informative messages.
+  - Maintain code quality and lint compliance.
+  constraints:
+  - Use Python 3.12+.
+  - Prefer SQLite for default portability; allow PostgreSQL for advanced use.
+  - Do not introduce conflicting dependencies.
+  - Follow existing codebase structure and coding standards.
+  - All new data models must use Pydantic and/or dataclasses.
+  - Implement async/await for all database and AI operations.
+  - Write unit tests for all new functionality.
+  - No external database servers required for default setup.
+  - CLI interface must remain simple and scriptable.
+  - All data must remain human-readable and exportable.
+implementation:
+- task: Design database schema and data models for specifications, tasks, and work
+    history
+  details: Define tables/models for specifications, tasks, approvals, and work logs.
+    Use Pydantic models and dataclasses. Ensure all metadata from YAML is preserved.
+    Plan for extensibility (e.g., approval levels, timestamps, notes).
+  files:
+  - agentic_spec/models.py
+  - agentic_spec/db.py
+  - agentic_spec/migrations/
+  acceptance: Schema supports all required fields; models pass unit tests; migration
+    scripts initialize schema in SQLite.
+  estimated_effort: medium
+  step_id: 3a16acfa:0
+  sub_spec_id: 2a695a8f
+  decomposition_hint: 'composite: Can be split into schema design, model implementation,
+    and migration script creation.'
+  progress:
+    status: approved
+    started_at: '2025-07-27T11:19:57.804321'
+    completed_at: '2025-07-27T11:20:06.402937'
+    time_spent_minutes: 0
+    completion_notes: Enhanced models with Pydantic v2, database tracking, and comprehensive
+      test coverage
+  approvals:
+  - level: self
+    approved_by: claude
+    approved_at: '2025-07-27T11:20:16.028631'
+    comments: Implementation complete with all requirements met
+- task: Implement database access layer with async support and error handling
+  details: Create async database session management, CRUD operations for specifications
+    and tasks, and robust error handling. Use SQLite as default backend, with optional
+    PostgreSQL support.
+  files:
+  - agentic_spec/db.py
+  - agentic_spec/exceptions.py
+  acceptance: All database operations are async, type-safe, and handle errors gracefully;
+    passes integration tests.
+  estimated_effort: medium
+  step_id: 3a16acfa:1
+  sub_spec_id: d4fe1cd2
+  decomposition_hint: 'composite: Can be split into session management, CRUD for each
+    entity, and error handling.'
+- task: Migrate existing YAML specifications to database objects with backwards compatibility
+  details: Implement migration utilities to import/export specs between YAML and database.
+    Ensure CLI can operate in both modes. Provide clear migration instructions.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/db.py
+  acceptance: Specs can be migrated without data loss; CLI supports both YAML and
+    DB modes; migration is reversible.
+  estimated_effort: medium
+  step_id: 3a16acfa:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into import, export, and CLI integration.'
+- task: Implement task progress tracking and approval workflow with strict mode enforcement
+  details: 'Track task status, timestamps, completion notes, and approval metadata.
+    Enforce strict mode: prevent next task until approval. Support override and multiple
+    approval levels.'
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/db.py
+  acceptance: Task progress and approvals are tracked and enforced; strict mode prevents
+    unauthorized progression; override works as specified.
+  estimated_effort: medium
+  step_id: 3a16acfa:3
+  sub_spec_id: 1cbfdd28
+  decomposition_hint: 'composite: Can be split into status tracking, approval logic,
+    and override mechanism.'
+- task: Develop CLI commands and API endpoints for database-backed operations
+  details: Add CLI commands for querying, updating, and reporting on specs and tasks.
+    Implement API endpoints for external integration. Ensure commands are intuitive
+    and scriptable.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/db.py
+  acceptance: All database operations are accessible via CLI and API; commands are
+    documented and tested.
+  estimated_effort: medium
+  step_id: 3a16acfa:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into CLI, API, and documentation.'
+- task: Implement work history querying, reporting, and export features
+  details: Enable querying completed tasks, generating productivity reports, tracking
+    time spent, and exporting logs in markdown, CSV, and JSON formats.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  acceptance: Work history can be queried and exported in all formats; reports are
+    accurate and useful.
+  estimated_effort: medium
+  step_id: 3a16acfa:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into querying, reporting, and export
+    logic.'
+- task: Integrate optional git commit tracking for dual work history
+  details: Allow linking database work logs with git commits for enhanced traceability.
+    Provide configuration for enabling/disabling this feature.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/config.py
+  acceptance: Work logs can be linked to git commits; feature is optional and configurable.
+  estimated_effort: low
+  step_id: 3a16acfa:6
+  sub_spec_id: null
+  decomposition_hint: atomic
+- task: Ensure comprehensive unit and integration test coverage for all new features
+  details: Write tests for schema, database operations, migration, CLI, approval workflow,
+    and reporting. Use async test patterns and mocking as needed.
+  files:
+  - tests/
+  acceptance: All new features have passing unit and integration tests; test coverage
+    meets project standards.
+  estimated_effort: medium
+  step_id: 3a16acfa:7
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split by feature area (DB, CLI, migration,
+    workflow, reporting).'
+review_notes:
+- 'Missing Implementation Details: The spec does not specify which async ORM or database
+  library to use (e.g., SQLModel, Tortoise ORM, or async SQLAlchemy). This is critical
+  for implementing async DB access and type-safe models with Pydantic/dataclasses.'
+- "Technical Gotchas: Async database support in SQLite is limited; ensure the chosen\
+  \ library supports async operations natively with SQLite, or document any sync fallbacks.\
+  \ Also, reversible migrations in SQLite can be tricky\u2014plan for edge cases."
+- "Integration Points: Backwards compatibility with YAML and CLI must be carefully\
+  \ managed\u2014ensure clear separation between file and DB modes, and test migration\
+  \ paths thoroughly to avoid data loss or user confusion."
+- 'Current Best Practices: The listed dependencies are current, but verify that the
+  async DB library you choose is actively maintained and compatible with Python 3.12+.
+  Avoid legacy libraries like peewee or sync-only SQLAlchemy.'
+work_logs:
+- spec_id: 3a16acfa
+  step_id: 3a16acfa:0
+  action: task_started
+  timestamp: '2025-07-27T11:19:57.804321'
+  notes: 'Task started by claude: Database schema design completed with enhanced models'
+  metadata:
+    started_by: claude
+- spec_id: 3a16acfa
+  step_id: 3a16acfa:0
+  action: task_completed
+  timestamp: '2025-07-27T11:20:06.402937'
+  duration_minutes: 0
+  notes: 'Task completed by claude: Enhanced models with Pydantic v2, database tracking,
+    and comprehensive test coverage'
+  metadata:
+    completed_by: claude
+- spec_id: 3a16acfa
+  step_id: 3a16acfa:0
+  action: approved_self
+  timestamp: '2025-07-27T11:20:16.028631'
+  notes: 'Approved by claude (self): Implementation complete with all requirements
+    met'
+  metadata:
+    approved_by: claude
+    approval_level: self
+    override: false
+    override_reason: null

@@ -1,0 +1,281 @@
+# YAML to Database Schema Mapping Analysis
+# Generated: 2025-07-27
+# Purpose: Complete mapping between YAML specification schema and database models
+
+yaml_schema_analysis:
+  description: "Analysis of existing YAML specification structure from representative files"
+
+  core_structure:
+    metadata:
+      id: str
+      title: str
+      inherits: list[str]
+      created: "str (ISO datetime)"
+      version: str
+      status: "str (enum-like: draft, reviewed, approved, implemented, archived)"
+      parent_spec_id: "str | null"
+      child_spec_ids: "list[str] | null"
+
+    context:
+      project: str
+      domain: str
+      dependencies:
+        - name: str
+          version: str (optional)
+          description: str (optional)
+      files_involved: list[str] | null
+
+    requirements:
+      functional: list[str]
+      non_functional: list[str]
+      constraints: list[str] | null
+
+    implementation:
+      - task: str
+        details: str
+        files: list[str]
+        acceptance: str
+        estimated_effort: "str (enum-like: low, medium, high)"
+        step_id: "str | null"
+        sub_spec_id: "str | null" 
+        decomposition_hint: "str | null"
+        progress: "dict | null (Pydantic model serialized)"
+        approvals: "list[dict] | null (Pydantic model serialized)"
+
+    optional_fields:
+      review_notes: "list[str] | null"
+      context_parameters:
+        user_role: "str | null"
+        target_audience: "str | null"
+        desired_tone: "str | null"
+        complexity_level: "str | null"
+        time_constraints: "str | null" 
+        existing_codebase_context: "str | null"
+        custom_parameters: dict
+      feedback_history: "list[dict] | null"
+      work_logs: "list[dict] | null (Pydantic model serialized)"
+
+database_schema_analysis:
+  description: "Current database models from models.py"
+
+  core_models:
+    SpecificationDB:
+      id: str
+      title: str
+      inherits: list[str]
+      created: datetime
+      updated: datetime
+      version: str
+      status: SpecStatus (enum)
+      parent_spec_id: str | null
+      child_spec_ids: list[str]
+      context: dict[str, Any] (JSON)
+      requirements: dict[str, Any] (JSON)
+      review_notes: list[str]
+      context_parameters: dict[str, Any] | null (JSON)
+      tasks: list[TaskDB] (relationship)
+      work_logs: list[WorkLogDB] (relationship)
+
+    TaskDB:
+      id: str
+      spec_id: str
+      step_index: int
+      task: str
+      details: str
+      files: list[str]
+      acceptance: str
+      estimated_effort: str
+      sub_spec_id: str | null
+      decomposition_hint: str | null
+      status: TaskStatus (enum)
+      started_at: datetime | null
+      completed_at: datetime | null
+      time_spent_minutes: int | null
+      completion_notes: str | null
+      blockers: list[str]
+      approvals: list[ApprovalDB] (relationship)
+
+    ApprovalDB:
+      id: str
+      task_id: str
+      level: ApprovalLevel (enum)
+      approved_by: str
+      approved_at: datetime
+      comments: str | null
+      override_reason: str | null
+
+    WorkLogDB:
+      id: str
+      spec_id: str
+      task_id: str | null
+      action: str
+      timestamp: datetime
+      duration_minutes: int | null
+      notes: str | null
+      metadata: dict[str, Any] (JSON)
+
+field_mapping:
+  description: "Direct field mappings between YAML and database models"
+
+  specification_level:
+    yaml_field: db_field
+    metadata.id: SpecificationDB.id
+    metadata.title: SpecificationDB.title
+    metadata.inherits: SpecificationDB.inherits
+    metadata.created: SpecificationDB.created (str->datetime conversion)
+    metadata.version: SpecificationDB.version
+    metadata.status: SpecificationDB.status (str->enum conversion)
+    metadata.parent_spec_id: SpecificationDB.parent_spec_id
+    metadata.child_spec_ids: SpecificationDB.child_spec_ids
+    context: SpecificationDB.context (dict serialization)
+    requirements: SpecificationDB.requirements (dict serialization)
+    review_notes: SpecificationDB.review_notes
+    context_parameters: SpecificationDB.context_parameters (dict serialization)
+    work_logs: SpecificationDB.work_logs (relationship, serialize to WorkLogDB)
+
+    # Missing in DB: feedback_history (needs new table/field)
+
+  task_level:
+    yaml_field: db_field
+    implementation[i].task: TaskDB.task
+    implementation[i].details: TaskDB.details
+    implementation[i].files: TaskDB.files
+    implementation[i].acceptance: TaskDB.acceptance
+    implementation[i].estimated_effort: TaskDB.estimated_effort
+    implementation[i].step_id: TaskDB.id (use step_id as primary key)
+    implementation[i].sub_spec_id: TaskDB.sub_spec_id
+    implementation[i].decomposition_hint: TaskDB.decomposition_hint
+    implementation[i].progress.status: TaskDB.status
+    implementation[i].progress.started_at: TaskDB.started_at
+    implementation[i].progress.completed_at: TaskDB.completed_at
+    implementation[i].progress.time_spent_minutes: TaskDB.time_spent_minutes
+    implementation[i].progress.completion_notes: TaskDB.completion_notes
+    implementation[i].progress.blockers: TaskDB.blockers
+    implementation[i].approvals: TaskDB.approvals (relationship, serialize to ApprovalDB)
+
+    # Additional DB fields: spec_id (foreign key), step_index (array index)
+
+gaps_and_mismatches:
+  missing_in_db:
+    - feedback_history: YAML has feedback_history list, DB model doesn't have equivalent table
+    - updated timestamp: DB has SpecificationDB.updated but YAML doesn't track modification time
+
+  missing_in_yaml:
+    - step_index: DB TaskDB.step_index for ordering, YAML relies on array order
+    - foreign keys: DB has explicit relationships (task_id, spec_id), YAML uses embedded structure
+    - unique IDs: DB models have ID fields for relationships, YAML uses step_id inconsistently
+
+  type_conversions_needed:
+    - created timestamp: YAML stores as ISO string, DB expects datetime object
+    - status fields: YAML uses string values, DB uses typed enums
+    - progress/approvals: YAML stores as serialized dicts, DB uses proper relationships
+    - dependencies: YAML has mixed dict/object structure, DB stores as JSON
+
+migration_logic:
+  description: "Detailed migration strategy for each data category"
+
+  metadata_migration:
+    strategy: "Direct field mapping with type conversion"
+    steps:
+      - Parse metadata.created string to datetime object
+      - Convert metadata.status string to SpecStatus enum
+      - Handle null child_spec_ids as empty list
+      - Set updated timestamp to current time if missing
+    edge_cases:
+      - Invalid datetime strings: use file modification time as fallback
+      - Unrecognized status values: default to 'draft'
+      - Missing or malformed metadata: skip file with error log
+
+  context_migration:
+    strategy: "Serialize entire context as JSON with dependency normalization"
+    steps:
+      - Normalize dependencies to DependencyModel structure
+      - Serialize context dict to JSON for storage
+      - Preserve all fields even if not explicitly modeled
+    edge_cases:
+      - Mixed dependency formats: convert strings to {name: str} objects
+      - Missing project/domain: use 'unknown' defaults
+      - Invalid dependency structure: log warning, store as-is
+
+  requirements_migration:
+    strategy: "Direct JSON serialization"
+    steps:
+      - Serialize requirements dict to JSON
+      - Ensure all lists are properly formatted
+    edge_cases:
+      - Missing requirements section: create empty structure
+      - Non-list functional/non_functional: convert to single-item list
+
+  implementation_migration:
+    strategy: "Convert to TaskDB records with relationships"
+    steps:
+      - Create TaskDB record for each implementation step
+      - Generate spec_id foreign key reference
+      - Use array index as step_index
+      - Extract progress/approvals into separate tables
+      - Generate unique task IDs if step_id missing
+    edge_cases:
+      - Missing step_id: generate UUID-based ID
+      - Invalid progress data: create default TaskProgress
+      - Malformed approvals: skip with warning log
+      - Duplicate step_ids: append index suffix for uniqueness
+
+  workflow_migration:
+    strategy: "Preserve work logs and create audit trail"
+    steps:
+      - Migrate work_logs to WorkLogDB records
+      - Create migration log entry for each spec
+      - Link task progress to appropriate TaskDB records
+    edge_cases:
+      - Missing work_logs: create empty log
+      - Invalid timestamps: use current time
+      - Orphaned progress records: attach to first task
+
+data_integrity_requirements:
+  validation_rules:
+    - All spec IDs must be unique and valid
+    - Parent-child relationships must be consistent
+    - Task step_ids must be unique within spec
+    - All foreign key references must exist
+    - Datetime fields must be valid and parseable
+    - Enum values must match defined types
+
+  consistency_checks:
+    - Child specs reference correct parent IDs
+    - Task approvals reference valid task IDs
+    - Work logs reference existing specs/tasks
+    - Dependencies have valid name fields
+    - All required fields are present
+
+  error_handling:
+    - Invalid specs: log error, skip file, continue migration
+    - Partial data: migrate what's valid, log warnings for missing parts
+    - Relationship errors: create orphaned records, log for manual review
+    - Type conversion errors: use sensible defaults, log issues
+
+idempotency_strategy:
+  approach: "Check-then-insert with conflict resolution"
+  implementation:
+    - Query existing records by ID before insert
+    - Compare timestamps to determine if update needed
+    - Use ON CONFLICT REPLACE for SQLite or equivalent
+    - Maintain migration state file to track processed files
+    - Support --force flag to re-migrate specific files
+
+  conflict_resolution:
+    - Newer YAML overwrites DB: use file modification time vs DB updated time
+    - DB has local changes: preserve DB data, log conflict
+    - Structural changes: merge where possible, log manual review needed
+
+performance_considerations:
+  bulk_operations:
+    - Process files in batches to avoid memory issues
+    - Use database transactions for atomicity
+    - Create indexes after migration completion
+    - Progress reporting for large specification sets
+
+  optimization:
+    - Pre-compile regex patterns for validation
+    - Cache parsed YAML to avoid re-reading
+    - Use prepared statements for database operations
+    - Stream large files instead of loading entirely into memory

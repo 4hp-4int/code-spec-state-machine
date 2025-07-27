@@ -14,7 +14,10 @@ This project includes a custom slash command for Claude Code:
 
 - `/spec` - Generate programming specifications using agentic-spec
   - `/spec generate "task description"` - Generate a new specification
+  - `/spec generate "task" --template feature-addition` - Generate with prompt template
   - `/spec generate "task" --inherits template1 template2` - Generate with template inheritance
+  - `/spec browse-templates` - Browse available prompt templates
+  - `/spec preview-template template-name` - Preview a prompt template
   - `/spec templates` - Create base templates
   - `/spec review` - List existing specifications
   - `/spec expand spec_id:step_index` - Expand an implementation step into a sub-specification
@@ -30,6 +33,9 @@ This project includes a custom slash command for Claude Code:
 ```bash
 # Basic generation
 agentic-spec generate "Build a REST API for user management"
+
+# With prompt template
+agentic-spec generate "Add JWT authentication" --template feature-addition
 
 # With template inheritance
 agentic-spec generate "Add JWT authentication" --inherits web-api base-coding-standards
@@ -123,6 +129,19 @@ agentic-spec sync-foundation --force  # Force sync even if current
 **check-foundation** - Check if foundation specification needs to be synced
 ```bash
 agentic-spec check-foundation
+```
+
+#### Template Browsing Commands
+
+**browse-templates** - Browse available prompt templates
+```bash
+agentic-spec browse-templates
+```
+
+**preview-template** - Preview a specific prompt template
+```bash
+agentic-spec preview-template feature-addition
+agentic-spec preview-template bug-fix
 ```
 
 #### Rendering Commands
@@ -293,3 +312,6 @@ Generated specs include:
 - Always use the agentic-spec tool to generate new specs to follow when working on the project.
 - Run project commands through make and the Makefile
 - **AUTOMATIC WORKFLOW**: When completing a specification or declaring it done, ALWAYS run `make spec-complete` to commit changes and publish completed specifications. This ensures proper version control and specification tracking.
+- Memorize the doc/location structure, keep docs up to date
+- Relay the current spec graph after completing sub-specifications or the parent specification
+- Always decompose composite task to build full spec trees, unless theres 3 levels of nested decomposition, then get approval

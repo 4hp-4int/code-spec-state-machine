@@ -700,6 +700,148 @@ class TestRenderCommand:
         assert "Specification nonexistent not found" in result.stdout
 
 
+class TestTemplateBrowsing:
+    """Test template browsing and selection functionality."""
+
+    def test_browse_templates_command(self, cli_runner):
+        """Test browse-templates command shows available templates."""
+        result = cli_runner.invoke(app, ["browse-templates"])
+        assert result.exit_code == 0
+        assert "Available Prompt Templates" in result.stdout
+        assert "User Templates:" in result.stdout
+        assert "basic-specification" in result.stdout
+        assert "feature-addition" in result.stdout
+        assert "bug-fix" in result.stdout
+        assert "Internal Templates" in result.stdout
+
+    def test_preview_template_command(self, cli_runner):
+        """Test preview-template command shows template content."""
+        result = cli_runner.invoke(app, ["preview-template", "feature-addition"])
+        assert result.exit_code == 0
+        assert "Template: feature-addition" in result.stdout
+        assert (
+            "Surgical feature integration with focus on clean architectural alignment"
+            in result.stdout
+        )
+        assert "Template Content:" in result.stdout
+
+    def test_preview_nonexistent_template(self, cli_runner):
+        """Test preview-template with non-existent template."""
+        result = cli_runner.invoke(app, ["preview-template", "nonexistent"])
+        assert result.exit_code == 1
+        assert "Failed to preview template" in result.stdout
+
+    @patch("agentic_spec.cli.initialize_generator")
+    def test_generate_with_template_flag(self, mock_init_gen, cli_runner, temp_dirs):
+        """Test generate command with --template flag."""
+        templates_dir, specs_dir = temp_dirs
+
+        # Create necessary directories and template files
+        prompt_templates_dir = templates_dir.parent / "prompt-templates"
+        prompt_templates_dir.mkdir(exist_ok=True)
+
+        # Create a mock template file
+        feature_template = prompt_templates_dir / "feature-addition.md"
+        feature_template.write_text("Test template content")
+
+        # Import necessary classes for creating a real spec object
+        from datetime import datetime
+
+        from agentic_spec.models import (
+            ContextParameters,
+            ImplementationStep,
+            ProgrammingSpec,
+            SpecContext,
+            SpecMetadata,
+            SpecRequirement,
+        )
+
+        # Create a real spec object that can be serialized
+        mock_spec = ProgrammingSpec(
+            metadata=SpecMetadata(
+                id="test123",
+                title="Test Spec",
+                inherits=[],
+                created=datetime.now().isoformat(),
+                version="1.0",
+                status="draft",
+            ),
+            context=SpecContext(
+                project="test-project",
+                domain="test",
+                dependencies=[],
+                files_involved=[],
+            ),
+            requirements=SpecRequirement(
+                functional=["Test requirement"], non_functional=[], constraints=[]
+            ),
+            implementation=[
+                ImplementationStep(
+                    task="Test task",
+                    details="Test details",
+                    files=[],
+                    acceptance="Test acceptance",
+                    estimated_effort="medium",
+                    step_id="test123:0",
+                )
+            ],
+            context_parameters=ContextParameters(),
+        )
+
+        # Mock generator
+        mock_generator = MagicMock()
+        mock_generator.generate_spec = AsyncMock(return_value=mock_spec)
+        mock_init_gen.return_value = mock_generator
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "test prompt",
+                "--template",
+                "feature-addition",
+                "--dry-run",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "Using template: feature-addition" in result.stdout
+
+        # Verify generate_spec was called with the template
+        mock_generator.generate_spec.assert_called_once()
+        call_args = mock_generator.generate_spec.call_args[1]
+        assert call_args["custom_template"] == "feature-addition"
+
+    def test_generate_with_invalid_template(self, cli_runner, temp_dirs):
+        """Test generate command with invalid template."""
+        templates_dir, specs_dir = temp_dirs
+
+        # Create necessary directories but don't create the template file
+        prompt_templates_dir = templates_dir.parent / "prompt-templates"
+        prompt_templates_dir.mkdir(exist_ok=True)
+
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "test prompt",
+                "--template",
+                "nonexistent-template",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
+
+        assert result.exit_code == 1
+        assert "Template 'nonexistent-template' not found" in result.stdout
+
+
 class TestErrorHandling:
     """Test CLI error handling."""
 

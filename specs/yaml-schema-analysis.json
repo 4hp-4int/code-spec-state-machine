@@ -1,0 +1,874 @@
+{
+  "summary": {
+    "total_files": 40,
+    "valid_files": 39,
+    "invalid_files": 1,
+    "unique_fields": 66
+  },
+  "field_usage": {
+    "metadata": {
+      "count": 39,
+      "types": {
+        "dict": 39
+      },
+      "paths": [
+        "metadata"
+      ],
+      "examples": []
+    },
+    "metadata.id": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "metadata.id"
+      ],
+      "examples": []
+    },
+    "metadata.title": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "metadata.title"
+      ],
+      "examples": []
+    },
+    "metadata.inherits": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "metadata.inherits"
+      ],
+      "examples": [
+        "list[0]",
+        "list[0]",
+        "list[2]"
+      ]
+    },
+    "metadata.created": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "metadata.created"
+      ],
+      "examples": []
+    },
+    "metadata.version": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "metadata.version"
+      ],
+      "examples": []
+    },
+    "metadata.status": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "metadata.status"
+      ],
+      "examples": []
+    },
+    "metadata.parent_spec_id": {
+      "count": 39,
+      "types": {
+        "null": 23,
+        "str": 16
+      },
+      "paths": [
+        "metadata.parent_spec_id"
+      ],
+      "examples": []
+    },
+    "metadata.child_spec_ids": {
+      "count": 39,
+      "types": {
+        "list": 7,
+        "null": 32
+      },
+      "paths": [
+        "metadata.child_spec_ids"
+      ],
+      "examples": [
+        "list[2]",
+        "list[2]",
+        "list[3]"
+      ]
+    },
+    "context": {
+      "count": 39,
+      "types": {
+        "dict": 39
+      },
+      "paths": [
+        "context"
+      ],
+      "examples": []
+    },
+    "context.project": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "context.project"
+      ],
+      "examples": []
+    },
+    "context.domain": {
+      "count": 39,
+      "types": {
+        "str": 39
+      },
+      "paths": [
+        "context.domain"
+      ],
+      "examples": []
+    },
+    "context.dependencies": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "context.dependencies"
+      ],
+      "examples": [
+        "list[5]",
+        "list[1]",
+        "list[9]"
+      ]
+    },
+    "context.dependencies[].name": {
+      "count": 86,
+      "types": {
+        "str": 86
+      },
+      "paths": [
+        "context.dependencies[].name"
+      ],
+      "examples": []
+    },
+    "context.dependencies[].version": {
+      "count": 79,
+      "types": {
+        "str": 77,
+        "null": 2
+      },
+      "paths": [
+        "context.dependencies[].version"
+      ],
+      "examples": []
+    },
+    "context.dependencies[].description": {
+      "count": 62,
+      "types": {
+        "str": 62
+      },
+      "paths": [
+        "context.dependencies[].description"
+      ],
+      "examples": []
+    },
+    "context.files_involved": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "context.files_involved"
+      ],
+      "examples": [
+        "list[6]",
+        "list[3]",
+        "list[5]"
+      ]
+    },
+    "requirements": {
+      "count": 39,
+      "types": {
+        "dict": 39
+      },
+      "paths": [
+        "requirements"
+      ],
+      "examples": []
+    },
+    "requirements.functional": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "requirements.functional"
+      ],
+      "examples": [
+        "list[7]",
+        "list[4]",
+        "list[4]"
+      ]
+    },
+    "requirements.non_functional": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "requirements.non_functional"
+      ],
+      "examples": [
+        "list[5]",
+        "list[4]",
+        "list[4]"
+      ]
+    },
+    "requirements.constraints": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "requirements.constraints"
+      ],
+      "examples": [
+        "list[4]",
+        "list[5]",
+        "list[6]"
+      ]
+    },
+    "implementation": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "implementation"
+      ],
+      "examples": [
+        "list[6]",
+        "list[4]",
+        "list[3]"
+      ]
+    },
+    "implementation[].task": {
+      "count": 117,
+      "types": {
+        "str": 117
+      },
+      "paths": [
+        "implementation[].task"
+      ],
+      "examples": []
+    },
+    "implementation[].details": {
+      "count": 117,
+      "types": {
+        "str": 117
+      },
+      "paths": [
+        "implementation[].details"
+      ],
+      "examples": []
+    },
+    "implementation[].files": {
+      "count": 117,
+      "types": {
+        "list": 117
+      },
+      "paths": [
+        "implementation[].files"
+      ],
+      "examples": [
+        "list[1]",
+        "list[2]",
+        "list[2]"
+      ]
+    },
+    "implementation[].acceptance": {
+      "count": 117,
+      "types": {
+        "str": 117
+      },
+      "paths": [
+        "implementation[].acceptance"
+      ],
+      "examples": []
+    },
+    "implementation[].estimated_effort": {
+      "count": 117,
+      "types": {
+        "str": 117
+      },
+      "paths": [
+        "implementation[].estimated_effort"
+      ],
+      "examples": []
+    },
+    "implementation[].step_id": {
+      "count": 117,
+      "types": {
+        "str": 114,
+        "null": 3
+      },
+      "paths": [
+        "implementation[].step_id"
+      ],
+      "examples": []
+    },
+    "implementation[].sub_spec_id": {
+      "count": 117,
+      "types": {
+        "str": 13,
+        "null": 104
+      },
+      "paths": [
+        "implementation[].sub_spec_id"
+      ],
+      "examples": []
+    },
+    "review_notes": {
+      "count": 39,
+      "types": {
+        "list": 39
+      },
+      "paths": [
+        "review_notes"
+      ],
+      "examples": [
+        "list[4]",
+        "list[4]",
+        "list[4]"
+      ]
+    },
+    "context_parameters": {
+      "count": 38,
+      "types": {
+        "null": 28,
+        "dict": 10
+      },
+      "paths": [
+        "context_parameters"
+      ],
+      "examples": []
+    },
+    "feedback_history": {
+      "count": 38,
+      "types": {
+        "list": 38
+      },
+      "paths": [
+        "feedback_history"
+      ],
+      "examples": [
+        "list[0]",
+        "list[0]",
+        "list[0]"
+      ]
+    },
+    "context.dependencies[].purpose": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "context.dependencies[].purpose"
+      ],
+      "examples": []
+    },
+    "implementation[].decomposition_hint": {
+      "count": 36,
+      "types": {
+        "str": 36
+      },
+      "paths": [
+        "implementation[].decomposition_hint"
+      ],
+      "examples": []
+    },
+    "implementation[].progress": {
+      "count": 28,
+      "types": {
+        "null": 27,
+        "dict": 1
+      },
+      "paths": [
+        "implementation[].progress"
+      ],
+      "examples": []
+    },
+    "implementation[].approvals": {
+      "count": 28,
+      "types": {
+        "null": 27,
+        "list": 1
+      },
+      "paths": [
+        "implementation[].approvals"
+      ],
+      "examples": [
+        "list[1]"
+      ]
+    },
+    "work_logs": {
+      "count": 10,
+      "types": {
+        "null": 9,
+        "list": 1
+      },
+      "paths": [
+        "work_logs"
+      ],
+      "examples": [
+        "list[3]"
+      ]
+    },
+    "context_parameters.user_role": {
+      "count": 10,
+      "types": {
+        "str": 10
+      },
+      "paths": [
+        "context_parameters.user_role"
+      ],
+      "examples": []
+    },
+    "context_parameters.target_audience": {
+      "count": 10,
+      "types": {
+        "str": 10
+      },
+      "paths": [
+        "context_parameters.target_audience"
+      ],
+      "examples": []
+    },
+    "context_parameters.desired_tone": {
+      "count": 10,
+      "types": {
+        "str": 10
+      },
+      "paths": [
+        "context_parameters.desired_tone"
+      ],
+      "examples": []
+    },
+    "context_parameters.complexity_level": {
+      "count": 10,
+      "types": {
+        "str": 10
+      },
+      "paths": [
+        "context_parameters.complexity_level"
+      ],
+      "examples": []
+    },
+    "context_parameters.time_constraints": {
+      "count": 10,
+      "types": {
+        "str": 10
+      },
+      "paths": [
+        "context_parameters.time_constraints"
+      ],
+      "examples": []
+    },
+    "context_parameters.existing_codebase_context": {
+      "count": 10,
+      "types": {
+        "null": 10
+      },
+      "paths": [
+        "context_parameters.existing_codebase_context"
+      ],
+      "examples": []
+    },
+    "context_parameters.custom_parameters": {
+      "count": 10,
+      "types": {
+        "dict": 10
+      },
+      "paths": [
+        "context_parameters.custom_parameters"
+      ],
+      "examples": []
+    },
+    "implementation[].progress.status": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].progress.status"
+      ],
+      "examples": []
+    },
+    "implementation[].progress.started_at": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].progress.started_at"
+      ],
+      "examples": []
+    },
+    "implementation[].progress.completed_at": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].progress.completed_at"
+      ],
+      "examples": []
+    },
+    "implementation[].progress.time_spent_minutes": {
+      "count": 1,
+      "types": {
+        "int": 1
+      },
+      "paths": [
+        "implementation[].progress.time_spent_minutes"
+      ],
+      "examples": [
+        0
+      ]
+    },
+    "implementation[].progress.completion_notes": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].progress.completion_notes"
+      ],
+      "examples": []
+    },
+    "implementation[].approvals[].level": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].approvals[].level"
+      ],
+      "examples": []
+    },
+    "implementation[].approvals[].approved_by": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].approvals[].approved_by"
+      ],
+      "examples": []
+    },
+    "implementation[].approvals[].approved_at": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].approvals[].approved_at"
+      ],
+      "examples": []
+    },
+    "implementation[].approvals[].comments": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "implementation[].approvals[].comments"
+      ],
+      "examples": []
+    },
+    "work_logs[].spec_id": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "work_logs[].spec_id"
+      ],
+      "examples": []
+    },
+    "work_logs[].step_id": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "work_logs[].step_id"
+      ],
+      "examples": []
+    },
+    "work_logs[].action": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "work_logs[].action"
+      ],
+      "examples": []
+    },
+    "work_logs[].timestamp": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "work_logs[].timestamp"
+      ],
+      "examples": []
+    },
+    "work_logs[].notes": {
+      "count": 3,
+      "types": {
+        "str": 3
+      },
+      "paths": [
+        "work_logs[].notes"
+      ],
+      "examples": []
+    },
+    "work_logs[].metadata": {
+      "count": 3,
+      "types": {
+        "dict": 3
+      },
+      "paths": [
+        "work_logs[].metadata"
+      ],
+      "examples": []
+    },
+    "work_logs[].metadata.started_by": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "work_logs[].metadata.started_by"
+      ],
+      "examples": []
+    },
+    "work_logs[].duration_minutes": {
+      "count": 1,
+      "types": {
+        "int": 1
+      },
+      "paths": [
+        "work_logs[].duration_minutes"
+      ],
+      "examples": [
+        0
+      ]
+    },
+    "work_logs[].metadata.completed_by": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "work_logs[].metadata.completed_by"
+      ],
+      "examples": []
+    },
+    "work_logs[].metadata.approved_by": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "work_logs[].metadata.approved_by"
+      ],
+      "examples": []
+    },
+    "work_logs[].metadata.approval_level": {
+      "count": 1,
+      "types": {
+        "str": 1
+      },
+      "paths": [
+        "work_logs[].metadata.approval_level"
+      ],
+      "examples": []
+    },
+    "work_logs[].metadata.override": {
+      "count": 1,
+      "types": {
+        "bool": 1
+      },
+      "paths": [
+        "work_logs[].metadata.override"
+      ],
+      "examples": [
+        false
+      ]
+    },
+    "work_logs[].metadata.override_reason": {
+      "count": 1,
+      "types": {
+        "null": 1
+      },
+      "paths": [
+        "work_logs[].metadata.override_reason"
+      ],
+      "examples": []
+    }
+  },
+  "common_patterns": {
+    "required_fields": [
+      "metadata",
+      "metadata.id",
+      "metadata.title",
+      "metadata.inherits",
+      "metadata.created",
+      "metadata.version",
+      "metadata.status",
+      "metadata.parent_spec_id",
+      "metadata.child_spec_ids",
+      "context",
+      "context.project",
+      "context.domain",
+      "context.dependencies",
+      "context.dependencies[].name",
+      "context.dependencies[].version",
+      "context.dependencies[].description",
+      "context.files_involved",
+      "requirements",
+      "requirements.functional",
+      "requirements.non_functional",
+      "requirements.constraints",
+      "implementation",
+      "implementation[].task",
+      "implementation[].details",
+      "implementation[].files",
+      "implementation[].acceptance",
+      "implementation[].estimated_effort",
+      "implementation[].step_id",
+      "implementation[].sub_spec_id",
+      "review_notes",
+      "context_parameters",
+      "feedback_history",
+      "implementation[].decomposition_hint"
+    ],
+    "optional_fields": [
+      "context.dependencies[].purpose",
+      "implementation[].progress",
+      "implementation[].approvals",
+      "work_logs",
+      "context_parameters.user_role",
+      "context_parameters.target_audience",
+      "context_parameters.desired_tone",
+      "context_parameters.complexity_level",
+      "context_parameters.time_constraints",
+      "context_parameters.existing_codebase_context",
+      "context_parameters.custom_parameters",
+      "implementation[].progress.status",
+      "implementation[].progress.started_at",
+      "implementation[].progress.completed_at",
+      "implementation[].progress.time_spent_minutes",
+      "implementation[].progress.completion_notes",
+      "implementation[].approvals[].level",
+      "implementation[].approvals[].approved_by",
+      "implementation[].approvals[].approved_at",
+      "implementation[].approvals[].comments",
+      "work_logs[].spec_id",
+      "work_logs[].step_id",
+      "work_logs[].action",
+      "work_logs[].timestamp",
+      "work_logs[].notes",
+      "work_logs[].metadata",
+      "work_logs[].metadata.started_by",
+      "work_logs[].duration_minutes",
+      "work_logs[].metadata.completed_by",
+      "work_logs[].metadata.approved_by",
+      "work_logs[].metadata.approval_level",
+      "work_logs[].metadata.override",
+      "work_logs[].metadata.override_reason"
+    ],
+    "field_type_consistency": {
+      "metadata": "dict",
+      "metadata.id": "str",
+      "metadata.title": "str",
+      "metadata.inherits": "list",
+      "metadata.created": "str",
+      "metadata.version": "str",
+      "metadata.status": "str",
+      "metadata.parent_spec_id": "MIXED: {'null': 23, 'str': 16}",
+      "metadata.child_spec_ids": "MIXED: {'list': 7, 'null': 32}",
+      "context": "dict",
+      "context.project": "str",
+      "context.domain": "str",
+      "context.dependencies": "list",
+      "context.dependencies[].name": "str",
+      "context.dependencies[].version": "MIXED: {'str': 77, 'null': 2}",
+      "context.dependencies[].description": "str",
+      "context.files_involved": "list",
+      "requirements": "dict",
+      "requirements.functional": "list",
+      "requirements.non_functional": "list",
+      "requirements.constraints": "list",
+      "implementation": "list",
+      "implementation[].task": "str",
+      "implementation[].details": "str",
+      "implementation[].files": "list",
+      "implementation[].acceptance": "str",
+      "implementation[].estimated_effort": "str",
+      "implementation[].step_id": "MIXED: {'str': 114, 'null': 3}",
+      "implementation[].sub_spec_id": "MIXED: {'str': 13, 'null': 104}",
+      "review_notes": "list",
+      "context_parameters": "MIXED: {'null': 28, 'dict': 10}",
+      "feedback_history": "list",
+      "context.dependencies[].purpose": "str",
+      "implementation[].decomposition_hint": "str",
+      "implementation[].progress": "MIXED: {'null': 27, 'dict': 1}",
+      "implementation[].approvals": "MIXED: {'null': 27, 'list': 1}",
+      "work_logs": "MIXED: {'null': 9, 'list': 1}",
+      "context_parameters.user_role": "str",
+      "context_parameters.target_audience": "str",
+      "context_parameters.desired_tone": "str",
+      "context_parameters.complexity_level": "str",
+      "context_parameters.time_constraints": "str",
+      "context_parameters.existing_codebase_context": "null",
+      "context_parameters.custom_parameters": "dict",
+      "implementation[].progress.status": "str",
+      "implementation[].progress.started_at": "str",
+      "implementation[].progress.completed_at": "str",
+      "implementation[].progress.time_spent_minutes": "int",
+      "implementation[].progress.completion_notes": "str",
+      "implementation[].approvals[].level": "str",
+      "implementation[].approvals[].approved_by": "str",
+      "implementation[].approvals[].approved_at": "str",
+      "implementation[].approvals[].comments": "str",
+      "work_logs[].spec_id": "str",
+      "work_logs[].step_id": "str",
+      "work_logs[].action": "str",
+      "work_logs[].timestamp": "str",
+      "work_logs[].notes": "str",
+      "work_logs[].metadata": "dict",
+      "work_logs[].metadata.started_by": "str",
+      "work_logs[].duration_minutes": "int",
+      "work_logs[].metadata.completed_by": "str",
+      "work_logs[].metadata.approved_by": "str",
+      "work_logs[].metadata.approval_level": "str",
+      "work_logs[].metadata.override": "bool",
+      "work_logs[].metadata.override_reason": "null"
+    }
+  },
+  "schema_variations": []
+}

@@ -13,6 +13,7 @@ import yaml
 
 from .config import AgenticSpecConfig, get_config_manager, parse_cli_overrides
 from .core import SpecGenerator
+from .db import FileBasedSpecStorage
 from .exceptions import (
     AgenticSpecError,
     AIServiceError,
@@ -23,8 +24,9 @@ from .exceptions import (
     ValidationError,
 )
 from .graph_visualization import get_spec_stats, print_spec_graph
-from .models import ContextParameters
+from .models import ApprovalLevel, ContextParameters
 from .prompt_editor import PromptEditor
+from .prompt_template_loader import PromptTemplateLoader
 from .template_loader import (
     TemplateLoader,
     list_templates,
@@ -32,11 +34,51 @@ from .template_loader import (
 )
 from .template_validator import TemplateValidator
 from .templates.base import create_base_templates
+from .workflow import TaskWorkflowManager, WorkflowViolationError
 
 
 def _create_basic_prompt_templates(prompt_templates_dir: Path, project_name: str):
     """Create basic prompt templates for common use cases."""
+    import importlib.resources
 
+    # Try to load templates from configuration file
+    try:
+        # Get the path to the templates configuration file
+        templates_package = importlib.resources.files("agentic_spec.templates")
+        config_file = templates_package / "basic_prompt_templates.yaml"
+
+        if config_file.is_file():
+            # Read and parse the YAML configuration
+            config_content = config_file.read_text(encoding="utf-8")
+            templates_config = yaml.safe_load(config_content)
+
+            # Process each template from the configuration
+            for template_key, template_data in templates_config.get(
+                "templates", {}
+            ).items():
+                filename = f"{template_key}.md"
+                content = template_data.get("content", "")
+
+                # Replace the project_name placeholder
+                content = content.replace("{{project_name}}", project_name)
+
+                # Write the template file
+                template_path = prompt_templates_dir / filename
+                template_path.write_text(content.strip(), encoding="utf-8")
+
+            return
+
+    except (ImportError, OSError, yaml.YAMLError) as e:
+        # Fall back to default templates if configuration loading fails
+        logger = logging.getLogger("agentic_spec")
+        logger.warning("Failed to load prompt templates from configuration: %s", e)
+
+    # Fallback: Create default templates if configuration is not available
+    _create_default_prompt_templates(prompt_templates_dir, project_name)
+
+
+def _create_default_prompt_templates(prompt_templates_dir: Path, project_name: str):
+    """Create default prompt templates as fallback."""
     # Basic specification generation prompt
     basic_prompt = f"""You are generating a programming specification for the {project_name} project.
 
@@ -321,6 +363,16 @@ def generate_spec(
     feedback: bool = Option(
         False, "--feedback", help="Enable interactive feedback collection"
     ),
+    template: str | None = Option(
+        None,
+        "--template",
+        help="Override default template with specific prompt template (e.g., 'feature-addition', 'bug-fix')",
+    ),
+    interactive_templates: bool = Option(
+        False,
+        "--interactive-templates",
+        help="Show interactive template selection menu instead of using default",
+    ),
     dry_run: bool = Option(
         False,
         "--dry-run",
@@ -343,10 +395,13 @@ def generate_spec(
     """Generate a new programming specification from a prompt.
 
     The prompt can be provided as an argument, piped via stdin, or entered
-    interactively.
-    Use --inherits to build upon existing templates, and customize the generation
-    context
-    with role, audience, tone, and complexity options.
+    interactively. By default, uses the 'specification-generation' template
+    for consistent, high-quality specs.
+
+    Use --template to override the default template, --interactive-templates
+    to select from available templates, or --inherits to build upon existing
+    YAML templates. Customize generation context with role, audience, tone,
+    and complexity options.
     """
 
     async def _generate():
@@ -389,6 +444,11 @@ def generate_spec(
 
                 _raise_validation_error()
 
+            # Handle template selection
+            selected_template = await _handle_template_selection(
+                template, interactive_templates, generator
+            )
+
             logger.info(
                 "Starting specification generation for prompt: %s...",
                 final_prompt[:100],
@@ -412,7 +472,11 @@ def generate_spec(
             # AI generation with fallback handling
             try:
                 spec = await generator.generate_spec(
-                    final_prompt, inherits_list, project, context_params
+                    final_prompt,
+                    inherits_list,
+                    project,
+                    context_params,
+                    custom_template=selected_template,
                 )
                 logger.info("Specification generated successfully")
             except Exception as e:
@@ -482,8 +546,8 @@ def generate_spec(
                     logger.warning("Auto-review failed: %s", e)
                     print("⚠️  Auto-review failed, continuing without review")
 
-            # Collect feedback if requested or enabled in config
-            if feedback or generator.config.workflow.collect_feedback:
+            # Collect feedback if requested or enabled in config (but skip in dry-run)
+            if not dry_run and (feedback or generator.config.workflow.collect_feedback):
                 try:
                     feedback_data = generator.prompt_engineer.collect_feedback(
                         output_content=str(spec_path), interactive=True
@@ -1027,9 +1091,7 @@ def manage_templates(
 
         else:
             print("📋 Template Commands:")
-            print(
-                "  agentic-spec template list           - List available " "templates"
-            )
+            print("  agentic-spec template list           - List available templates")
             print(
                 "  agentic-spec template info --template <name> - Show template information"
             )
@@ -1359,6 +1421,935 @@ def prompt_command(
         logger.exception("Error managing prompts")
         print(f"❌ Failed to manage prompts: {e}")
         raise typer.Exit(1) from None
+
+
+@app.command("browse-templates")
+def browse_templates(
+    prompt_templates_dir: str = Option(
+        "prompt-templates",
+        "--prompt-templates-dir",
+        help="Prompt templates directory",
+    ),
+):
+    """Browse available prompt templates with descriptions and use cases."""
+    logger = logging.getLogger("agentic_spec")
+
+    try:
+        templates_dir = Path(prompt_templates_dir)
+        loader = PromptTemplateLoader(templates_dir)
+
+        templates = loader.list_template_metadata()
+
+        if not templates:
+            print("❌ No prompt templates found")
+            print(f"💡 Check the {prompt_templates_dir}/ directory")
+            return
+
+        print("📋 Available Prompt Templates:")
+        print("=" * 50)
+
+        # Separate user-facing templates from internal ones
+        user_templates = [t for t in templates if not _is_internal_template(t.name)]
+        internal_templates = [t for t in templates if _is_internal_template(t.name)]
+
+        if user_templates:
+            print("\n🎯 User Templates:")
+            for i, template in enumerate(user_templates, 1):
+                print(f"  {i}. {template.name}")
+                print(f"     📝 {template.description}")
+                print(f"     💡 {template.use_case}")
+                print()
+
+        if internal_templates:
+            print("🔧 Internal Templates (used by the system):")
+            for template in internal_templates:
+                print(f"  • {template.name}")
+                print(f"    📝 {template.description}")
+            print()
+
+        print("💡 Use 'agentic-spec preview-template <name>' to see template content")
+        print(
+            "💡 Use 'agentic-spec generate --template <name> \"your prompt\"' to use a template"
+        )
+
+    except Exception as e:
+        logger.exception("Error browsing templates")
+        print(f"❌ Failed to browse templates: {e}")
+        raise typer.Exit(1) from None
+
+
+@app.command("preview-template")
+def preview_template(
+    template_name: str = Argument(..., help="Name of template to preview"),
+    prompt_templates_dir: str = Option(
+        "prompt-templates",
+        "--prompt-templates-dir",
+        help="Prompt templates directory",
+    ),
+):
+    """Preview the content of a specific prompt template."""
+    logger = logging.getLogger("agentic_spec")
+
+    try:
+        templates_dir = Path(prompt_templates_dir)
+        loader = PromptTemplateLoader(templates_dir)
+
+        # Get template metadata
+        try:
+            metadata = loader.get_template_metadata(template_name)
+        except FileNotFoundError:
+            print(f"❌ Template '{template_name}' not found")
+            print("💡 Use 'agentic-spec browse-templates' to see available templates")
+            raise typer.Exit(1) from None
+
+        # Load and display template content
+        content = loader.render_template(template_name)
+
+        print(f"📋 Template: {metadata.name}")
+        print("=" * 50)
+        print(f"📝 Description: {metadata.description}")
+        print(f"💡 Use case: {metadata.use_case}")
+        print()
+        print("📄 Template Content:")
+        print("-" * 30)
+        print(content)
+        print("-" * 30)
+        print()
+        print(
+            f'💡 Use with: agentic-spec generate --template {template_name} "your prompt"'
+        )
+
+    except Exception as e:
+        logger.exception("Error previewing template")
+        print(f"❌ Failed to preview template: {e}")
+        raise typer.Exit(1) from None
+
+
+def _is_internal_template(template_name: str) -> bool:
+    """Check if a template is internal (used by the system) vs user-facing."""
+    internal_templates = {
+        "specification-generation",
+        "specification-review",
+        "step-expansion",
+        "context-enhancement",
+    }
+    return template_name in internal_templates
+
+
+async def _handle_template_selection(
+    template: str | None, interactive_templates: bool, generator: SpecGenerator
+) -> str | None:
+    """Handle template selection for specification generation.
+
+    Args:
+        template: Template name provided via --template option, or None
+        interactive_templates: Whether to show interactive template selection
+        generator: SpecGenerator instance for accessing configuration
+
+    Returns:
+        Selected template name, or None if using default generation
+    """
+    prompt_loader = PromptTemplateLoader(
+        generator.spec_templates_dir.parent
+        / generator.config.directories.prompt_templates_dir
+    )
+
+    # If template is explicitly provided, validate and use it
+    if template:
+        if not prompt_loader.template_exists(template):
+            available = [
+                t
+                for t in prompt_loader.list_templates()
+                if not _is_internal_template(t)
+            ]
+            available_str = ", ".join(available) if available else "none"
+            raise TemplateError(
+                f"Template '{template}' not found. Available templates: {available_str}"
+            )
+
+        print(f"✅ Using template: {template}")
+        return template
+
+    # If interactive templates is requested, show selection menu
+    if interactive_templates:
+        available_templates = [
+            metadata
+            for metadata in prompt_loader.list_template_metadata()
+            if not _is_internal_template(metadata.name)
+        ]
+
+        if not available_templates:
+            print(
+                "ℹ️  No user prompt templates available. Using specification-generation template."
+            )
+            return "specification-generation"
+
+        # Show available templates
+        print("\n📋 Available prompt templates:")
+        for i, metadata in enumerate(available_templates, 1):
+            print(f"  {i}. {metadata.name}")
+            print(f"     {metadata.description}")
+            print(f"     Use case: {metadata.use_case}")
+            print()
+
+        print("  0. Use specification-generation template (default)")
+        print()
+
+        # Get user selection
+        while True:
+            try:
+                choice = typer.prompt("Select a template (number)", type=int)
+                if choice == 0:
+                    print("✅ Using specification-generation template")
+                    return "specification-generation"
+                if 1 <= choice <= len(available_templates):
+                    selected = available_templates[choice - 1]
+                    print(f"✅ Using template: {selected.name}")
+                    return selected.name
+                print(
+                    f"❌ Please enter a number between 0 and {len(available_templates)}"
+                )
+            except (ValueError, typer.Abort):
+                print("❌ Please enter a valid number")
+            except KeyboardInterrupt:
+                print("\n❌ Template selection cancelled")
+                raise typer.Abort()
+
+    # Default behavior: use specification-generation template
+    if prompt_loader.template_exists("specification-generation"):
+        print("✅ Using specification-generation template (default)")
+        return "specification-generation"
+    print("⚠️  specification-generation template not found. Using default generation.")
+    return None
+
+
+@app.command("task-start")
+def start_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    started_by: str = Option(..., "--by", help="Who is starting the task"),
+    notes: str | None = Option(
+        None, "--notes", help="Optional notes for starting the task"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    strict_mode: bool = Option(
+        True, "--strict/--no-strict", help="Enable strict mode enforcement"
+    ),
+):
+    """Start working on a task."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage, strict_mode=strict_mode)
+
+        # Parse spec_id from step_id
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.start_task(spec_id, step_id, started_by, notes)
+        print(f"✅ Task {step_id} started by {started_by}")
+
+        if notes:
+            print(f"📝 Notes: {notes}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        print(f"   Current status: {e.current_status}")
+        print(f"   Attempted action: {e.attempted_action}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error starting task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-complete")
+def complete_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    completed_by: str = Option(..., "--by", help="Who completed the task"),
+    notes: str | None = Option(None, "--notes", help="Completion notes"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Mark a task as completed."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.complete_task(spec_id, step_id, completed_by, notes)
+        print(f"✅ Task {step_id} completed by {completed_by}")
+
+        if notes:
+            print(f"📝 Completion notes: {notes}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error completing task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-approve")
+def approve_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    approved_by: str = Option(..., "--by", help="Who is approving the task"),
+    level: str = Option(
+        "self", "--level", help="Approval level: self, peer, ai, admin"
+    ),
+    comments: str | None = Option(None, "--comments", help="Approval comments"),
+    override_reason: str | None = Option(
+        None, "--override", help="Override reason if needed"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Approve a completed task."""
+    try:
+        # Validate approval level
+        try:
+            approval_level = ApprovalLevel(level.lower())
+        except ValueError:
+            valid_levels = [level.value for level in ApprovalLevel]
+            print(f"❌ Invalid approval level. Valid levels: {', '.join(valid_levels)}")
+            raise typer.Exit(1)
+
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.approve_task(
+            spec_id, step_id, approval_level, approved_by, comments, override_reason
+        )
+        print(f"✅ Task {step_id} approved by {approved_by} ({level})")
+
+        if comments:
+            print(f"💬 Comments: {comments}")
+        if override_reason:
+            print(f"⚠️  Override reason: {override_reason}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error approving task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-reject")
+def reject_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    rejected_by: str = Option(..., "--by", help="Who is rejecting the task"),
+    reason: str = Option(..., "--reason", help="Rejection reason"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Reject a task, requiring rework."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.reject_task(spec_id, step_id, rejected_by, reason)
+        print(f"❌ Task {step_id} rejected by {rejected_by}")
+        print(f"📝 Reason: {reason}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error rejecting task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-block")
+def block_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    blocked_by: str = Option(..., "--by", help="Who is blocking the task"),
+    blockers: list[str] = Option(
+        ..., "--blocker", help="Blocking issues (can specify multiple)"
+    ),
+    notes: str | None = Option(
+        None, "--notes", help="Additional notes about the block"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Block a task due to external dependencies or issues."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.block_task(spec_id, step_id, blocked_by, blockers, notes)
+        print(f"🚫 Task {step_id} blocked by {blocked_by}")
+        print(f"🔒 Blockers: {', '.join(blockers)}")
+
+        if notes:
+            print(f"📝 Notes: {notes}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error blocking task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-unblock")
+def unblock_task(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    unblocked_by: str = Option(..., "--by", help="Who is unblocking the task"),
+    resolution: str = Option(
+        ..., "--resolution", help="How the blockers were resolved"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Unblock a task and return it to pending status."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.unblock_task(spec_id, step_id, unblocked_by, resolution)
+        print(f"✅ Task {step_id} unblocked by {unblocked_by}")
+        print(f"🔓 Resolution: {resolution}")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error unblocking task: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-override")
+def override_strict_mode(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    override_by: str = Option(..., "--by", help="Who is overriding strict mode"),
+    reason: str = Option(..., "--reason", help="Reason for override"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Override strict mode to start a task out of sequence."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage, strict_mode=True)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        workflow.override_strict_mode(spec_id, step_id, override_by, reason)
+        print(f"⚠️  Strict mode overridden for task {step_id}")
+        print(f"👤 Override by: {override_by}")
+        print(f"📝 Reason: {reason}")
+        print("🚀 Task has been started with override")
+
+    except WorkflowViolationError as e:
+        print(f"❌ Workflow violation: {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        print(f"❌ Error overriding strict mode: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("task-status")
+def show_task_status(
+    step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Show detailed status information for a task."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage)
+
+        if ":" not in step_id:
+            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+        spec_id = step_id.split(":")[0]
+
+        status = workflow.get_task_status(spec_id, step_id)
+
+        print(f"📋 Task Status: {step_id}")
+        print(f"   Task: {status['task']}")
+        print(f"   Status: {status['status']}")
+        print(f"   Estimated Effort: {status['estimated_effort']}")
+        print(f"   Files: {', '.join(status['files'])}")
+
+        print("\n🚦 Actions Available:")
+        print(f"   Can start: {'✅' if status['can_start'] else '❌'}")
+        print(f"   Can complete: {'✅' if status['can_complete'] else '❌'}")
+        print(f"   Can approve: {'✅' if status['can_approve'] else '❌'}")
+
+        if status.get("started_at"):
+            print("\n⏱️  Timing:")
+            print(f"   Started: {status['started_at']}")
+            if status.get("completed_at"):
+                print(f"   Completed: {status['completed_at']}")
+            if status.get("time_spent_minutes"):
+                print(f"   Time Spent: {status['time_spent_minutes']} minutes")
+
+        if status.get("completion_notes"):
+            print(f"\n📝 Notes: {status['completion_notes']}")
+
+        if status.get("blockers"):
+            print("\n🚫 Blockers:")
+            for blocker in status["blockers"]:
+                print(f"   • {blocker}")
+
+        if status.get("approvals"):
+            print("\n✅ Approvals:")
+            for approval in status["approvals"]:
+                print(
+                    f"   • {approval['level']} by {approval['approved_by']} at {approval['approved_at']}"
+                )
+                if approval["comments"]:
+                    print(f"     💬 {approval['comments']}")
+                if approval["override_reason"]:
+                    print(f"     ⚠️  Override: {approval['override_reason']}")
+
+    except Exception as e:
+        print(f"❌ Error getting task status: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("workflow-status")
+def show_workflow_status(
+    spec_id: str = Argument(..., help="Specification ID"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    strict_mode: bool = Option(
+        True, "--strict/--no-strict", help="Show status with strict mode context"
+    ),
+):
+    """Show comprehensive workflow status for a specification."""
+    try:
+        storage = FileBasedSpecStorage(specs_dir)
+        workflow = TaskWorkflowManager(storage, strict_mode=strict_mode)
+
+        status = workflow.get_workflow_status(spec_id)
+
+        print(f"📊 Workflow Status: {spec_id}")
+        print(f"   Title: {status['spec_title']}")
+        print(f"   Total Tasks: {status['total_tasks']}")
+        print(f"   Completion: {status['completion_percentage']}%")
+        print(
+            f"   Strict Mode: {'✅ Enabled' if status['strict_mode'] else '❌ Disabled'}"
+        )
+
+        print("\n📈 Task Breakdown:")
+        for status_name, count in status["status_counts"].items():
+            if count > 0:
+                emoji = {
+                    "pending": "⏳",
+                    "in_progress": "🚀",
+                    "completed": "✅",
+                    "approved": "🎉",
+                    "rejected": "❌",
+                    "blocked": "🚫",
+                }.get(status_name, "📋")
+                print(f"   {emoji} {status_name.replace('_', ' ').title()}: {count}")
+
+        if status["next_available_task"]:
+            print(f"\n🎯 Next Available Task: {status['next_available_task']}")
+
+        print("\n📋 All Tasks:")
+        for task in status["tasks"]:
+            status_emoji = {
+                "pending": "⏳",
+                "in_progress": "🚀",
+                "completed": "✅",
+                "approved": "🎉",
+                "rejected": "❌",
+                "blocked": "🚫",
+            }.get(task["status"], "📋")
+
+            availability = "🟢" if task["can_start"] else "🔴"
+            print(f"   {status_emoji} {availability} {task['step_id']}: {task['task']}")
+
+            if task.get("time_spent_minutes"):
+                print(f"     ⏱️  {task['time_spent_minutes']} minutes")
+            if task.get("blockers"):
+                print(f"     🚫 Blocked by: {', '.join(task['blockers'])}")
+
+        print(
+            f"\n📝 Required Approvals: {', '.join(status['required_approval_levels'])}"
+        )
+
+    except Exception as e:
+        print(f"❌ Error getting workflow status: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("migrate-bulk")
+def migrate_bulk(
+    specs_dir: str = Option("specs", "--specs-dir", help="Specifications directory"),
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
+    ),
+    dry_run: bool = Option(False, "--dry-run", help="Validate without migrating"),
+    verbose: bool = Option(False, "--verbose", help="Show detailed progress"),
+):
+    """Migrate all specifications to database."""
+    try:
+        specs_path = Path(specs_dir)
+        templates_path = Path(templates_dir)
+
+        generator = SpecGenerator(templates_path, specs_path)
+
+        print("🔄 Starting bulk migration of specifications...")
+
+        def progress_callback(msg: str):
+            if verbose or "Discovered" in msg or "completed" in msg:
+                print(f"   {msg}")
+
+        # Run async migration
+        async def run_migration():
+            return await generator.migrate_specifications(
+                full_migration=True,
+                dry_run=dry_run,
+                progress_callback=progress_callback,
+            )
+
+        results = asyncio.run(run_migration())
+
+        # Display results
+        action = "Validated" if dry_run else "Migrated"
+        print(f"\n📊 {action} Specifications:")
+        print(f"   Total files: {results['total_files']}")
+        print(f"   Valid files: {results['valid_files']}")
+        print(f"   {action.lower()} files: {results['migrated_files']}")
+        print(f"   Errors: {len(results['errors'])}")
+        print(f"   Warnings: {len(results['warnings'])}")
+
+        success_rate = results["migrated_files"] / max(results["total_files"], 1) * 100
+        print(f"   Success rate: {success_rate:.1f}%")
+
+        if results["errors"]:
+            print(f"\n❌ Errors ({len(results['errors'])}):")
+            for error in results["errors"][:5]:  # Show first 5
+                file_name = Path(error["file"]).name
+                print(f"   {file_name}: {error['error'][:80]}...")
+            if len(results["errors"]) > 5:
+                print(f"   ... and {len(results['errors']) - 5} more errors")
+
+        if results["warnings"] and verbose:
+            print(f"\n⚠️  Warnings ({len(results['warnings'])}):")
+            for warning in results["warnings"][:3]:  # Show first 3
+                file_name = Path(warning["file"]).name
+                print(f"   {file_name}: {warning['warning'][:80]}...")
+
+        if results["errors"]:
+            print("\n💡 Use --verbose for detailed output")
+            if not dry_run:
+                print("💡 Run with --dry-run first to validate before migrating")
+
+        if results["migrated_files"] == results["total_files"]:
+            print(f"\n✅ All specifications {action.lower()} successfully!")
+        elif results["migrated_files"] > 0:
+            print(
+                f"\n⚠️  Partial success: {results['migrated_files']}/{results['total_files']} files {action.lower()}"
+            )
+        else:
+            print(f"\n❌ No files were {action.lower()} successfully")
+            raise typer.Exit(1)
+
+    except Exception as e:
+        print(f"❌ Error during bulk migration: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("migrate-incremental")
+def migrate_incremental(
+    specs_dir: str = Option("specs", "--specs-dir", help="Specifications directory"),
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
+    ),
+    dry_run: bool = Option(False, "--dry-run", help="Validate without migrating"),
+    verbose: bool = Option(False, "--verbose", help="Show detailed progress"),
+):
+    """Migrate only new or changed specifications to database."""
+    try:
+        specs_path = Path(specs_dir)
+        templates_path = Path(templates_dir)
+
+        generator = SpecGenerator(templates_path, specs_path)
+
+        print("🔄 Starting incremental migration of specifications...")
+
+        def progress_callback(msg: str):
+            if verbose or "Discovered" in msg or "completed" in msg:
+                print(f"   {msg}")
+
+        # Run async migration
+        async def run_migration():
+            return await generator.migrate_specifications(
+                full_migration=False,  # Incremental mode
+                dry_run=dry_run,
+                progress_callback=progress_callback,
+            )
+
+        results = asyncio.run(run_migration())
+
+        # Display results
+        action = "Validated" if dry_run else "Migrated"
+        print(f"\n📊 {action} Specifications (Incremental):")
+        print(f"   Total files checked: {results['total_files']}")
+        print(f"   Valid files: {results['valid_files']}")
+        print(f"   {action.lower()} files: {results['migrated_files']}")
+        print(f"   Errors: {len(results['errors'])}")
+        print(f"   Warnings: {len(results['warnings'])}")
+
+        if results["total_files"] == 0:
+            print("   🎉 No changes detected - all files up to date!")
+        else:
+            success_rate = (
+                results["migrated_files"] / max(results["total_files"], 1) * 100
+            )
+            print(f"   Success rate: {success_rate:.1f}%")
+
+        if results["errors"] and verbose:
+            print("\n❌ Errors:")
+            for error in results["errors"]:
+                file_name = Path(error["file"]).name
+                print(f"   {file_name}: {error['error'][:100]}...")
+
+        if results["migrated_files"] > 0:
+            print("\n✅ Incremental migration completed successfully!")
+        elif results["total_files"] == 0:
+            print("\n✅ No migration needed - all files up to date!")
+        else:
+            print(f"\n❌ No files were {action.lower()} successfully")
+            raise typer.Exit(1)
+
+    except Exception as e:
+        print(f"❌ Error during incremental migration: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("migration-status")
+def migration_status(
+    specs_dir: str = Option("specs", "--specs-dir", help="Specifications directory"),
+):
+    """Show current migration status."""
+    try:
+        specs_path = Path(specs_dir)
+
+        # Check for migration state file
+        state_file = specs_path / ".migration_state.json"
+        db_file = specs_path / "specifications.db"
+
+        print("📊 Migration Status:")
+
+        if not state_file.exists():
+            print("   ❌ No migration state found")
+            print(
+                "   💡 Run 'migrate-bulk' or 'migrate-incremental' to start migration"
+            )
+            return
+
+        # Load migration state
+        try:
+            with open(state_file, encoding="utf-8") as f:
+                state = json.load(f)
+
+            print(f"   📁 Tracked files: {len(state)}")
+
+            # Get latest migration time
+            latest_time = None
+            for file_info in state.values():
+                modified = file_info.get("modified", 0)
+                if latest_time is None or modified > latest_time:
+                    latest_time = modified
+
+            if latest_time:
+                import datetime
+
+                latest_dt = datetime.datetime.fromtimestamp(latest_time)
+                print(
+                    f"   🕐 Last migration check: {latest_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"   ❌ Error reading migration state: {e}")
+
+        # Check database file
+        if db_file.exists():
+            print(f"   💾 Database file: {db_file}")
+            print(f"   📊 Database size: {db_file.stat().st_size / 1024:.1f} KB")
+        else:
+            print("   ❌ No database file found")
+            print("   💡 Use 'migrate-bulk' to create database")
+
+        # Count YAML files
+        yaml_files = list(specs_path.glob("*.yaml"))
+        spec_count = 0
+        for file_path in yaml_files:
+            if file_path.name not in ["yaml-to-db-mapping.yaml", "migration-plan.yaml"]:
+                spec_count += 1
+
+        print(f"   📄 YAML specifications: {spec_count}")
+
+        # Suggest actions
+        if not db_file.exists():
+            print("\n💡 Suggestions:")
+            print("   • Run 'agentic-spec migrate-bulk --dry-run' to validate")
+            print("   • Run 'agentic-spec migrate-bulk' to create database")
+        else:
+            print("\n💡 Suggestions:")
+            print("   • Run 'agentic-spec migrate-incremental' to sync changes")
+            print("   • Run 'agentic-spec migration-report' for detailed analysis")
+
+    except Exception as e:
+        print(f"❌ Error checking migration status: {e}")
+        raise typer.Exit(1)
+
+
+@app.command("migration-report")
+def migration_report(
+    specs_dir: str = Option("specs", "--specs-dir", help="Specifications directory"),
+    output_format: str = Option(
+        "table", "--format", help="Output format: table, yaml, json"
+    ),
+    save_file: str = Option(None, "--save", help="Save report to file"),
+):
+    """Generate detailed migration report."""
+    try:
+        specs_path = Path(specs_dir)
+
+        # Basic file analysis
+        yaml_files = list(specs_path.glob("*.yaml"))
+        spec_files = []
+        doc_files = []
+
+        for file_path in yaml_files:
+            if file_path.name in ["yaml-to-db-mapping.yaml", "migration-plan.yaml"]:
+                doc_files.append(file_path)
+            else:
+                spec_files.append(file_path)
+
+        # Load migration state if exists
+        state_file = specs_path / ".migration_state.json"
+        migration_state = {}
+        if state_file.exists():
+            try:
+                with open(state_file, encoding="utf-8") as f:
+                    migration_state = json.load(f)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
+
+        # Generate report data
+        from datetime import datetime
+
+        report = {
+            "generated_at": datetime.now().isoformat(),
+            "specs_directory": str(specs_path),
+            "summary": {
+                "total_yaml_files": len(yaml_files),
+                "specification_files": len(spec_files),
+                "documentation_files": len(doc_files),
+                "tracked_files": len(migration_state),
+                "database_exists": (specs_path / "specifications.db").exists(),
+            },
+            "files": [],
+        }
+
+        # Analyze each spec file
+        for file_path in spec_files:
+            file_info = {
+                "name": file_path.name,
+                "size": file_path.stat().st_size,
+                "modified": file_path.stat().st_mtime,
+                "tracked": str(file_path) in migration_state,
+            }
+
+            # Try to get spec ID and title
+            try:
+                with open(file_path, encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+                    if isinstance(data, dict) and "metadata" in data:
+                        file_info["spec_id"] = data["metadata"].get("id", "unknown")
+                        file_info["title"] = data["metadata"].get("title", "unknown")
+                        file_info["status"] = data["metadata"].get("status", "unknown")
+            except:
+                file_info["spec_id"] = "unknown"
+                file_info["title"] = "parse_error"
+                file_info["status"] = "error"
+
+            report["files"].append(file_info)
+
+        # Output report
+        if output_format.lower() == "json":
+            report_str = json.dumps(report, indent=2, default=str)
+        elif output_format.lower() == "yaml":
+            report_str = yaml.dump(report, default_flow_style=False, sort_keys=False)
+        else:  # table format
+            report_str = _format_migration_report_table(report)
+
+        if save_file:
+            save_path = Path(save_file)
+            with open(save_path, "w", encoding="utf-8") as f:
+                f.write(report_str)
+            print(f"📄 Report saved to: {save_path}")
+        else:
+            print(report_str)
+
+    except Exception as e:
+        print(f"❌ Error generating migration report: {e}")
+        raise typer.Exit(1)
+
+
+def _format_migration_report_table(report: dict) -> str:
+    """Format migration report as a table."""
+    lines = []
+    lines.append("📊 Migration Report")
+    lines.append("=" * 50)
+
+    summary = report["summary"]
+    lines.append(f"📁 Specifications Directory: {report['specs_directory']}")
+    lines.append(f"🕐 Generated: {report['generated_at']}")
+    lines.append("")
+
+    lines.append("📈 Summary:")
+    lines.append(f"   Total YAML files: {summary['total_yaml_files']}")
+    lines.append(f"   Specification files: {summary['specification_files']}")
+    lines.append(f"   Documentation files: {summary['documentation_files']}")
+    lines.append(f"   Tracked files: {summary['tracked_files']}")
+    lines.append(f"   Database exists: {'✅' if summary['database_exists'] else '❌'}")
+    lines.append("")
+
+    lines.append("📋 Files:")
+    lines.append(
+        f"{'Name':<30} {'Spec ID':<12} {'Status':<12} {'Tracked':<8} {'Size':<8}"
+    )
+    lines.append("-" * 80)
+
+    for file_info in report["files"]:
+        name = file_info["name"][:28]
+        spec_id = str(file_info["spec_id"])[:10]
+        status = str(file_info["status"])[:10]
+        tracked = "✅" if file_info["tracked"] else "❌"
+        size = f"{file_info['size'] / 1024:.1f}KB"
+
+        lines.append(f"{name:<30} {spec_id:<12} {status:<12} {tracked:<8} {size:<8}")
+
+    return "\n".join(lines)
 
 
 def main():

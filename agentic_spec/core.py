@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+import uuid
 
 import yaml
 
@@ -409,6 +410,7 @@ class SpecGenerator:
         project_name: str = "project",
         context_params: ContextParameters | None = None,
         parent_spec_id: str | None = None,
+        custom_template: str | None = None,
     ) -> ProgrammingSpec:
         """Generate a detailed programming specification from a prompt."""
 
@@ -444,7 +446,11 @@ class SpecGenerator:
         # Generate spec using AI if available
         if self.ai_provider and self.ai_provider.is_available:
             spec_data = await self._generate_with_ai(
-                prompt, comprehensive_context, project_name, context_params
+                prompt,
+                comprehensive_context,
+                project_name,
+                context_params,
+                custom_template,
             )
         else:
             spec_data = self._generate_basic(prompt, inherited_context, project_name)
@@ -476,6 +482,7 @@ class SpecGenerator:
         comprehensive_context: dict,
         project_name: str,
         context_params: ContextParameters,
+        custom_template: str | None = None,
     ) -> dict:
         """Use AI to generate detailed specification."""
 
@@ -523,8 +530,10 @@ You MUST thoroughly analyze and incorporate ALL provided context into your speci
 
         # Load system prompt from template
         try:
+            # Use custom template if provided, otherwise use default
+            template_name = custom_template or "specification-generation"
             system_prompt = self.prompt_template_loader.render_template(
-                "specification-generation",
+                template_name,
                 context_info=context_info,
                 project_name=project_name,
             )
@@ -781,6 +790,8 @@ Return a simple JSON array of strings - no markdown formatting."""
                 step_task=target_step.task,
                 step_details=target_step.details,
                 step_files=", ".join(target_step.files),
+                step_acceptance=target_step.acceptance,
+                step_effort=target_step.estimated_effort,
                 parent_project=parent_spec.context.project,
                 parent_domain=parent_spec.context.domain,
             )
@@ -854,3 +865,562 @@ Return a simple JSON array of strings - no markdown formatting."""
             except (OSError, UnicodeDecodeError, ValueError, KeyError):
                 continue
         return None
+
+    # Migration functionality for database backfill
+
+    def discover_yaml_files(self, full_migration: bool = True) -> list[Path]:
+        """Discover YAML specification files for migration.
+
+        Args:
+            full_migration: If True, return all files. If False, return only new/changed files.
+
+        Returns:
+            List of Path objects for YAML files to process.
+        """
+        # Get all YAML files in specs directory
+        all_files = list(self.specs_dir.glob("*.yaml"))
+
+        # Filter out non-specification files
+        spec_files = []
+        for file_path in all_files:
+            # Skip documentation files
+            if file_path.name in ["yaml-to-db-mapping.yaml", "migration-plan.yaml"]:
+                continue
+
+            # Skip files that don't parse as valid specifications
+            try:
+                with open(file_path, encoding="utf-8") as f:
+                    data = yaml.safe_load(f)
+
+                # Check if it looks like a specification (has required fields)
+                if (
+                    isinstance(data, dict)
+                    and "metadata" in data
+                    and "context" in data
+                    and "requirements" in data
+                    and "implementation" in data
+                ):
+                    spec_files.append(file_path)
+
+            except (yaml.YAMLError, UnicodeDecodeError, KeyError, TypeError):
+                # Skip invalid YAML files
+                continue
+
+        if full_migration:
+            return spec_files
+
+        # For incremental migration, check change detection
+        return self._detect_changed_files(spec_files)
+
+    def _detect_changed_files(self, spec_files: list[Path]) -> list[Path]:
+        """Detect which files have changed since last migration.
+
+        Args:
+            spec_files: List of all specification files
+
+        Returns:
+            List of files that are new or have changed
+        """
+        migration_state_file = self.specs_dir / ".migration_state.json"
+
+        # Load previous migration state
+        previous_state = {}
+        if migration_state_file.exists():
+            try:
+                with open(migration_state_file, encoding="utf-8") as f:
+                    previous_state = json.load(f)
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                # If state file is corrupted, treat as full migration
+                previous_state = {}
+
+        changed_files = []
+        current_state = {}
+
+        for file_path in spec_files:
+            try:
+                # Calculate file hash for change detection
+                file_hash = self._calculate_file_hash(file_path)
+                current_state[str(file_path)] = {
+                    "hash": file_hash,
+                    "modified": file_path.stat().st_mtime,
+                    "size": file_path.stat().st_size,
+                }
+
+                # Check if file is new or changed
+                file_key = str(file_path)
+                if (
+                    file_key not in previous_state
+                    or previous_state[file_key].get("hash") != file_hash
+                ):
+                    changed_files.append(file_path)
+
+            except (OSError, PermissionError):
+                # If we can't read the file, include it for migration attempt
+                changed_files.append(file_path)
+
+        # Update migration state
+        try:
+            with open(migration_state_file, "w", encoding="utf-8") as f:
+                json.dump(current_state, f, indent=2)
+        except (OSError, PermissionError):
+            # Log warning but continue - state tracking is optional
+            pass
+
+        return changed_files
+
+    def _calculate_file_hash(self, file_path: Path) -> str:
+        """Calculate MD5 hash of file contents for change detection.
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            MD5 hash as hex string
+        """
+        hasher = hashlib.md5()
+        try:
+            with open(file_path, "rb") as f:
+                # Read file in chunks to handle large files
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hasher.update(chunk)
+        except (OSError, PermissionError):
+            # If we can't read file, use file stats as fallback
+            stat = file_path.stat()
+            fallback_data = f"{file_path.name}{stat.st_size}{stat.st_mtime}".encode()
+            hasher.update(fallback_data)
+
+        return hasher.hexdigest()
+
+    def validate_yaml_file(
+        self, file_path: Path
+    ) -> tuple[bool, dict[str, Any] | None, str | None]:
+        """Validate a YAML file against our specification schema.
+
+        Args:
+            file_path: Path to YAML file to validate
+
+        Returns:
+            Tuple of (is_valid, parsed_data, error_message)
+        """
+        try:
+            with open(file_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+
+            # Basic structure validation
+            if not isinstance(data, dict):
+                return False, None, "Root element must be a dictionary"
+
+            # Check required top-level fields
+            required_fields = ["metadata", "context", "requirements", "implementation"]
+            missing_fields = [field for field in required_fields if field not in data]
+            if missing_fields:
+                return (
+                    False,
+                    None,
+                    f"Missing required fields: {', '.join(missing_fields)}",
+                )
+
+            # Try to parse with our ProgrammingSpec model for full validation
+            try:
+                spec = ProgrammingSpec.from_dict(data)
+                # If we get here, the spec is fully valid
+                return True, data, None
+
+            except (ValueError, TypeError, KeyError):
+                # ProgrammingSpec validation failed, do basic validation
+                return self._basic_validation(data)
+
+        except yaml.YAMLError as e:
+            return False, None, f"YAML parsing error: {e!s}"
+        except (UnicodeDecodeError, OSError) as e:
+            return False, None, f"File reading error: {e!s}"
+        except Exception as e:
+            return False, None, f"Unexpected error: {e!s}"
+
+    def _basic_validation(
+        self, data: dict[str, Any]
+    ) -> tuple[bool, dict[str, Any] | None, str | None]:
+        """Perform basic validation when Pydantic validation fails.
+
+        Args:
+            data: Parsed YAML data
+
+        Returns:
+            Tuple of (is_valid, data, error_message)
+        """
+        # Validate metadata structure
+        metadata = data.get("metadata", {})
+        required_metadata = ["id", "title", "created", "version"]
+        missing_metadata = [
+            field for field in required_metadata if field not in metadata
+        ]
+        if missing_metadata:
+            return (
+                False,
+                None,
+                f"Missing metadata fields: {', '.join(missing_metadata)}",
+            )
+
+        # Validate context structure
+        context = data.get("context", {})
+        required_context = ["project", "domain"]
+        missing_context = [field for field in required_context if field not in context]
+        if missing_context:
+            return False, None, f"Missing context fields: {', '.join(missing_context)}"
+
+        # Validate requirements structure
+        requirements = data.get("requirements", {})
+        required_requirements = ["functional", "non_functional"]
+        missing_requirements = [
+            field for field in required_requirements if field not in requirements
+        ]
+        if missing_requirements:
+            return (
+                False,
+                None,
+                f"Missing requirements fields: {', '.join(missing_requirements)}",
+            )
+
+        # Validate implementation structure
+        implementation = data.get("implementation", [])
+        if not isinstance(implementation, list):
+            return False, None, "Implementation must be a list"
+
+        # Validate each implementation step
+        for i, step in enumerate(implementation):
+            if not isinstance(step, dict):
+                return False, None, f"Implementation step {i} must be a dictionary"
+
+            required_step_fields = ["task", "details", "files", "acceptance"]
+            missing_step_fields = [
+                field for field in required_step_fields if field not in step
+            ]
+            if missing_step_fields:
+                return (
+                    False,
+                    None,
+                    f"Step {i} missing fields: {', '.join(missing_step_fields)}",
+                )
+
+        # Basic validation passed, but note that Pydantic validation failed
+        return True, data, "Basic validation passed, but some data may be malformed"
+
+    async def migrate_specifications(
+        self,
+        full_migration: bool = True,
+        dry_run: bool = False,
+        progress_callback: callable = None,
+    ) -> dict[str, Any]:
+        """Migrate YAML specifications to database using AsyncSpecManager.
+
+        Args:
+            full_migration: If True, migrate all files. If False, only new/changed files.
+            dry_run: If True, validate but don't actually migrate
+            progress_callback: Optional callback for progress updates
+
+        Returns:
+            Migration results dictionary with statistics and errors
+        """
+        from .async_db import AsyncSpecManager, SQLiteBackend
+        from .db import FileBasedSpecStorage
+
+        # Initialize results tracking
+        results = {
+            "total_files": 0,
+            "valid_files": 0,
+            "migrated_files": 0,
+            "errors": [],
+            "warnings": [],
+            "skipped_files": [],
+            "migration_start": datetime.now().isoformat(),
+            "migration_end": None,
+            "dry_run": dry_run,
+        }
+
+        try:
+            # Discover files to migrate
+            files_to_migrate = self.discover_yaml_files(full_migration=full_migration)
+            results["total_files"] = len(files_to_migrate)
+
+            if progress_callback:
+                progress_callback(
+                    f"Discovered {len(files_to_migrate)} files for migration"
+                )
+
+            # Initialize database backend
+            db_path = self.specs_dir / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+
+            # Initialize file storage for comparison
+            file_storage = FileBasedSpecStorage(self.specs_dir)
+
+            # Process files in batches
+            batch_size = 10
+            migrated_count = 0
+
+            async with AsyncSpecManager(backend) as spec_manager:
+                for i in range(0, len(files_to_migrate), batch_size):
+                    batch = files_to_migrate[i : i + batch_size]
+
+                    for file_path in batch:
+                        try:
+                            # Progress update
+                            if progress_callback:
+                                progress_callback(f"Processing {file_path.name}...")
+
+                            # Validate file
+                            is_valid, data, error = self.validate_yaml_file(file_path)
+                            if not is_valid:
+                                results["errors"].append(
+                                    {
+                                        "file": str(file_path),
+                                        "error": f"Validation failed: {error}",
+                                    }
+                                )
+                                continue
+
+                            results["valid_files"] += 1
+
+                            if error:  # Warning from basic validation
+                                results["warnings"].append(
+                                    {"file": str(file_path), "warning": error}
+                                )
+
+                            # Convert YAML data to database format
+                            try:
+                                migration_result = await self._migrate_single_spec(
+                                    spec_manager, data, file_path, dry_run
+                                )
+
+                                if migration_result["success"]:
+                                    migrated_count += 1
+                                    results["migrated_files"] += 1
+                                else:
+                                    results["errors"].append(
+                                        {
+                                            "file": str(file_path),
+                                            "error": migration_result["error"],
+                                        }
+                                    )
+
+                            except Exception as e:
+                                results["errors"].append(
+                                    {
+                                        "file": str(file_path),
+                                        "error": f"Migration error: {e!s}",
+                                    }
+                                )
+
+                        except Exception as e:
+                            results["errors"].append(
+                                {
+                                    "file": str(file_path),
+                                    "error": f"Processing error: {e!s}",
+                                }
+                            )
+
+                    # Progress update after batch
+                    if progress_callback:
+                        progress_callback(
+                            f"Processed {min(i + batch_size, len(files_to_migrate))}/{len(files_to_migrate)} files"
+                        )
+
+        except Exception as e:
+            results["errors"].append(
+                {"file": "SYSTEM", "error": f"Migration system error: {e!s}"}
+            )
+
+        results["migration_end"] = datetime.now().isoformat()
+
+        if progress_callback:
+            progress_callback(
+                f"Migration completed: {results['migrated_files']}/{results['total_files']} files migrated"
+            )
+
+        return results
+
+    async def _migrate_single_spec(
+        self,
+        spec_manager: "AsyncSpecManager",
+        data: dict[str, Any],
+        file_path: Path,
+        dry_run: bool = False,
+    ) -> dict[str, Any]:
+        """Migrate a single specification to the database.
+
+        Args:
+            spec_manager: AsyncSpecManager instance
+            data: Parsed YAML data
+            file_path: Path to source file
+            dry_run: If True, validate but don't insert
+
+        Returns:
+            Migration result dictionary
+        """
+        try:
+            # Create ProgrammingSpec object for conversion
+            spec = ProgrammingSpec.from_dict(data)
+
+            # Convert to database format
+            spec_db = await self._convert_spec_to_db(spec, file_path)
+
+            if dry_run:
+                return {"success": True, "action": "validated", "spec_id": spec_db.id}
+
+            # Check if spec already exists
+            existing_spec = await spec_manager.get_specification(spec_db.id)
+
+            if existing_spec:
+                # Update existing specification
+                await spec_manager.update_specification(spec_db)
+                action = "updated"
+            else:
+                # Create new specification
+                await spec_manager.create_specification(spec_db)
+                action = "created"
+
+            return {"success": True, "action": action, "spec_id": spec_db.id}
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "spec_id": data.get("metadata", {}).get("id", "unknown"),
+            }
+
+    async def _convert_spec_to_db(
+        self, spec: ProgrammingSpec, file_path: Path
+    ) -> "SpecificationDB":
+        """Convert ProgrammingSpec to SpecificationDB format.
+
+        Args:
+            spec: ProgrammingSpec object
+            file_path: Source file path for metadata
+
+        Returns:
+            SpecificationDB object
+        """
+        from datetime import datetime
+
+        from .models import (
+            ApprovalDB,
+            SpecificationDB,
+            SpecStatus,
+            TaskDB,
+            TaskStatus,
+            WorkLogDB,
+        )
+
+        # Convert datetime string to datetime object
+        created_dt = datetime.fromisoformat(
+            spec.metadata.created.replace("Z", "+00:00")
+        )
+        updated_dt = datetime.fromtimestamp(file_path.stat().st_mtime)
+
+        # Convert status to enum
+        try:
+            status = SpecStatus(spec.metadata.status.lower())
+        except ValueError:
+            status = SpecStatus.DRAFT
+
+        # Create task records
+        tasks = []
+        work_logs = []
+
+        for i, step in enumerate(spec.implementation):
+            # Generate task ID if missing
+            task_id = step.step_id or f"{spec.metadata.id}:{i}"
+
+            # Convert task status
+            task_status = TaskStatus.PENDING
+            started_at = None
+            completed_at = None
+            time_spent = None
+            completion_notes = None
+            blockers = []
+
+            if step.progress:
+                try:
+                    task_status = TaskStatus(step.progress.status.value)
+                    started_at = step.progress.started_at
+                    completed_at = step.progress.completed_at
+                    time_spent = step.progress.time_spent_minutes
+                    completion_notes = step.progress.completion_notes
+                    blockers = step.progress.blockers if step.progress.blockers else []
+                except (ValueError, AttributeError):
+                    pass
+
+            task_db = TaskDB(
+                id=task_id,
+                spec_id=spec.metadata.id,
+                step_index=i,
+                task=step.task,
+                details=step.details,
+                files=step.files,
+                acceptance=step.acceptance,
+                estimated_effort=step.estimated_effort,
+                sub_spec_id=step.sub_spec_id,
+                decomposition_hint=step.decomposition_hint,
+                status=task_status,
+                started_at=started_at,
+                completed_at=completed_at,
+                time_spent_minutes=time_spent,
+                completion_notes=completion_notes,
+                blockers=blockers,
+            )
+
+            # Convert approvals if present
+            if step.approvals:
+                for approval in step.approvals:
+                    approval_db = ApprovalDB(
+                        id=str(uuid.uuid4()),
+                        task_id=task_id,
+                        level=approval.level,
+                        approved_by=approval.approved_by,
+                        approved_at=approval.approved_at,
+                        comments=approval.comments,
+                        override_reason=approval.override_reason,
+                    )
+                    task_db.approvals.append(approval_db)
+
+            tasks.append(task_db)
+
+        # Convert work logs if present
+        if spec.work_logs:
+            for log in spec.work_logs:
+                work_log_db = WorkLogDB(
+                    id=str(uuid.uuid4()),
+                    spec_id=spec.metadata.id,
+                    task_id=log.step_id if hasattr(log, "step_id") else None,
+                    action=log.action,
+                    timestamp=log.timestamp,
+                    duration_minutes=log.duration_minutes,
+                    notes=log.notes,
+                    metadata=log.metadata or {},
+                )
+                work_logs.append(work_log_db)
+
+        # Create specification DB record
+        spec_db = SpecificationDB(
+            id=spec.metadata.id,
+            title=spec.metadata.title,
+            inherits=spec.metadata.inherits,
+            created=created_dt,
+            updated=updated_dt,
+            version=spec.metadata.version,
+            status=status,
+            parent_spec_id=spec.metadata.parent_spec_id,
+            child_spec_ids=spec.metadata.child_spec_ids
+            if spec.metadata.child_spec_ids
+            else [],
+            context=spec.context.to_dict(),
+            requirements=spec.requirements.to_dict(),
+            review_notes=spec.review_notes or [],
+            context_parameters=spec.context_parameters.to_dict()
+            if spec.context_parameters
+            else None,
+            tasks=tasks,
+            work_logs=work_logs,
+        )
+
+        return spec_db

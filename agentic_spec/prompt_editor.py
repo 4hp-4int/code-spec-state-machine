@@ -14,7 +14,7 @@ class PromptEditor:
 
     def __init__(self, config_dir: Path | None = None):
         """Initialize the prompt editor.
-        
+
         Args:
             config_dir: Directory containing configuration files and templates
         """
@@ -26,13 +26,13 @@ class PromptEditor:
 
     def edit_prompt(self, name: str) -> str:
         """Edit a prompt file using the system editor.
-        
+
         Args:
             name: Name of the prompt to edit (without extension)
-            
+
         Returns:
             Updated prompt content
-            
+
         Raises:
             ConfigurationError: If editor cannot be found or launched
             FileNotFoundError: If prompt file doesn't exist
@@ -43,7 +43,9 @@ class PromptEditor:
             prompt_file = self._create_new_prompt_file(name)
 
         # Read current content
-        original_content = prompt_file.read_text(encoding="utf-8") if prompt_file.exists() else ""
+        original_content = (
+            prompt_file.read_text(encoding="utf-8") if prompt_file.exists() else ""
+        )
 
         # Create temporary file for editing
         with tempfile.NamedTemporaryFile(
@@ -51,7 +53,7 @@ class PromptEditor:
             suffix=".md",
             prefix=f"agentic_spec_prompt_{name}_",
             delete=False,
-            encoding="utf-8"
+            encoding="utf-8",
         ) as temp_file:
             temp_file.write(original_content)
             temp_path = Path(temp_file.name)
@@ -79,10 +81,10 @@ class PromptEditor:
 
     def _find_prompt_file(self, name: str) -> Path | None:
         """Find existing prompt file by name.
-        
+
         Args:
             name: Name of prompt to find
-            
+
         Returns:
             Path to prompt file or None if not found
         """
@@ -106,10 +108,10 @@ class PromptEditor:
 
     def _create_new_prompt_file(self, name: str) -> Path:
         """Create path for new prompt file.
-        
+
         Args:
             name: Name of new prompt
-            
+
         Returns:
             Path where new prompt will be created
         """
@@ -117,10 +119,10 @@ class PromptEditor:
 
     def _launch_editor(self, file_path: Path) -> None:
         """Launch system editor for the given file.
-        
+
         Args:
             file_path: Path to file to edit
-            
+
         Raises:
             ConfigurationError: If editor cannot be launched
         """
@@ -140,7 +142,7 @@ class PromptEditor:
 
     def _launch_editor_windows(self, file_path: Path) -> None:
         """Launch editor on Windows.
-        
+
         Args:
             file_path: Path to file to edit
         """
@@ -155,7 +157,7 @@ class PromptEditor:
 
     def _launch_editor_macos(self, file_path: Path) -> None:
         """Launch editor on macOS.
-        
+
         Args:
             file_path: Path to file to edit
         """
@@ -170,7 +172,7 @@ class PromptEditor:
 
     def _launch_editor_unix(self, file_path: Path) -> None:
         """Launch editor on Unix-like systems.
-        
+
         Args:
             file_path: Path to file to edit
         """
@@ -195,7 +197,7 @@ class PromptEditor:
 
     def list_prompts(self) -> list[str]:
         """List all available prompts.
-        
+
         Returns:
             List of prompt names (without extensions)
         """
