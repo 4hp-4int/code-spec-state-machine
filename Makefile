@@ -1,7 +1,7 @@
 # Makefile for agentic-spec project
 # Provides automated code quality workflows and development tasks
 
-.PHONY: help install install-dev format lint check test test-coverage clean build docs spec-commit spec-publish spec-complete
+.PHONY: help install install-dev format lint check test test-coverage clean build docs spec-commit spec-publish spec-publish-all spec-complete
 
 # Default target
 help:
@@ -28,9 +28,10 @@ help:
 	@echo "  quality      Run comprehensive code quality checks"
 	@echo ""
 	@echo "Specification Workflow Commands:"
-	@echo "  spec-commit  Commit specifications and implementation changes"
-	@echo "  spec-publish Publish all completed specifications as implemented"
-	@echo "  spec-complete Complete specification workflow (commit + publish)"
+	@echo "  spec-commit     Commit specifications and implementation changes"
+	@echo "  spec-publish    Publish new draft specifications as implemented"
+	@echo "  spec-publish-all Publish ALL specifications in specs/ directory as implemented"
+	@echo "  spec-complete   Complete specification workflow (commit + publish)"
 
 # Installation commands
 install:
@@ -216,6 +217,27 @@ spec-publish:
 	else \
 		echo "✅ Published $$published_count new specifications"; \
 	fi
+
+spec-publish-all:
+	@echo "Publishing ALL specifications in specs/ directory..."
+	@published_count=0; \
+	failed_count=0; \
+	for spec_file in $$(find specs/ -name "*.yaml"); do \
+		spec_id=$$(basename $$spec_file .yaml | sed 's/^[0-9-]*-//'); \
+		echo "📋 Publishing spec: $$spec_id"; \
+		if agentic-spec publish $$spec_id 2>/dev/null; then \
+			published_count=$$((published_count + 1)); \
+		else \
+			echo "❌ Failed to publish $$spec_id"; \
+			failed_count=$$((failed_count + 1)); \
+		fi; \
+	done; \
+	echo "========================================"; \
+	echo "✅ Published $$published_count specifications"; \
+	if [ $$failed_count -gt 0 ]; then \
+		echo "❌ Failed to publish $$failed_count specifications"; \
+	fi; \
+	echo "========================================"
 
 spec-complete: spec-commit spec-publish
 	@echo "========================================="
