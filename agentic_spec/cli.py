@@ -91,7 +91,7 @@ def get_prompt_input(args_prompt: str | None) -> str:
 
     # 1. Command line argument (highest priority)
     if args_prompt:
-        logger.debug(f"Using command line prompt: {args_prompt[:50]}...")
+        logger.debug("Using command line prompt: %s...", args_prompt[:50])
         return args_prompt
 
     # 2. Piped input (stdin)
@@ -104,10 +104,12 @@ def get_prompt_input(args_prompt: str | None) -> str:
             logger.warning("Piped input was empty")
         except (KeyboardInterrupt, EOFError) as e:
             logger.info("Piped input interrupted by user")
-            raise ValidationError("Input cancelled by user", str(e))
-        except Exception as e:
-            logger.error(f"Error reading piped input: {e}")
-            raise FileSystemError("Failed to read piped input", str(e))
+            msg = "Input cancelled by user"
+            raise ValidationError(msg, str(e)) from e
+        except OSError as e:
+            logger.exception("Error reading piped input")
+            msg = "Failed to read piped input"
+            raise FileSystemError(msg, str(e)) from e
 
     # 3. Interactive multiline input (lowest priority)
     print("Enter your prompt (press Ctrl+D on Unix/Ctrl+Z on Windows when done):")
@@ -124,7 +126,8 @@ def get_prompt_input(args_prompt: str | None) -> str:
             logger.debug("Using interactive input prompt")
             return prompt
         logger.warning("Interactive input was empty")
-        raise ValidationError("No prompt provided")
+        msg = "No prompt provided"
+        raise ValidationError(msg)
     except KeyboardInterrupt:
         logger.info("Interactive input cancelled by user")
         print("\nCancelled.")
@@ -134,7 +137,7 @@ def get_prompt_input(args_prompt: str | None) -> str:
 # Create Typer app
 app = typer.Typer(
     name="agentic-spec",
-    help="AI-powered programming specification generator with inheritance and review workflows",
+    help="AI-powered programming specification generator with inheritance and review",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -144,7 +147,7 @@ async def initialize_generator(
     templates_dir: Path,
     specs_dir: Path,
     config_file: Path | None = None,
-    cli_overrides: list[str] = [],
+    cli_overrides: list[str] | None = None,
 ) -> SpecGenerator:
     """Initialize the SpecGenerator with configuration."""
     logger = logging.getLogger("agentic_spec")
@@ -156,13 +159,16 @@ async def initialize_generator(
         logger.debug("Configuration loaded successfully")
 
         # Apply CLI overrides
+        if cli_overrides is None:
+            cli_overrides = []
         cli_override_dict = parse_cli_overrides(cli_overrides)
         config = config_manager.merge_cli_overrides(config, cli_override_dict)
-        logger.debug(f"Applied {len(cli_override_dict)} CLI overrides")
+        logger.debug("Applied %d CLI overrides", len(cli_override_dict))
 
     except Exception as e:
-        logger.error(f"Error loading configuration: {e}")
-        raise ConfigurationError("Failed to load configuration", str(e))
+        logger.exception("Error loading configuration")
+        msg = "Failed to load configuration"
+        raise ConfigurationError(msg, str(e)) from e
 
     try:
         # Use config to set paths if not overridden by CLI
@@ -178,8 +184,9 @@ async def initialize_generator(
         return generator
 
     except Exception as e:
-        logger.error(f"Error initializing SpecGenerator: {e}")
-        raise FileSystemError("Failed to initialize application", str(e))
+        logger.exception("Error initializing SpecGenerator")
+        msg = "Failed to initialize application"
+        raise FileSystemError(msg, str(e)) from e
 
 
 @app.command("generate")
@@ -225,13 +232,15 @@ def generate_spec(
     set_options: list[str] = Option(
         [],
         "--set",
-        help="Override configuration values (e.g., --set prompt_settings.temperature=0.2)",
+        help="Override config values (e.g., --set prompt_settings.temperature=0.2)",
     ),
 ):
     """Generate a new programming specification from a prompt.
 
-    The prompt can be provided as an argument, piped via stdin, or entered interactively.
-    Use --inherits to build upon existing templates, and customize the generation context
+    The prompt can be provided as an argument, piped via stdin, or entered
+    interactively.
+    Use --inherits to build upon existing templates, and customize the generation
+    context
     with role, audience, tone, and complexity options.
     """
 
@@ -239,9 +248,18 @@ def generate_spec(
         logger = logging.getLogger("agentic_spec")
 
         try:
-            generator = await initialize_generator(
-                templates_dir, specs_dir, config, set_options
-            )
+            try:
+                generator = await initialize_generator(
+                    templates_dir, specs_dir, config, set_options
+                )
+            except (ConfigurationError, FileSystemError) as e:
+                logger.exception("Failed to initialize")
+                print(f"❌ Failed to initialize application: {e.message}")
+                raise typer.Exit(1) from None
+            except Exception:
+                logger.exception("Failed to initialize")
+                print("❌ Failed to initialize application")
+                raise typer.Exit(1) from None
 
             # Get prompt input
             final_prompt = get_prompt_input(prompt)
@@ -250,7 +268,8 @@ def generate_spec(
                 raise ValidationError("No prompt provided")
 
             logger.info(
-                f"Starting specification generation for prompt: {final_prompt[:100]}..."
+                "Starting specification generation for prompt: %s...",
+                final_prompt[:100],
             )
 
             # Build context parameters from CLI args, defaulting to config
@@ -264,9 +283,9 @@ def generate_spec(
                 time_constraints=generator.config.default_context.time_constraints,
             )
 
-            print(
-                f"🔄 Generating specification for: {final_prompt[:50]}{'...' if len(final_prompt) > 50 else ''}"
-            )
+            prompt_preview = final_prompt[:50]
+            ellipsis = "..." if len(final_prompt) > 50 else ""
+            print(f"🔄 Generating specification for: {prompt_preview}{ellipsis}")
 
             # AI generation with fallback handling
             try:
@@ -275,18 +294,18 @@ def generate_spec(
                 )
                 logger.info("Specification generated successfully")
             except Exception as e:
-                logger.error(f"AI generation failed: {e}")
-                raise AIServiceError(
-                    "Failed to generate specification using AI", str(e)
-                )
+                logger.exception("AI generation failed")
+                msg = "Failed to generate specification using AI"
+                raise AIServiceError(msg, str(e)) from e
 
             # Save specification with error handling
             try:
                 spec_path = generator.save_spec(spec)
-                logger.info(f"Specification saved to {spec_path}")
+                logger.info("Specification saved to %s", spec_path)
             except Exception as e:
-                logger.error(f"Error saving specification: {e}")
-                raise FileSystemError("Failed to save specification", str(e))
+                logger.exception("Error saving specification")
+                msg = "Failed to save specification"
+                raise FileSystemError(msg, str(e)) from e
 
             print(f"✅ Specification generated: {spec_path}")
             print(f"📋 Spec ID: {spec.metadata.id}")
@@ -305,8 +324,8 @@ def generate_spec(
                         print("📝 Review feedback:")
                         for note in review_notes:
                             print(f"  • {note}")
-                except Exception as e:
-                    logger.warning(f"Auto-review failed: {e}")
+                except (AIServiceError, ConnectionError, TimeoutError) as e:
+                    logger.warning("Auto-review failed: %s", e)
                     print("⚠️  Auto-review failed, continuing without review")
 
             # Collect feedback if requested or enabled in config
@@ -320,23 +339,26 @@ def generate_spec(
                         generator.save_spec(spec)  # Save with feedback
                         print("💾 Feedback saved with specification")
                         logger.info("User feedback collected and saved")
-                except Exception as e:
-                    logger.warning(f"Feedback collection failed: {e}")
+                except (ValidationError, FileSystemError) as e:
+                    logger.warning("Feedback collection failed: %s", e)
                     print("⚠️  Feedback collection failed, continuing without feedback")
 
             print(
                 "\n💡 Next step: Review and approve specification before implementation"
             )
 
-        except ValidationError:
-            # Re-raise validation errors as they have user-friendly messages
-            raise
-        except AgenticSpecError:
-            # Re-raise our custom errors
-            raise
-        except Exception as e:
-            logger.error(f"Unexpected error during generation: {e}")
-            raise SpecificationError("Failed to generate specification", str(e))
+        except ValidationError as e:
+            logger.exception("Validation error")
+            print(f"❌ {e.message}")
+            raise typer.Exit(1) from None
+        except AgenticSpecError as e:
+            logger.exception("Application error")
+            print(f"❌ {e.message}")
+            raise typer.Exit(1) from None
+        except Exception:
+            logger.exception("Unexpected error during generation")
+            print("❌ Failed to generate specification")
+            raise typer.Exit(1) from None
 
     asyncio.run(_generate())
 
@@ -357,11 +379,12 @@ def review_specs(
     logger = logging.getLogger("agentic_spec")
 
     try:
-        logger.info(f"Listing specifications in {specs_dir}")
+        logger.info("Listing specifications in %s", specs_dir)
         # List available specs for review
         if not specs_dir.exists():
-            logger.warning(f"Specs directory does not exist: {specs_dir}")
-            raise FileSystemError("Specifications directory not found")
+            logger.warning("Specs directory does not exist: %s", specs_dir)
+            msg = "Specifications directory not found"
+            raise FileSystemError(msg)
 
         specs = list(specs_dir.glob("*.yaml"))
         if not specs:
@@ -373,13 +396,16 @@ def review_specs(
         for i, spec_path in enumerate(specs):
             print(f"  {i}: {spec_path.name}")
 
-        logger.info(f"Listed {len(specs)} specifications")
+        logger.info("Listed %d specifications", len(specs))
 
-    except FileSystemError:
-        raise
-    except Exception as e:
-        logger.error(f"Error listing specifications: {e}")
-        raise FileSystemError("Failed to list specifications", str(e))
+    except FileSystemError as e:
+        logger.exception("File system error")
+        print(f"❌ {e.message}")
+        raise typer.Exit(1) from None
+    except Exception:
+        logger.exception("Error listing specifications")
+        print("❌ Failed to list specifications")
+        raise typer.Exit(1) from None
 
 
 @app.command("templates")
@@ -397,13 +423,14 @@ def create_templates(
     logger = logging.getLogger("agentic_spec")
 
     try:
-        logger.info(f"Creating base templates in {templates_dir}")
+        logger.info("Creating base templates in %s", templates_dir)
         create_base_templates(templates_dir, project)
         print(f"✅ Base templates created in {templates_dir}")
         logger.info("Base templates created successfully")
-    except Exception as e:
-        logger.error(f"Error creating base templates: {e}")
-        raise TemplateError("Failed to create base templates", str(e))
+    except Exception:
+        logger.exception("Error creating base templates")
+        print("❌ Failed to create base templates")
+        raise typer.Exit(1) from None
 
 
 @app.command("graph")
@@ -500,9 +527,10 @@ def expand_step(
             else:
                 print("❌ Failed to generate sub-specification")
 
-        except Exception as e:
-            logger.error(f"Error expanding step: {e}")
-            raise SpecificationError("Failed to expand step", str(e))
+        except Exception:
+            logger.exception("Error expanding step")
+            print("❌ Failed to expand step")
+            raise typer.Exit(1) from None
 
     asyncio.run(_expand())
 
@@ -551,9 +579,10 @@ def publish_spec(
 
             print_spec_graph(specs_dir)
 
-        except Exception as e:
-            logger.error(f"Error publishing spec: {e}")
-            raise SpecificationError("Failed to publish specification", str(e))
+        except Exception:
+            logger.exception("Error publishing spec")
+            print("❌ Failed to publish specification")
+            raise typer.Exit(1) from None
 
     asyncio.run(_publish())
 
@@ -621,8 +650,9 @@ def manage_config(
 
     except Exception as e:
         logger = logging.getLogger("agentic_spec")
-        logger.error(f"Error managing config: {e}")
-        raise ConfigurationError("Failed to manage configuration", str(e))
+        logger.exception("Error managing config")
+        msg = "Failed to manage configuration"
+        raise ConfigurationError(msg, str(e)) from e
 
 
 @app.command("template")
@@ -675,8 +705,9 @@ def manage_templates(
 
     except Exception as e:
         logger = logging.getLogger("agentic_spec")
-        logger.error(f"Error managing templates: {e}")
-        raise TemplateError("Failed to manage templates", str(e))
+        logger.exception("Error managing templates")
+        msg = "Failed to manage templates"
+        raise TemplateError(msg, str(e)) from e
 
 
 @app.command("validate")
@@ -727,8 +758,9 @@ def validate_templates(
 
     except Exception as e:
         logger = logging.getLogger("agentic_spec")
-        logger.error(f"Error validating templates: {e}")
-        raise TemplateError("Failed to validate templates", str(e))
+        logger.exception("Error validating templates")
+        msg = "Failed to validate templates"
+        raise TemplateError(msg, str(e)) from e
 
 
 @app.command("sync-foundation")
@@ -741,50 +773,60 @@ def sync_foundation_spec(
     ),
     config: Path | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
-    force: bool = Option(False, "--force", help="Force sync even if foundation spec is current"),
+    force: bool = Option(
+        False, "--force", help="Force sync even if foundation spec is current"
+    ),
 ):
     """Sync foundation specification with current codebase state.
-    
+
     Analyzes the current codebase structure, dependencies, and architecture
     to update the agentic-spec-foundation.yaml template with accurate information.
     """
+
     async def _sync():
         logger = logging.getLogger("agentic_spec")
-        
+
         try:
             generator = await initialize_generator(
                 templates_dir, specs_dir, config, set_options
             )
-            
+
             print("🔍 Analyzing current codebase...")
-            
+
             # Check if sync is needed
             if not force and not generator.check_foundation_sync_needed():
                 print("✅ Foundation spec is already current")
                 return
-            
+
             print("🔄 Syncing foundation spec with codebase...")
             success = generator.sync_foundation_spec()
-            
+
             if success:
                 print("✅ Foundation spec successfully synced")
                 print(f"📄 Updated: {templates_dir / 'agentic-spec-foundation.yaml'}")
-                
+
                 # Show what was updated
                 try:
                     foundation = generator.load_template("agentic-spec-foundation")
-                    print(f"🕒 Last synced: {foundation.get('_last_synced', 'Unknown')}")
-                    print(f"📦 Dependencies tracked: {len(foundation.get('context', {}).get('dependencies', []))}")
-                    print(f"📋 Coding standards: {len(foundation.get('coding_standards', []))}")
-                except Exception:
+                    print(
+                        f"🕒 Last synced: {foundation.get('_last_synced', 'Unknown')}"
+                    )
+                    print(
+                        f"📦 Dependencies tracked: {len(foundation.get('context', {}).get('dependencies', []))}"
+                    )
+                    print(
+                        f"📋 Coding standards: {len(foundation.get('coding_standards', []))}"
+                    )
+                except (OSError, KeyError, ValueError, TypeError):
                     pass
             else:
                 print("❌ Failed to sync foundation spec")
-                
+
         except Exception as e:
-            logger.error(f"Error syncing foundation spec: {e}")
-            raise SpecificationError("Failed to sync foundation specification", str(e))
-    
+            logger.exception("Error syncing foundation spec")
+            msg = "Failed to sync foundation specification"
+            raise SpecificationError(msg, str(e)) from e
+
     asyncio.run(_sync())
 
 
@@ -800,47 +842,49 @@ def check_foundation_status(
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
 ):
     """Check if foundation specification needs to be synced.
-    
+
     Analyzes the foundation spec and determines if it's out of sync
     with the current codebase state.
     """
+
     async def _check():
         logger = logging.getLogger("agentic_spec")
-        
+
         try:
             generator = await initialize_generator(
                 templates_dir, specs_dir, config, set_options
             )
-            
+
             print("🔍 Checking foundation spec status...")
-            
+
             try:
                 foundation = generator.load_template("agentic-spec-foundation")
                 last_synced = foundation.get("_last_synced")
                 sync_version = foundation.get("_sync_version", "unknown")
-                
+
                 print("📄 Foundation Spec Status:")
-                print(f"  Exists: ✅")
+                print("  Exists: ✅")
                 print(f"  Last synced: {last_synced or 'Never'}")
                 print(f"  Sync version: {sync_version}")
-                
+
                 needs_sync = generator.check_foundation_sync_needed()
                 if needs_sync:
                     print("  Status: ⚠️  Needs sync")
                     print("\n💡 Run 'agentic-spec sync-foundation' to update")
                 else:
                     print("  Status: ✅ Current")
-                    
-            except Exception:
+
+            except (OSError, UnicodeDecodeError, KeyError, ValueError):
                 print("📄 Foundation Spec Status:")
                 print("  Exists: ❌ Not found")
                 print("  Status: ⚠️  Needs creation")
                 print("\n💡 Run 'agentic-spec sync-foundation' to create")
-                
+
         except Exception as e:
-            logger.error(f"Error checking foundation status: {e}")
-            raise SpecificationError("Failed to check foundation status", str(e))
-    
+            logger.exception("Error checking foundation status")
+            msg = "Failed to check foundation status"
+            raise SpecificationError(msg, str(e)) from e
+
     asyncio.run(_check())
 
 
@@ -903,9 +947,10 @@ def render_spec(
                 print("=" * 50)
                 print(rendered)
 
-        except Exception as e:
-            logger.error(f"Error rendering template: {e}")
-            raise TemplateError("Failed to render template", str(e))
+        except Exception:
+            logger.exception("Error rendering template")
+            print("❌ Failed to render template")
+            raise typer.Exit(1) from None
 
     asyncio.run(_render())
 
@@ -924,14 +969,23 @@ def main():
         sys.exit(1)
     except AgenticSpecError as e:
         logger = logging.getLogger("agentic_spec")
-        logger.error(f"Application error: {e.message}")
+        logger.exception("Application error")
         if e.details:
-            logger.debug(f"Error details: {e.details}")
+            logger.debug("Error details: %s", e.details)
         print(f"❌ {e.message}")
         sys.exit(1)
-    except Exception as e:
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except (
+        RuntimeError,
+        ValueError,
+        TypeError,
+        AttributeError,
+        ImportError,
+        OSError,
+    ) as e:
         logger = logging.getLogger("agentic_spec")
-        logger.critical(f"Unexpected error: {e}", exc_info=True)
+        logger.critical("Unexpected error: %s", e, exc_info=True)
         print("❌ Unexpected error occurred. Check logs for details.")
         sys.exit(1)
 

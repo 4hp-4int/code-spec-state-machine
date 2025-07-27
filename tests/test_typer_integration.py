@@ -1,8 +1,8 @@
 """Tests for Typer integration and CLI user experience improvements."""
 
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+import tempfile
+from unittest.mock import patch
 
 import pytest
 import typer
@@ -29,7 +29,9 @@ class TestTyperIntegration:
     def test_no_args_shows_help(self, cli_runner):
         """Test that running with no arguments shows help."""
         result = cli_runner.invoke(app, [])
-        assert result.exit_code == 0
+        assert (
+            result.exit_code == 2
+        )  # Typer returns 2 when no args with no_args_is_help=True
         assert "Usage:" in result.stdout
         assert "Commands" in result.stdout
 
@@ -37,23 +39,37 @@ class TestTyperIntegration:
         """Test that invalid commands show appropriate error."""
         result = cli_runner.invoke(app, ["invalid-command"])
         assert result.exit_code != 0
-        assert "No such command" in result.stdout or "Usage:" in result.stdout
+        # Check both stdout and stderr as Typer may output to either
+        output = result.stdout + (result.stderr or "")
+        assert "No such command" in output or "Usage:" in output
 
     def test_command_help_follows_conventions(self, cli_runner):
         """Test that all commands follow CLI help conventions."""
-        commands = ["generate", "review", "templates", "graph", "expand", "publish", "config", "template", "validate", "render"]
-        
+        commands = [
+            "generate",
+            "review",
+            "templates",
+            "graph",
+            "expand",
+            "publish",
+            "config",
+            "template",
+            "validate",
+            "render",
+        ]
+
         for command in commands:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0, f"Help failed for command: {command}"
             assert "Usage:" in result.stdout, f"No usage info for command: {command}"
-            assert "Options" in result.stdout, f"No options section for command: {command}"
+            assert (
+                "Options" in result.stdout
+            ), f"No options section for command: {command}"
 
     def test_version_option_handling(self, cli_runner):
         """Test version option handling (if implemented)."""
         # Note: Version option would need to be added to the Typer app
         # This test documents the expected behavior
-        result = cli_runner.invoke(app, ["--version"])
         # Currently this will fail as --version is not implemented
         # When implemented, should return version information
 
@@ -66,12 +82,17 @@ class TestTyperIntegration:
             specs_dir.mkdir()
 
             # Test that global options don't interfere with command execution
-            result = cli_runner.invoke(app, [
-                "review",
-                "--templates-dir", str(templates_dir),
-                "--specs-dir", str(specs_dir)
-            ])
-            
+            result = cli_runner.invoke(
+                app,
+                [
+                    "review",
+                    "--templates-dir",
+                    str(templates_dir),
+                    "--specs-dir",
+                    str(specs_dir),
+                ],
+            )
+
             # Should execute successfully even with empty directories
             assert result.exit_code == 0
 
@@ -93,14 +114,21 @@ class TestUserExperienceImprovements:
         """Test that commands are properly categorized in help."""
         result = cli_runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        
+
         # All main commands should be listed
         expected_commands = [
-            "generate", "review", "templates", "graph", 
-            "expand", "publish", "config", "template", 
-            "validate", "render"
+            "generate",
+            "review",
+            "templates",
+            "graph",
+            "expand",
+            "publish",
+            "config",
+            "template",
+            "validate",
+            "render",
         ]
-        
+
         for command in expected_commands:
             assert command in result.stdout
 
@@ -112,32 +140,52 @@ class TestUserExperienceImprovements:
             "review": "List available specifications",
             "templates": "Create base templates",
             "validate": "Validate all templates",
-            "render": "Render a specification"
+            "render": "Render a specification",
         }
-        
+
         for command, expected_desc in commands_with_descriptions.items():
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
             # Check that description matches expected pattern
-            assert any(word in result.stdout.lower() for word in expected_desc.lower().split())
+            assert any(
+                word in result.stdout.lower() for word in expected_desc.lower().split()
+            )
 
     def test_option_consistency(self, cli_runner):
         """Test that options are consistently named across commands."""
         # Commands that should accept templates-dir
-        template_dir_commands = ["generate", "templates", "expand", "template", "validate", "render"]
-        
+        template_dir_commands = [
+            "generate",
+            "templates",
+            "expand",
+            "template",
+            "validate",
+            "render",
+        ]
+
         for command in template_dir_commands:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
-            assert "--templates-dir" in result.stdout, f"Command {command} missing --templates-dir option"
+            assert (
+                "--templates-dir" in result.stdout
+            ), f"Command {command} missing --templates-dir option"
 
         # Commands that should accept specs-dir
-        specs_dir_commands = ["generate", "review", "graph", "expand", "publish", "render"]
-        
+        specs_dir_commands = [
+            "generate",
+            "review",
+            "graph",
+            "expand",
+            "publish",
+            "render",
+        ]
+
         for command in specs_dir_commands:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
-            assert "--specs-dir" in result.stdout, f"Command {command} missing --specs-dir option"
+            assert (
+                "--specs-dir" in result.stdout
+            ), f"Command {command} missing --specs-dir option"
 
     def test_error_message_clarity(self, cli_runner):
         """Test that error messages are clear and helpful."""
@@ -145,12 +193,14 @@ class TestUserExperienceImprovements:
         result = cli_runner.invoke(app, ["expand"])
         assert result.exit_code != 0
         # Should show usage information when required arguments are missing
-        assert "Usage:" in result.stdout or "Error:" in result.stdout
+        output = result.stdout + (result.stderr or "")
+        assert "Usage:" in output or "Error:" in output
 
         result = cli_runner.invoke(app, ["publish"])
         assert result.exit_code != 0
         # Should show usage information when required arguments are missing
-        assert "Usage:" in result.stdout or "Error:" in result.stdout
+        output = result.stdout + (result.stderr or "")
+        assert "Usage:" in output or "Error:" in output
 
     @patch("agentic_spec.cli.initialize_generator")
     def test_informative_progress_messages(self, mock_init_gen, cli_runner):
@@ -162,15 +212,19 @@ class TestUserExperienceImprovements:
             specs_dir.mkdir()
 
             # Test generate command progress messages
-            mock_generator = MagicMock()
             mock_init_gen.side_effect = Exception("Test error")
 
-            result = cli_runner.invoke(app, [
-                "generate",
-                "test prompt",
-                "--templates-dir", str(templates_dir),
-                "--specs-dir", str(specs_dir)
-            ])
+            result = cli_runner.invoke(
+                app,
+                [
+                    "generate",
+                    "test prompt",
+                    "--templates-dir",
+                    str(templates_dir),
+                    "--specs-dir",
+                    str(specs_dir),
+                ],
+            )
 
             # Should show clear error message
             assert result.exit_code == 1
@@ -185,10 +239,21 @@ class TestCLIConventions:
         # Get list of commands from main help
         result = cli_runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        
+
         # Extract command names (simplified approach)
-        commands = ["generate", "review", "templates", "graph", "expand", "publish", "config", "template", "validate", "render"]
-        
+        commands = [
+            "generate",
+            "review",
+            "templates",
+            "graph",
+            "expand",
+            "publish",
+            "config",
+            "template",
+            "validate",
+            "render",
+        ]
+
         for command in commands:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0, f"--help not working for {command}"
@@ -197,13 +262,13 @@ class TestCLIConventions:
         """Test that options follow standard naming conventions."""
         result = cli_runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
-        
+
         # Long options should use double dashes
         assert "--inherits" in result.stdout
         assert "--project" in result.stdout
         assert "--user-role" in result.stdout
         assert "--target-audience" in result.stdout
-        
+
         # Options should use kebab-case for multi-word options
         assert "--templates-dir" in result.stdout
         assert "--specs-dir" in result.stdout
@@ -214,7 +279,7 @@ class TestCLIConventions:
         """Test that boolean flags work correctly."""
         result = cli_runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
-        
+
         # --feedback should be a boolean flag
         assert "--feedback" in result.stdout
         # Should not require a value
@@ -225,16 +290,18 @@ class TestCLIConventions:
         # Commands that use positional arguments
         commands_with_args = {
             "expand": "step_id",
-            "publish": "spec_id", 
+            "publish": "spec_id",
             "config": "action",
             "template": "action",
-            "render": "spec_id"
+            "render": "spec_id",
         }
-        
-        for command, arg_name in commands_with_args.items():
+
+        for command in commands_with_args:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
-            assert "Arguments" in result.stdout, f"Command {command} should show Arguments section"
+            assert (
+                "Arguments" in result.stdout
+            ), f"Command {command} should show Arguments section"
 
     def test_consistent_path_handling(self, cli_runner):
         """Test that path options are consistently handled."""
@@ -245,17 +312,11 @@ class TestCLIConventions:
             specs_dir.mkdir()
 
             # Test that paths work with various formats
-            result = cli_runner.invoke(app, [
-                "review",
-                "--specs-dir", str(specs_dir)
-            ])
+            result = cli_runner.invoke(app, ["review", "--specs-dir", str(specs_dir)])
             assert result.exit_code == 0
 
             # Test relative paths
-            result = cli_runner.invoke(app, [
-                "review", 
-                "--specs-dir", "specs"
-            ])
+            result = cli_runner.invoke(app, ["review", "--specs-dir", "specs"])
             # Should handle gracefully even if directory doesn't exist
             assert result.exit_code in [0, 1]  # Either succeeds or fails gracefully
 
@@ -266,11 +327,18 @@ class TestBackwardCompatibility:
     def test_all_original_commands_available(self, cli_runner):
         """Test that all original commands are still available."""
         original_commands = [
-            "generate", "review", "templates", "graph", 
-            "expand", "publish", "config", "template", 
-            "validate", "render"
+            "generate",
+            "review",
+            "templates",
+            "graph",
+            "expand",
+            "publish",
+            "config",
+            "template",
+            "validate",
+            "render",
         ]
-        
+
         for command in original_commands:
             result = cli_runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0, f"Original command {command} not available"
@@ -280,14 +348,21 @@ class TestBackwardCompatibility:
         # Test generate command options
         result = cli_runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
-        
+
         original_options = [
-            "--inherits", "--project", "--user-role", 
-            "--target-audience", "--tone", "--complexity",
-            "--feedback", "--templates-dir", "--specs-dir",
-            "--config", "--set"
+            "--inherits",
+            "--project",
+            "--user-role",
+            "--target-audience",
+            "--tone",
+            "--complexity",
+            "--feedback",
+            "--templates-dir",
+            "--specs-dir",
+            "--config",
+            "--set",
         ]
-        
+
         for option in original_options:
             assert option in result.stdout, f"Original option {option} not preserved"
 
@@ -298,11 +373,16 @@ class TestBackwardCompatibility:
             templates_dir = Path(tmp_dir) / "templates"
             templates_dir.mkdir()
 
-            result = cli_runner.invoke(app, [
-                "templates",
-                "--project", "test-project",
-                "--templates-dir", str(templates_dir)
-            ])
+            result = cli_runner.invoke(
+                app,
+                [
+                    "templates",
+                    "--project",
+                    "test-project",
+                    "--templates-dir",
+                    str(templates_dir),
+                ],
+            )
 
             assert result.exit_code == 0
             mock_create_templates.assert_called_once_with(templates_dir, "test-project")
@@ -311,7 +391,7 @@ class TestBackwardCompatibility:
         """Test that configuration-related options still work."""
         result = cli_runner.invoke(app, ["generate", "--help"])
         assert result.exit_code == 0
-        
+
         # Configuration options should be preserved
         assert "--config" in result.stdout
         assert "--set" in result.stdout

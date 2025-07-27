@@ -3,7 +3,7 @@ metadata:
   inherits: []
   created: '2025-07-26T18:41:59.212600'
   version: '1.0'
-  status: draft
+  status: implemented
   parent_spec_id: f998adbd
   child_spec_ids: null
 context:
@@ -52,12 +52,5 @@ review_notes:
 - Regularly update Ruff to benefit from the latest features and improvements, and
   pin its version in your dependencies to maintain consistency across development
   environments. ([gpxz.io](https://www.gpxz.io/blog/ruff?utm_source=openai))
-context_parameters:
-  user_role: solo developer
-  target_audience: solo developer
-  desired_tone: practical
-  complexity_level: intermediate
-  time_constraints: production ready
-  existing_codebase_context: null
-  custom_parameters: {}
+context_parameters: null
 feedback_history: []

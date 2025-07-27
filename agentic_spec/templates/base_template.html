@@ -21,7 +21,7 @@
         </nav>
         {% endblock %}
     </header>
-    
+
     <main>
         {% block content %}
         <section id="context">
@@ -38,7 +38,7 @@
             {% endif %}
             {% endblock %}
         </section>
-        
+
         <section id="requirements">
             {% block requirements_section %}
             <h2>Requirements</h2>
@@ -51,7 +51,7 @@
                 {% endfor %}
                 </ul>
                 {% endif %}
-                
+
                 {% if requirements.non_functional %}
                 <h3>Non-Functional Requirements</h3>
                 <ul>
@@ -63,7 +63,7 @@
             {% endif %}
             {% endblock %}
         </section>
-        
+
         <section id="implementation">
             {% block implementation_section %}
             <h2>Implementation</h2>
@@ -86,13 +86,13 @@
         </section>
         {% endblock %}
     </main>
-    
+
     <footer>
         {% block footer %}
         <p>&copy; 2025 Agentic Spec. Generated at {{ metadata.created if metadata else 'Unknown' }}</p>
         {% endblock %}
     </footer>
-    
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

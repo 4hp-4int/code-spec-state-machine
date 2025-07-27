@@ -1,91 +1,82 @@
-context:
-  dependencies:
-  - Jinja2
-  domain: Python CLI tool for specification generation
-  files_involved:
-  - agentic_spec/templates/
-  project: agentic-spec CLI Enhancement
-context_parameters:
-  complexity_level: intermediate
-  custom_parameters: {}
-  desired_tone: practical
-  existing_codebase_context: null
-  target_audience: solo developer
-  time_constraints: production ready
-  user_role: solo developer
-feedback_history: []
-implementation:
-- acceptance: Templates render correctly with inherited structures, and child templates
-    can override base template blocks.
-  details: Define a base template that includes common elements (e.g., headers, footers).
-    Create child templates that extend the base template, overriding or adding specific
-    blocks as needed.
-  estimated_effort: medium
-  files:
-  - agentic_spec/templates/base_template.html
-  - agentic_spec/templates/child_template.html
-  step_id: 462eb499:0
-  sub_spec_id: null
-  task: Design Template Inheritance Structure
-- acceptance: Templates are loaded dynamically without errors, and missing templates
-    are handled appropriately.
-  details: Develop a function to load templates dynamically based on user input or
-    configuration. Ensure the function searches the 'agentic_spec/templates/' directory
-    and handles missing templates gracefully.
-  estimated_effort: medium
-  files:
-  - agentic_spec/template_loader.py
-  step_id: 462eb499:1
-  sub_spec_id: null
-  task: Implement Modular Template Loading
-- acceptance: Templates are validated for correct structure, and errors are reported
-    clearly.
-  details: Create a validation mechanism to check templates for correct structure,
-    including required blocks and proper inheritance. Utilize Jinja2's parsing capabilities
-    to inspect templates.
-  estimated_effort: medium
-  files:
-  - agentic_spec/template_validator.py
-  step_id: 462eb499:2
-  sub_spec_id: null
-  task: Validate Template Structure
-- acceptance: Users can select and render templates through the CLI without errors.
-  details: Modify the CLI to allow users to select templates and provide necessary
-    data for rendering. Ensure the CLI handles user input errors gracefully.
-  estimated_effort: medium
-  files:
-  - agentic_spec/cli.py
-  step_id: 462eb499:3
-  sub_spec_id: null
-  task: Integrate Template System with CLI
-- acceptance: Documentation accurately reflects the new template system and provides
-    clear usage instructions.
-  details: Revise existing documentation to include instructions on using the new
-    template system, including examples of template inheritance and validation.
-  estimated_effort: low
-  files:
-  - docs/template_system.md
-  step_id: 462eb499:4
-  sub_spec_id: null
-  task: Update Documentation
 metadata:
-  child_spec_ids: null
-  created: '2025-07-26T18:40:25.161673'
   id: 462eb499
   inherits: []
-  parent_spec_id: f998adbd
-  status: implemented
+  created: '2025-07-26T18:40:25.161673'
   version: '1.0'
+  status: implemented
+  parent_spec_id: f998adbd
+  child_spec_ids: null
+context:
+  project: agentic-spec CLI Enhancement
+  domain: Python CLI tool for specification generation
+  dependencies:
+  - Jinja2
+  files_involved:
+  - agentic_spec/templates/
 requirements:
-  constraints:
-  - Utilize the existing Jinja2 dependency for template rendering.
-  - Adhere to the current project directory structure.
   functional:
   - Implement a modular template system supporting template inheritance.
   - Ensure templates are correctly structured and validated.
   non_functional:
   - Maintain compatibility with existing project architecture and dependencies.
   - Ensure the system is scalable and maintainable.
+  constraints:
+  - Utilize the existing Jinja2 dependency for template rendering.
+  - Adhere to the current project directory structure.
+implementation:
+- task: Design Template Inheritance Structure
+  details: Define a base template that includes common elements (e.g., headers, footers).
+    Create child templates that extend the base template, overriding or adding specific
+    blocks as needed.
+  files:
+  - agentic_spec/templates/base_template.html
+  - agentic_spec/templates/child_template.html
+  acceptance: Templates render correctly with inherited structures, and child templates
+    can override base template blocks.
+  estimated_effort: medium
+  step_id: 462eb499:0
+  sub_spec_id: null
+- task: Implement Modular Template Loading
+  details: Develop a function to load templates dynamically based on user input or
+    configuration. Ensure the function searches the 'agentic_spec/templates/' directory
+    and handles missing templates gracefully.
+  files:
+  - agentic_spec/template_loader.py
+  acceptance: Templates are loaded dynamically without errors, and missing templates
+    are handled appropriately.
+  estimated_effort: medium
+  step_id: 462eb499:1
+  sub_spec_id: null
+- task: Validate Template Structure
+  details: Create a validation mechanism to check templates for correct structure,
+    including required blocks and proper inheritance. Utilize Jinja2's parsing capabilities
+    to inspect templates.
+  files:
+  - agentic_spec/template_validator.py
+  acceptance: Templates are validated for correct structure, and errors are reported
+    clearly.
+  estimated_effort: medium
+  step_id: 462eb499:2
+  sub_spec_id: null
+- task: Integrate Template System with CLI
+  details: Modify the CLI to allow users to select templates and provide necessary
+    data for rendering. Ensure the CLI handles user input errors gracefully.
+  files:
+  - agentic_spec/cli.py
+  acceptance: Users can select and render templates through the CLI without errors.
+  estimated_effort: medium
+  step_id: 462eb499:3
+  sub_spec_id: null
+- task: Update Documentation
+  details: Revise existing documentation to include instructions on using the new
+    template system, including examples of template inheritance and validation.
+  files:
+  - docs/template_system.md
+  acceptance: Documentation accurately reflects the new template system and provides
+    clear usage instructions.
+  estimated_effort: low
+  step_id: 462eb499:4
+  sub_spec_id: null
 review_notes:
 - Implement a robust error-handling mechanism in the template loading function to
   manage missing templates gracefully, ensuring the application doesn't crash when
@@ -99,3 +90,5 @@ review_notes:
 - Update the CLI to allow users to select templates and provide necessary data for
   rendering, ensuring it handles user input errors gracefully to enhance user experience.
   ([realpython.com](https://realpython.com/primer-on-jinja-templating/?utm_source=openai))
+context_parameters: null
+feedback_history: []

@@ -35,7 +35,7 @@ def create_base_templates(templates_dir: Path, project_name: str = "project"):
         },
     }
 
-    with open(templates_dir / "base-coding-standards.yaml", "w") as f:
+    with (templates_dir / "base-coding-standards.yaml").open("w") as f:
         yaml.dump(base_standards, f, default_flow_style=False)
 
     # Web API template
@@ -51,7 +51,7 @@ def create_base_templates(templates_dir: Path, project_name: str = "project"):
         "files_involved": ["main.py", "models.py", "routes/", "tests/"],
     }
 
-    with open(templates_dir / "web-api.yaml", "w") as f:
+    with (templates_dir / "web-api.yaml").open("w") as f:
         yaml.dump(web_api_template, f, default_flow_style=False)
 
     # CLI application template
@@ -67,7 +67,7 @@ def create_base_templates(templates_dir: Path, project_name: str = "project"):
         "files_involved": ["cli.py", "commands/", "config.py", "tests/"],
     }
 
-    with open(templates_dir / "cli-application.yaml", "w") as f:
+    with (templates_dir / "cli-application.yaml").open("w") as f:
         yaml.dump(cli_template, f, default_flow_style=False)
 
     # Data analysis template
@@ -83,7 +83,7 @@ def create_base_templates(templates_dir: Path, project_name: str = "project"):
         "files_involved": ["analysis.py", "data/", "notebooks/", "visualizations/"],
     }
 
-    with open(templates_dir / "data-analysis.yaml", "w") as f:
+    with (templates_dir / "data-analysis.yaml").open("w") as f:
         yaml.dump(data_analysis_template, f, default_flow_style=False)
 
     # Machine learning template
@@ -105,5 +105,5 @@ def create_base_templates(templates_dir: Path, project_name: str = "project"):
         ],
     }
 
-    with open(templates_dir / "machine-learning.yaml", "w") as f:
+    with (templates_dir / "machine-learning.yaml").open("w") as f:
         yaml.dump(ml_template, f, default_flow_style=False)

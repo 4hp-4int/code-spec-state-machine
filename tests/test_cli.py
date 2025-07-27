@@ -1,20 +1,15 @@
 """Tests for the Typer-based CLI functionality."""
 
-import asyncio
-import tempfile
 from pathlib import Path
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import typer
 from typer.testing import CliRunner
 
-from agentic_spec.cli import app, setup_logging
+from agentic_spec.cli import app
 from agentic_spec.exceptions import (
-    AgenticSpecError,
     ConfigurationError,
-    FileSystemError,
-    TemplateError,
     ValidationError,
 )
 
@@ -82,12 +77,14 @@ class TestGenerateCommand:
 
     @patch("agentic_spec.cli.initialize_generator")
     @patch("agentic_spec.cli.get_prompt_input")
-    def test_generate_with_prompt_argument(self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs):
+    def test_generate_with_prompt_argument(
+        self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test generate command with prompt as argument."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_generator.config.default_context.user_role = "developer"
         mock_generator.config.default_context.target_audience = "team"
         mock_generator.config.default_context.desired_tone = "professional"
@@ -95,22 +92,27 @@ class TestGenerateCommand:
         mock_generator.config.default_context.time_constraints = "moderate"
         mock_generator.config.workflow.auto_review = False
         mock_generator.config.workflow.collect_feedback = False
-        
+
         # Mock spec object
         mock_spec = MagicMock()
         mock_spec.metadata.id = "test123"
-        mock_generator.generate_spec.return_value = mock_spec
+        mock_generator.generate_spec = AsyncMock(return_value=mock_spec)
         mock_generator.save_spec.return_value = specs_dir / "test-spec.yaml"
-        
+
         mock_init_gen.return_value = mock_generator
         mock_get_prompt.return_value = "test prompt"
 
-        result = cli_runner.invoke(app, [
-            "generate",
-            "test prompt",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "test prompt",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Specification generated" in result.stdout
@@ -118,29 +120,38 @@ class TestGenerateCommand:
 
     @patch("agentic_spec.cli.initialize_generator")
     @patch("agentic_spec.cli.get_prompt_input")
-    def test_generate_with_validation_error(self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs):
+    def test_generate_with_validation_error(
+        self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test generate command with validation error."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_get_prompt.side_effect = ValidationError("No prompt provided")
 
-        result = cli_runner.invoke(app, [
-            "generate",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 1
         assert "No prompt provided" in result.stdout
 
     @patch("agentic_spec.cli.initialize_generator")
     @patch("agentic_spec.cli.get_prompt_input")
-    def test_generate_with_inherits(self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs):
+    def test_generate_with_inherits(
+        self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test generate command with template inheritance."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_generator.config.default_context.user_role = "developer"
         mock_generator.config.default_context.target_audience = "team"
         mock_generator.config.default_context.desired_tone = "professional"
@@ -148,23 +159,31 @@ class TestGenerateCommand:
         mock_generator.config.default_context.time_constraints = "moderate"
         mock_generator.config.workflow.auto_review = False
         mock_generator.config.workflow.collect_feedback = False
-        
+
         # Mock spec object
         mock_spec = MagicMock()
         mock_spec.metadata.id = "test123"
-        mock_generator.generate_spec.return_value = mock_spec
+        mock_generator.generate_spec = AsyncMock(return_value=mock_spec)
         mock_generator.save_spec.return_value = specs_dir / "test-spec.yaml"
-        
+
         mock_init_gen.return_value = mock_generator
         mock_get_prompt.return_value = "test prompt"
 
-        result = cli_runner.invoke(app, [
-            "generate",
-            "test prompt",
-            "--inherits", "template1", "template2",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "test prompt",
+                "--inherits",
+                "template1",
+                "--inherits",
+                "template2",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         mock_generator.generate_spec.assert_called_once()
@@ -178,15 +197,12 @@ class TestReviewCommand:
     def test_review_with_specs(self, cli_runner, temp_dirs):
         """Test review command with existing specs."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Create some test spec files
         (specs_dir / "spec1.yaml").touch()
         (specs_dir / "spec2.yaml").touch()
 
-        result = cli_runner.invoke(app, [
-            "review",
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(app, ["review", "--specs-dir", str(specs_dir)])
 
         assert result.exit_code == 0
         assert "Available specifications" in result.stdout
@@ -197,20 +213,14 @@ class TestReviewCommand:
         """Test review command with no specs."""
         templates_dir, specs_dir = temp_dirs
 
-        result = cli_runner.invoke(app, [
-            "review",
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(app, ["review", "--specs-dir", str(specs_dir)])
 
         assert result.exit_code == 0
         assert "No specifications found" in result.stdout
 
     def test_review_nonexistent_directory(self, cli_runner):
         """Test review command with nonexistent specs directory."""
-        result = cli_runner.invoke(app, [
-            "review",
-            "--specs-dir", "/nonexistent/path"
-        ])
+        result = cli_runner.invoke(app, ["review", "--specs-dir", "/nonexistent/path"])
 
         assert result.exit_code == 1
         assert "Specifications directory not found" in result.stdout
@@ -224,11 +234,16 @@ class TestTemplatesCommand:
         """Test templates command to create base templates."""
         templates_dir, specs_dir = temp_dirs
 
-        result = cli_runner.invoke(app, [
-            "templates",
-            "--project", "test-project",
-            "--templates-dir", str(templates_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "templates",
+                "--project",
+                "test-project",
+                "--templates-dir",
+                str(templates_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Base templates created" in result.stdout
@@ -238,13 +253,12 @@ class TestTemplatesCommand:
     def test_templates_create_error(self, mock_create_templates, cli_runner, temp_dirs):
         """Test templates command with error."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_create_templates.side_effect = Exception("Template creation failed")
 
-        result = cli_runner.invoke(app, [
-            "templates",
-            "--templates-dir", str(templates_dir)
-        ])
+        result = cli_runner.invoke(
+            app, ["templates", "--templates-dir", str(templates_dir)]
+        )
 
         assert result.exit_code == 1
         assert "Failed to create base templates" in result.stdout
@@ -257,44 +271,58 @@ class TestExpandCommand:
     def test_expand_step_success(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command success."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_parent_spec = MagicMock()
         mock_sub_spec = MagicMock()
         mock_sub_spec.metadata.id = "sub123"
-        
+
         mock_generator.find_spec_by_id.return_value = mock_parent_spec
-        mock_generator.generate_sub_spec.return_value = mock_sub_spec
+        mock_generator.generate_sub_spec = AsyncMock(return_value=mock_sub_spec)
         mock_generator.save_spec.return_value = specs_dir / "sub-spec.yaml"
-        mock_generator.review_spec.return_value = ["Review note 1", "Review note 2"]
-        
+        mock_generator.review_spec = AsyncMock(
+            return_value=["Review note 1", "Review note 2"]
+        )
+
         mock_init_gen.return_value = mock_generator
 
-        result = cli_runner.invoke(app, [
-            "expand",
-            "parent123:1",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "expand",
+                "parent123:1",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Sub-specification generated" in result.stdout
         assert "sub123" in result.stdout
         mock_generator.find_spec_by_id.assert_called_once_with("parent123")
-        mock_generator.generate_sub_spec.assert_called_once_with(mock_parent_spec, "parent123:1")
+        mock_generator.generate_sub_spec.assert_called_once_with(
+            mock_parent_spec, "parent123:1"
+        )
 
     @patch("agentic_spec.cli.initialize_generator")
     def test_expand_invalid_step_id(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command with invalid step ID format."""
         templates_dir, specs_dir = temp_dirs
 
-        result = cli_runner.invoke(app, [
-            "expand",
-            "invalid-step-id",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "expand",
+                "invalid-step-id",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Step ID must be in format" in result.stdout
@@ -303,17 +331,22 @@ class TestExpandCommand:
     def test_expand_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command with spec not found."""
         templates_dir, specs_dir = temp_dirs
-        
-        mock_generator = AsyncMock()
+
+        mock_generator = MagicMock()
         mock_generator.find_spec_by_id.return_value = None
         mock_init_gen.return_value = mock_generator
 
-        result = cli_runner.invoke(app, [
-            "expand",
-            "nonexistent:1",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "expand",
+                "nonexistent:1",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Specification nonexistent not found" in result.stdout
@@ -323,24 +356,25 @@ class TestPublishCommand:
     """Test the publish command functionality."""
 
     @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.print_spec_graph")
-    def test_publish_spec_success(self, mock_print_graph, mock_init_gen, cli_runner, temp_dirs):
+    @patch("agentic_spec.graph_visualization.print_spec_graph")
+    def test_publish_spec_success(
+        self, mock_print_graph, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test publish command success."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_target_spec = MagicMock()
         mock_target_spec.metadata.status = "draft"
-        
+
         mock_generator.find_spec_by_id.return_value = mock_target_spec
+        mock_generator.save_spec.return_value = specs_dir / "spec.yaml"
         mock_init_gen.return_value = mock_generator
 
-        result = cli_runner.invoke(app, [
-            "publish",
-            "spec123",
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app, ["publish", "spec123", "--specs-dir", str(specs_dir)]
+        )
 
         assert result.exit_code == 0
         assert "published as implemented" in result.stdout
@@ -351,16 +385,14 @@ class TestPublishCommand:
     def test_publish_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test publish command with spec not found."""
         templates_dir, specs_dir = temp_dirs
-        
-        mock_generator = AsyncMock()
+
+        mock_generator = MagicMock()
         mock_generator.find_spec_by_id.return_value = None
         mock_init_gen.return_value = mock_generator
 
-        result = cli_runner.invoke(app, [
-            "publish",
-            "nonexistent",
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app, ["publish", "nonexistent", "--specs-dir", str(specs_dir)]
+        )
 
         assert result.exit_code == 0
         assert "Specification nonexistent not found" in result.stdout
@@ -373,7 +405,9 @@ class TestConfigCommand:
     def test_config_init(self, mock_get_config_manager, cli_runner):
         """Test config init command."""
         mock_config_manager = MagicMock()
-        mock_config_manager.create_default_config_file.return_value = Path("config.yaml")
+        mock_config_manager.create_default_config_file.return_value = Path(
+            "config.yaml"
+        )
         mock_get_config_manager.return_value = mock_config_manager
 
         result = cli_runner.invoke(app, ["config", "init"])
@@ -467,21 +501,27 @@ class TestTemplateManagementCommand:
     def test_template_info(self, mock_template_loader_class, cli_runner, temp_dirs):
         """Test template info command."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_loader = MagicMock()
         mock_loader.get_template_info.return_value = {
             "exists": True,
             "path": templates_dir / "test.yaml",
             "size": 1024,
-            "modified": "2023-01-01T00:00:00"
+            "modified": "2023-01-01T00:00:00",
         }
         mock_template_loader_class.return_value = mock_loader
 
-        result = cli_runner.invoke(app, [
-            "template", "info",
-            "--template", "test.yaml",
-            "--templates-dir", str(templates_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "template",
+                "info",
+                "--template",
+                "test.yaml",
+                "--templates-dir",
+                str(templates_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Template Information: test.yaml" in result.stdout
@@ -506,10 +546,12 @@ class TestValidateCommand:
     """Test the validate command functionality."""
 
     @patch("agentic_spec.cli.TemplateValidator")
-    def test_validate_templates_success(self, mock_validator_class, cli_runner, temp_dirs):
+    def test_validate_templates_success(
+        self, mock_validator_class, cli_runner, temp_dirs
+    ):
         """Test validate command with successful validation."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_validator = MagicMock()
         mock_validator.validate_all_templates.return_value = {
             "template1.yaml": {
@@ -518,7 +560,7 @@ class TestValidateCommand:
                 "warnings": [],
                 "info": {"type": "base"},
                 "extends": None,
-                "blocks": []
+                "blocks": [],
             },
             "template2.yaml": {
                 "valid": False,
@@ -526,15 +568,14 @@ class TestValidateCommand:
                 "warnings": ["Deprecated syntax"],
                 "info": {"type": "child"},
                 "extends": "template1.yaml",
-                "blocks": ["content"]
-            }
+                "blocks": ["content"],
+            },
         }
         mock_validator_class.return_value = mock_validator
 
-        result = cli_runner.invoke(app, [
-            "validate",
-            "--templates-dir", str(templates_dir)
-        ])
+        result = cli_runner.invoke(
+            app, ["validate", "--templates-dir", str(templates_dir)]
+        )
 
         assert result.exit_code == 0
         assert "Validation Results: 1/2 templates valid" in result.stdout
@@ -546,15 +587,14 @@ class TestValidateCommand:
     def test_validate_no_templates(self, mock_validator_class, cli_runner, temp_dirs):
         """Test validate command with no templates."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_validator = MagicMock()
         mock_validator.validate_all_templates.return_value = {}
         mock_validator_class.return_value = mock_validator
 
-        result = cli_runner.invoke(app, [
-            "validate",
-            "--templates-dir", str(templates_dir)
-        ])
+        result = cli_runner.invoke(
+            app, ["validate", "--templates-dir", str(templates_dir)]
+        )
 
         assert result.exit_code == 0
         assert "No templates found to validate" in result.stdout
@@ -565,25 +605,34 @@ class TestRenderCommand:
 
     @patch("agentic_spec.cli.initialize_generator")
     @patch("agentic_spec.cli.render_specification_template")
-    def test_render_spec_to_stdout(self, mock_render, mock_init_gen, cli_runner, temp_dirs):
+    @patch("dataclasses.asdict")
+    def test_render_spec_to_stdout(
+        self, mock_asdict, mock_render, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test render command output to stdout."""
         templates_dir, specs_dir = temp_dirs
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_spec = MagicMock()
         mock_generator.find_spec_by_id.return_value = mock_spec
         mock_init_gen.return_value = mock_generator
-        
+        mock_asdict.return_value = {"mock": "spec_dict"}
         mock_render.return_value = "Rendered template content"
 
-        result = cli_runner.invoke(app, [
-            "render",
-            "spec123",
-            "--template", "test.html",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "render",
+                "spec123",
+                "--template",
+                "test.html",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Rendered Template" in result.stdout
@@ -591,26 +640,35 @@ class TestRenderCommand:
 
     @patch("agentic_spec.cli.initialize_generator")
     @patch("agentic_spec.cli.render_specification_template")
-    def test_render_spec_to_file(self, mock_render, mock_init_gen, cli_runner, temp_dirs):
+    @patch("dataclasses.asdict")
+    def test_render_spec_to_file(
+        self, mock_asdict, mock_render, mock_init_gen, cli_runner, temp_dirs
+    ):
         """Test render command output to file."""
         templates_dir, specs_dir = temp_dirs
         output_file = specs_dir / "output.html"
-        
+
         # Mock the generator and its methods
-        mock_generator = AsyncMock()
+        mock_generator = MagicMock()
         mock_spec = MagicMock()
         mock_generator.find_spec_by_id.return_value = mock_spec
         mock_init_gen.return_value = mock_generator
-        
+        mock_asdict.return_value = {"mock": "spec_dict"}
         mock_render.return_value = "Rendered template content"
 
-        result = cli_runner.invoke(app, [
-            "render",
-            "spec123",
-            "--output", str(output_file),
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "render",
+                "spec123",
+                "--output",
+                str(output_file),
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Rendered template saved" in result.stdout
@@ -621,17 +679,22 @@ class TestRenderCommand:
     def test_render_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test render command with spec not found."""
         templates_dir, specs_dir = temp_dirs
-        
-        mock_generator = AsyncMock()
+
+        mock_generator = MagicMock()
         mock_generator.find_spec_by_id.return_value = None
         mock_init_gen.return_value = mock_generator
 
-        result = cli_runner.invoke(app, [
-            "render",
-            "nonexistent",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "render",
+                "nonexistent",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 0
         assert "Specification nonexistent not found" in result.stdout
@@ -644,24 +707,28 @@ class TestErrorHandling:
         """Test that KeyboardInterrupt is handled gracefully."""
         with patch("agentic_spec.cli.app") as mock_app:
             mock_app.side_effect = KeyboardInterrupt()
-            
+
             # Note: This test is tricky with Typer's CliRunner
             # The actual KeyboardInterrupt handling is tested in the main() function
-            pass
 
     @patch("agentic_spec.cli.initialize_generator")
     def test_configuration_error_handling(self, mock_init_gen, cli_runner, temp_dirs):
         """Test configuration error handling."""
         templates_dir, specs_dir = temp_dirs
-        
+
         mock_init_gen.side_effect = ConfigurationError("Config error", "details")
 
-        result = cli_runner.invoke(app, [
-            "generate",
-            "test prompt",
-            "--templates-dir", str(templates_dir),
-            "--specs-dir", str(specs_dir)
-        ])
+        result = cli_runner.invoke(
+            app,
+            [
+                "generate",
+                "test prompt",
+                "--templates-dir",
+                str(templates_dir),
+                "--specs-dir",
+                str(specs_dir),
+            ],
+        )
 
         assert result.exit_code == 1
         assert "Config error" in result.stdout

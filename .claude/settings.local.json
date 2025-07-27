@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(agentic-spec expand:*)",
+      "Bash(python -m pytest tests/test_typer_integration.py::TestTyperIntegration::test_no_args_shows_help -v)",
+      "Bash(python:*)",
+      "Bash(make:*)",
+      "Bash(ruff check:*)",
+      "Bash(agentic-spec publish:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)"
+    ],
+    "deny": []
+  }
+}

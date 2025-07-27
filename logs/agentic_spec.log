@@ -1,0 +1,81 @@
+2025-07-26 19:17:48,637 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:17:56,471 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:23:23,352 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:23:31,383 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:23:47,992 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:23:54,786 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:23:54,793 - agentic_spec - INFO - Listing specifications in specs
+2025-07-26 19:23:54,793 - agentic_spec - INFO - Listed 8 specifications
+2025-07-26 19:24:11,316 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:24:35,922 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:24:36,252 - agentic_spec - INFO - Starting specification generation for prompt: Test prompt for CLI...
+2025-07-26 19:24:51,564 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 19:24:51,569 - agentic_spec - INFO - Specification saved to specs\2025-07-26-b540485c.yaml
+2025-07-26 19:24:53,275 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 19:31:57,107 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:36:19,236 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:36:19,543 - agentic_spec - INFO - Starting specification generation for prompt: base-coding-standards...
+2025-07-26 19:36:35,139 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 19:36:35,146 - agentic_spec - INFO - Specification saved to specs\2025-07-26-f96e2544.yaml
+2025-07-26 19:36:37,619 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 19:40:35,474 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:40:43,628 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:41:00,349 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:41:00,663 - agentic_spec - INFO - Starting specification generation for prompt: Test foundation context loading by creating a simple utility function...
+2025-07-26 19:41:00,673 - agentic_spec - ERROR - AI generation failed: name 'inherited_context' is not defined
+2025-07-26 19:41:00,673 - agentic_spec - ERROR - Application error: Failed to generate specification using AI
+2025-07-26 19:41:57,404 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:41:57,710 - agentic_spec - INFO - Starting specification generation for prompt: Test foundation context loading by creating a simple utility function...
+2025-07-26 19:42:03,647 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 19:42:03,650 - agentic_spec - INFO - Specification saved to specs\2025-07-26-d93faf1a.yaml
+2025-07-26 19:42:07,885 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 19:45:53,720 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:51:31,483 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:51:39,438 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:51:51,446 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 19:51:51,757 - agentic_spec - INFO - Starting specification generation for prompt: Fix failing test suite with 16 test failures including CLI error handling, async mock warnings, Type...
+2025-07-26 19:52:05,768 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 19:52:05,773 - agentic_spec - INFO - Specification saved to specs\2025-07-26-d0d26085.yaml
+2025-07-26 19:52:09,767 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 19:59:34,229 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:02:17,145 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:05:34,273 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:05:40,471 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:12:18,937 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:12:31,365 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:12:31,679 - agentic_spec - INFO - Starting specification generation for prompt: Create a comprehensive plan to fix all linting errors in the agentic-spec project and implement git ...
+2025-07-26 20:12:41,758 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 20:12:41,763 - agentic_spec - INFO - Specification saved to specs\2025-07-26-4bce15f2.yaml
+2025-07-26 20:12:43,840 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 20:20:39,801 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:20:40,110 - agentic_spec - INFO - Starting specification generation for prompt: Create a systematic plan to fix the remaining 237 linting errors in agentic-spec project. Current er...
+2025-07-26 20:20:58,385 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 20:20:58,391 - agentic_spec - INFO - Specification saved to specs\2025-07-26-930a1e10.yaml
+2025-07-26 20:21:00,202 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 20:26:19,194 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:26:19,201 - agentic_spec - INFO - Listing specifications in specs
+2025-07-26 20:26:19,201 - agentic_spec - INFO - Listed 14 specifications
+2025-07-26 20:26:44,054 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:26:51,666 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:26:53,830 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:26:56,024 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:26:58,271 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:06,390 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:08,624 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:10,849 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:18,564 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:20,820 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:27:23,110 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:29:59,917 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:02,126 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:04,267 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:06,385 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:08,671 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:10,860 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:13,117 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:15,552 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:17,862 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:20,042 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:22,317 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:24,476 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 20:30:26,701 - agentic_spec - INFO - Starting agentic-spec CLI

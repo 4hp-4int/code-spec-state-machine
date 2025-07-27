@@ -27,7 +27,7 @@ class TemplateLoader:
 
         # Ensure templates directory exists
         if not self.templates_dir.exists():
-            logger.warning(f"Templates directory not found: {self.templates_dir}")
+            logger.warning("Templates directory not found: %s", self.templates_dir)
             self.templates_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize Jinja2 environment
@@ -38,7 +38,9 @@ class TemplateLoader:
             lstrip_blocks=True,
         )
 
-        logger.info(f"Template loader initialized with directory: {self.templates_dir}")
+        logger.info(
+            "Template loader initialized with directory: %s", self.templates_dir
+        )
 
     def list_available_templates(self) -> list[str]:
         """List all available template files.
@@ -53,11 +55,11 @@ class TemplateLoader:
                 rel_path = file_path.relative_to(self.templates_dir)
                 templates.append(str(rel_path))
 
-            logger.debug(f"Found {len(templates)} templates: {templates}")
+            logger.debug("Found %d templates: %s", len(templates), templates)
             return sorted(templates)
 
-        except Exception as e:
-            logger.error(f"Error listing templates: {e}")
+        except (OSError, PermissionError, UnicodeDecodeError):
+            logger.exception("Error listing templates")
             return []
 
     def load_template(self, template_name: str):
@@ -74,17 +76,17 @@ class TemplateLoader:
         """
         try:
             template = self.env.get_template(template_name)
-            logger.debug(f"Successfully loaded template: {template_name}")
+            logger.debug("Successfully loaded template: %s", template_name)
             return template
 
         except TemplateNotFound as e:
-            logger.error(f"Template not found: {template_name}")
+            logger.exception("Template not found: %s", template_name)
             available = self.list_available_templates()
-            logger.info(f"Available templates: {available}")
+            logger.info("Available templates: %s", available)
             raise e
 
         except Exception as e:
-            logger.error(f"Error loading template {template_name}: {e}")
+            logger.exception("Error loading template: %s", template_name)
             raise e
 
     def render_template(self, template_name: str, context: dict[str, Any]) -> str:
@@ -103,11 +105,11 @@ class TemplateLoader:
         try:
             template = self.load_template(template_name)
             rendered = template.render(**context)
-            logger.debug(f"Successfully rendered template: {template_name}")
+            logger.debug("Successfully rendered template: %s", template_name)
             return rendered
 
         except Exception as e:
-            logger.error(f"Error rendering template {template_name}: {e}")
+            logger.exception("Error rendering template: %s", template_name)
             raise e
 
     def template_exists(self, template_name: str) -> bool:
@@ -124,8 +126,8 @@ class TemplateLoader:
             return True
         except TemplateNotFound:
             return False
-        except Exception as e:
-            logger.warning(f"Error checking template existence {template_name}: {e}")
+        except (TemplateSyntaxError, OSError, UnicodeDecodeError) as e:
+            logger.warning("Error checking template existence %s: %s", template_name, e)
             return False
 
     def get_template_info(self, template_name: str) -> dict[str, Any]:

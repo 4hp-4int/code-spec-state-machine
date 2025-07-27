@@ -45,7 +45,7 @@ class TemplateValidator:
         }
 
         logger.info(
-            f"Template validator initialized with directory: {self.templates_dir}"
+            "Template validator initialized with directory: %s", self.templates_dir
         )
 
     def validate_template(self, template_name: str) -> dict[str, Any]:
@@ -116,12 +116,14 @@ class TemplateValidator:
             result["valid"] = len(result["errors"]) == 0
 
             logger.debug(
-                f"Validation completed for {template_name}: {'valid' if result['valid'] else 'invalid'}"
+                "Validation completed for %s: %s",
+                template_name,
+                "valid" if result["valid"] else "invalid",
             )
 
         except Exception as e:
             result["errors"].append(f"Validation error: {e!s}")
-            logger.error(f"Error validating template {template_name}: {e}")
+            logger.exception("Error validating template: %s", template_name)
 
         return result
 
@@ -144,10 +146,10 @@ class TemplateValidator:
             # Validate inheritance relationships across all templates
             self._validate_global_inheritance(results)
 
-            logger.info(f"Validated {len(results)} templates")
+            logger.info("Validated %d templates", len(results))
 
-        except Exception as e:
-            logger.error(f"Error during bulk validation: {e}")
+        except Exception:
+            logger.exception("Error during bulk validation")
 
         return results
 
@@ -195,8 +197,8 @@ class TemplateValidator:
             ast = self.env.parse(source)
             variables = meta.find_undeclared_variables(ast)
             return list(variables)
-        except Exception as e:
-            logger.warning(f"Could not extract variables: {e}")
+        except (TemplateSyntaxError, AttributeError, ValueError) as e:
+            logger.warning("Could not extract variables: %s", e)
             return []
 
     def _determine_template_type(self, extends: str | None, blocks: list[str]) -> str:
@@ -263,7 +265,7 @@ class TemplateValidator:
                     ]
                 )
 
-        except Exception as e:
+        except (OSError, TemplateSyntaxError, UnicodeDecodeError) as e:
             result["errors"].append(f"Error validating parent template: {e}")
 
     def _validate_global_inheritance(self, results: dict[str, dict[str, Any]]):

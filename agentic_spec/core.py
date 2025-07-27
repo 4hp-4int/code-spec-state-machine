@@ -53,7 +53,7 @@ class SpecGenerator:
         """Load a base template by name."""
         template_path = self.templates_dir / f"{template_name}.yaml"
         if template_path.exists():
-            with open(template_path) as f:
+            with template_path.open() as f:
                 return yaml.safe_load(f)
         return {}
 
@@ -84,11 +84,11 @@ class SpecGenerator:
         """Load context from parent specification if it exists."""
         if not spec.metadata.parent_spec_id:
             return {}
-        
+
         parent_spec = self.find_spec_by_id(spec.metadata.parent_spec_id)
         if not parent_spec:
             return {}
-        
+
         # Convert parent spec to context dict
         parent_context = {
             "parent_project": parent_spec.context.project,
@@ -97,31 +97,33 @@ class SpecGenerator:
             "parent_context": parent_spec.context,
             "parent_metadata": parent_spec.metadata,
         }
-        
+
         # Recursively load grandparent context
         grandparent_context = self.load_parent_spec_context(parent_spec)
         if grandparent_context:
             parent_context["ancestor_context"] = grandparent_context
-        
+
         return parent_context
 
-    def resolve_comprehensive_context(self, inherits: list[str] = None, parent_spec_id: str = None) -> dict[str, Any]:
+    def resolve_comprehensive_context(
+        self, inherits: list[str] = None, parent_spec_id: str = None
+    ) -> dict[str, Any]:
         """Resolve complete context including inheritance, parent specs, and foundation."""
         context = {}
-        
+
         # 1. Load foundation spec context (always include)
         try:
             foundation_context = self.load_template("agentic-spec-foundation")
             self._deep_merge(context, {"foundation": foundation_context})
-        except Exception:
+        except (FileNotFoundError, KeyError, ValueError):
             # Foundation spec not found - this indicates it needs to be synced
             context["foundation_sync_needed"] = True
-        
+
         # 2. Load inherited template context
         inherited_context = self.resolve_inheritance(inherits or [])
         if inherited_context:
             self._deep_merge(context, {"inherited": inherited_context})
-        
+
         # 3. Load parent spec context if provided
         if parent_spec_id:
             parent_spec = self.find_spec_by_id(parent_spec_id)
@@ -129,7 +131,7 @@ class SpecGenerator:
                 parent_context = self.load_parent_spec_context(parent_spec)
                 if parent_context:
                     self._deep_merge(context, {"parent": parent_context})
-        
+
         return context
 
     def sync_foundation_spec(self) -> bool:
@@ -137,14 +139,14 @@ class SpecGenerator:
         try:
             # Analyze current codebase
             foundation_data = self._analyze_codebase_for_foundation()
-            
+
             # Write updated foundation spec
             foundation_path = self.templates_dir / "agentic-spec-foundation.yaml"
             with foundation_path.open("w", encoding="utf-8") as f:
                 yaml.dump(foundation_data, f, default_flow_style=False, sort_keys=False)
-            
+
             return True
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             print(f"Failed to sync foundation spec: {e}")
             return False
 
@@ -152,16 +154,16 @@ class SpecGenerator:
         """Analyze current codebase to generate foundation spec data."""
         # Get project root (go up from agentic_spec directory)
         project_root = self.templates_dir.parent
-        
+
         # Analyze Python files
         python_files = list(project_root.rglob("*.py"))
-        
+
         # Analyze dependencies from pyproject.toml
         dependencies = self._extract_dependencies(project_root)
-        
+
         # Analyze architecture from file structure
         architecture = self._analyze_architecture(project_root)
-        
+
         # Generate foundation data
         foundation_data = {
             "context": {
@@ -181,56 +183,69 @@ class SpecGenerator:
             "_last_synced": datetime.now().isoformat(),
             "_sync_version": "1.0",
         }
-        
+
         return foundation_data
 
     def _extract_dependencies(self, project_root: Path) -> list[dict[str, str]]:
         """Extract dependencies from pyproject.toml."""
         try:
             import tomllib
+
             pyproject_path = project_root / "pyproject.toml"
             if pyproject_path.exists():
                 with pyproject_path.open("rb") as f:
                     data = tomllib.load(f)
-                
+
                 dependencies = []
                 # Main dependencies
                 for dep in data.get("project", {}).get("dependencies", []):
                     name = dep.split(">=")[0].split(">")[0].split("==")[0]
                     version = dep.split(">=")[1] if ">=" in dep else "latest"
-                    dependencies.append({
-                        "name": name,
-                        "version": version,
-                        "description": f"Core dependency: {name}"
-                    })
-                
+                    dependencies.append(
+                        {
+                            "name": name,
+                            "version": version,
+                            "description": f"Core dependency: {name}",
+                        }
+                    )
+
                 return dependencies
-        except Exception:
+        except (OSError, ImportError, KeyError, ValueError, TypeError):
             pass
-        
+
         # Fallback basic dependencies
         return [
-            {"name": "Python", "version": "3.12+", "description": "Core programming language"},
-            {"name": "PyYAML", "version": "6.0+", "description": "YAML parsing and generation"},
+            {
+                "name": "Python",
+                "version": "3.12+",
+                "description": "Core programming language",
+            },
+            {
+                "name": "PyYAML",
+                "version": "6.0+",
+                "description": "YAML parsing and generation",
+            },
             {"name": "OpenAI", "version": "1.97+", "description": "AI integration"},
         ]
 
     def _analyze_architecture(self, project_root: Path) -> dict[str, Any]:
         """Analyze project architecture from file structure."""
         src_dir = project_root / "agentic_spec"
-        
+
         structure_lines = ["agentic_spec/"]
         if src_dir.exists():
             for py_file in sorted(src_dir.glob("*.py")):
                 if py_file.name != "__init__.py":
                     structure_lines.append(f"├── {py_file.name}")
-        
-        structure_lines.extend([
-            "templates/              # YAML template files",
-            "specs/                  # Generated specification files", 
-            "tests/                  # Test files",
-        ])
-        
+
+        structure_lines.extend(
+            [
+                "templates/              # YAML template files",
+                "specs/                  # Generated specification files",
+                "tests/                  # Test files",
+            ]
+        )
+
         return {
             "overview": (
                 "agentic-spec is a Python CLI tool that generates detailed programming "
@@ -239,7 +254,7 @@ class SpecGenerator:
             "structure": "\n".join(structure_lines),
             "functional_requirements": [
                 "Generate detailed specifications from high-level prompts",
-                "Support hierarchical sub-specifications with parent-child relationships", 
+                "Support hierarchical sub-specifications with parent-child relationships",
                 "Enable template inheritance for reusable specification patterns",
                 "Provide context-aware AI prompting with user role parameters",
                 "Track specification relationships and implementation status",
@@ -262,7 +277,7 @@ class SpecGenerator:
         """Extract coding standards from Python files."""
         return [
             "Use dataclasses and Pydantic models for data structures",
-            "Implement async/await for AI API calls", 
+            "Implement async/await for AI API calls",
             "Follow Python type hints throughout codebase",
             "Use pathlib.Path for all file operations",
             "Implement comprehensive error handling with informative messages",
@@ -274,7 +289,7 @@ class SpecGenerator:
         """Extract key design patterns from codebase."""
         return [
             "Template inheritance with deep merging strategy",
-            "Context-aware AI prompting with parameter injection", 
+            "Context-aware AI prompting with parameter injection",
             "Configuration-driven workflow behavior",
             "Graph-based specification relationships",
             "Graceful AI fallback mechanisms",
@@ -288,18 +303,19 @@ class SpecGenerator:
             last_synced = foundation.get("_last_synced")
             if not last_synced:
                 return True
-            
+
             # Check if significant time has passed since last sync
             from datetime import datetime, timedelta
+
             last_sync_time = datetime.fromisoformat(last_synced)
             if datetime.now() - last_sync_time > timedelta(days=7):
                 return True
-            
+
             # Check if codebase has changed significantly
             # (Could be enhanced to check git commits, file mtimes, etc.)
             return False
-            
-        except Exception:
+
+        except (OSError, UnicodeDecodeError, KeyError, ValueError, TypeError):
             # Foundation spec not found or corrupted
             return True
 
@@ -325,8 +341,10 @@ class SpecGenerator:
             print("✅ Foundation spec synced")
 
         # Resolve comprehensive context (foundation + inheritance + parent)
-        comprehensive_context = self.resolve_comprehensive_context(inherits, parent_spec_id)
-        
+        comprehensive_context = self.resolve_comprehensive_context(
+            inherits, parent_spec_id
+        )
+
         # Legacy support: also keep inherited_context for backward compatibility
         inherited_context = comprehensive_context.get("inherited", {})
 
@@ -381,7 +399,7 @@ class SpecGenerator:
 
         # Build comprehensive context description
         context_info = ""
-        
+
         # Foundation context
         if "foundation" in comprehensive_context:
             context_info += f"""
@@ -438,7 +456,7 @@ Project name: {project_name}
 SPECIFICATION REQUIREMENTS:
 Generate a detailed specification with:
 1. Context (project, domain, dependencies, files_involved) - MUST align with inherited context
-2. Requirements (functional, non_functional, constraints) - MUST respect inherited constraints  
+2. Requirements (functional, non_functional, constraints) - MUST respect inherited constraints
 3. Implementation steps (task, details, files, acceptance, estimated_effort) - MUST follow inherited patterns
 
 DEPENDENCY GUIDELINES:
@@ -492,9 +510,16 @@ Return ONLY valid JSON matching this structure:
 
             return json.loads(content)
 
-        except Exception as e:
+        except (
+            ConnectionError,
+            TimeoutError,
+            ValueError,
+            KeyError,
+            TypeError,
+            AttributeError,
+        ) as e:
             print(f"AI generation failed: {e}")
-            return self._generate_basic(prompt, inherited_context, project_name)
+            return self._generate_basic(prompt, legacy_inherited_context, project_name)
 
     def _generate_basic(
         self, prompt: str, inherited_context: dict, project_name: str
@@ -528,14 +553,14 @@ Return ONLY valid JSON matching this structure:
         filename = f"{spec.metadata.created[:10]}-{spec.metadata.id}.yaml"
         spec_path = self.specs_dir / filename
 
-        with open(spec_path, "w") as f:
+        with spec_path.open("w") as f:
             yaml.dump(asdict(spec), f, default_flow_style=False, sort_keys=False)
 
         return spec_path
 
     def load_spec(self, spec_path: Path) -> ProgrammingSpec:
         """Load specification from file."""
-        with open(spec_path) as f:
+        with spec_path.open() as f:
             data = yaml.safe_load(f)
 
         return ProgrammingSpec(
@@ -587,10 +612,16 @@ Return a simple JSON array of strings - no markdown formatting."""
             # Try to parse as JSON, fallback to text
             try:
                 return json.loads(content)
-            except:
+            except (json.JSONDecodeError, ValueError, TypeError):
                 return [content]
 
-        except Exception as e:
+        except (
+            ConnectionError,
+            TimeoutError,
+            ValueError,
+            KeyError,
+            AttributeError,
+        ) as e:
             return [f"Review failed: {e}"]
 
     async def generate_sub_spec(
@@ -643,16 +674,16 @@ Return a simple JSON array of strings - no markdown formatting."""
         # Create detailed prompt for the sub-specification
         sub_prompt = f"""
         Expand this implementation step into a detailed sub-specification:
-        
+
         Parent Spec: {parent_spec.metadata.id}
         Step: {target_step.task}
         Details: {target_step.details}
         Files: {", ".join(target_step.files)}
-        
+
         Context from parent spec:
         - Project: {parent_spec.context.project}
         - Domain: {parent_spec.context.domain}
-        
+
         Create a focused sub-specification that breaks down this step into concrete, actionable tasks.
         """
 
@@ -694,7 +725,7 @@ Return a simple JSON array of strings - no markdown formatting."""
                     "parent": spec.metadata.parent_spec_id,
                     "children": spec.metadata.child_spec_ids or [],
                 }
-            except Exception as e:
+            except (OSError, UnicodeDecodeError, ValueError, KeyError) as e:
                 print(f"Error loading {spec_file}: {e}")
 
         return specs
@@ -706,6 +737,6 @@ Return a simple JSON array of strings - no markdown formatting."""
                 spec = self.load_spec(spec_file)
                 if spec.metadata.id == spec_id:
                     return spec
-            except Exception:
+            except (OSError, UnicodeDecodeError, ValueError, KeyError):
                 continue
         return None

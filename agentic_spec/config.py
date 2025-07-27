@@ -75,19 +75,23 @@ class ConfigManager:
         # Load from file if it exists
         if self.config_file.exists():
             try:
-                with open(self.config_file) as f:
+                with self.config_file.open() as f:
                     file_config = yaml.safe_load(f) or {}
                 config_data = self._deep_merge(config_data, file_config)
             except yaml.YAMLError as e:
-                raise ValueError(f"Invalid YAML in config file {self.config_file}: {e}")
-            except Exception as e:
-                raise ValueError(f"Error reading config file {self.config_file}: {e}")
+                raise ValueError(
+                    f"Invalid YAML in config file {self.config_file}: {e}"
+                ) from e
+            except (OSError, UnicodeDecodeError, PermissionError) as e:
+                raise ValueError(
+                    f"Error reading config file {self.config_file}: {e}"
+                ) from e
 
         # Validate and create config object
         try:
             self._config = AgenticSpecConfig(**config_data)
         except ValidationError as e:
-            raise ValueError(f"Configuration validation failed: {e}")
+            raise ValueError(f"Configuration validation failed: {e}") from e
 
         return self._config
 
@@ -107,7 +111,7 @@ class ConfigManager:
         except ValidationError as e:
             raise ValueError(
                 f"Configuration validation failed after CLI overrides: {e}"
-            )
+            ) from e
 
     def _deep_merge(
         self, target: dict[str, Any], source: dict[str, Any]
@@ -136,7 +140,7 @@ class ConfigManager:
         # Convert to dict and save
         config_dict = config.model_dump()
 
-        with open(output_path, "w") as f:
+        with output_path.open("w") as f:
             yaml.dump(config_dict, f, default_flow_style=False, sort_keys=False)
 
         return output_path

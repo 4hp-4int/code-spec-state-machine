@@ -1,0 +1,130 @@
+metadata:
+  id: 4bce15f2
+  inherits:
+  - base-coding-standards
+  - agentic-spec-foundation
+  created: '2025-07-26T20:12:41.758312'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  - name: ruff
+    version: latest (ensure compatibility with Python 3.12+)
+  - name: pre-commit
+    version: latest (for git hooks, compatible with Python 3.12+)
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - tests/
+  - .pre-commit-config.yaml
+  - pyproject.toml
+requirements:
+  functional:
+  - Fix all ruff-detected linting errors (G004, B904, TRY003, EM101, BLE001, TRY400,
+    SIM117, DTZ005, F841, B007, PERF102) across cli.py, core.py, and all test files.
+  - Implement pre-commit git hooks to enforce linting (ruff) and auto-formatting (black,
+    isort) on commit.
+  - Ensure all code changes maintain existing functionality and pass all current tests.
+  - Document the linting and formatting workflow for solo developer usage.
+  non_functional:
+  - Maintain code readability and adhere to existing coding standards (dataclasses,
+    Pydantic, async/await, pathlib, type hints, error handling).
+  - Ensure all linting and formatting tools are configuration-driven (no hard-coded
+    paths or settings).
+  - Provide clear error messages and guidance if hooks fail during commit.
+  - 'Minimize developer friction: hooks should be fast and not block workflow unnecessarily.'
+  constraints:
+  - Use only Python 3.12+ features.
+  - Do not introduce new dependencies unless required for linting/formatting automation.
+  - Do not alter project architecture or file structure.
+  - Store all configuration in human-readable YAML or TOML files.
+  - Do not use external databases or services for linting/formatting.
+  - All changes must be covered by or validated with unit tests.
+implementation:
+- task: Audit and Fix All Ruff Linting Errors
+  details: "Systematically address each ruff error code (G004, B904, TRY003, EM101,\
+    \ BLE001, TRY400, SIM117, DTZ005, F841, B007, PERF102) in agentic_spec/cli.py,\
+    \ agentic_spec/core.py, and all files in tests/. For each error: \n- Refactor\
+    \ code to comply with ruff's recommendations (e.g., avoid logging f-strings, use\
+    \ exception chaining, provide informative exception messages, avoid blind excepts,\
+    \ handle nested with statements, ensure timezone-aware datetimes, remove unused\
+    \ variables, use correct dict iteration patterns).\n- Ensure all changes preserve\
+    \ existing logic and pass all tests.\n- Use pathlib.Path for file operations and\
+    \ maintain type hints throughout."
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - tests/
+  acceptance: No ruff errors reported in any file; all tests pass; code review confirms
+    no loss of functionality.
+  estimated_effort: high
+  step_id: 4bce15f2:0
+  sub_spec_id: null
+- task: Configure and Enforce Pre-commit Git Hooks
+  details: "Set up pre-commit hooks to run ruff (lint), black (format), and isort\
+    \ (import sort) on staged files before commit. \n- Create or update .pre-commit-config.yaml\
+    \ to include ruff, black, and isort hooks with project-appropriate settings.\n\
+    - Ensure hooks only run on relevant file types (e.g., *.py).\n- Add installation\
+    \ instructions to project README or CONTRIBUTING.md.\n- Update pyproject.toml\
+    \ with unified configuration for ruff, black, and isort."
+  files:
+  - .pre-commit-config.yaml
+  - pyproject.toml
+  - README.md
+  acceptance: Pre-commit hooks block commits with lint/format errors; developer can
+    run hooks manually; documentation is clear and accurate.
+  estimated_effort: medium
+  step_id: 4bce15f2:1
+  sub_spec_id: null
+- task: Test and Validate Linting/Formatting Workflow
+  details: "Verify that all hooks work as intended on various commit scenarios (clean,\
+    \ dirty, partially staged). \n- Ensure hooks do not introduce significant delays\
+    \ or false positives.\n- Confirm that all code remains functional and tests pass\
+    \ after auto-formatting and linting fixes.\n- Add or update unit tests if any\
+    \ logic is refactored for linting compliance."
+  files:
+  - tests/
+  - .pre-commit-config.yaml
+  - pyproject.toml
+  acceptance: All hooks function as expected; no regressions in test suite; developer
+    feedback confirms workflow is smooth.
+  estimated_effort: medium
+  step_id: 4bce15f2:2
+  sub_spec_id: null
+review_notes:
+- "No implementation details are provided for handling ruff error codes in test files\u2014\
+  ensure test code is included in linting and refactoring, not just core modules."
+- Be aware that ruff, black, and isort may have overlapping or conflicting rules;
+  verify unified configuration in pyproject.toml to avoid redundant or contradictory
+  formatting/linting.
+- Pre-commit hook performance can degrade with large staged diffs; recommend limiting
+  hooks to only run on staged Python files and consider using --diff or similar options.
+- Ensure pathlib.Path usage is consistent, especially in test utilities and CLI entrypoints,
+  as legacy os.path or open() patterns may persist in older code.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: advanced
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

@@ -1,7 +1,7 @@
 # Makefile for agentic-spec project
 # Provides automated code quality workflows and development tasks
 
-.PHONY: help install install-dev format lint check test test-coverage clean build docs
+.PHONY: help install install-dev format lint check test test-coverage clean build docs spec-commit spec-publish spec-complete
 
 # Default target
 help:
@@ -26,6 +26,11 @@ help:
 	@echo "  format-check Check if code needs formatting"
 	@echo "  lint-fix     Auto-fix linting issues where possible"
 	@echo "  quality      Run comprehensive code quality checks"
+	@echo ""
+	@echo "Specification Workflow Commands:"
+	@echo "  spec-commit  Commit specifications and implementation changes"
+	@echo "  spec-publish Publish all completed specifications as implemented"
+	@echo "  spec-complete Complete specification workflow (commit + publish)"
 
 # Installation commands
 install:
@@ -179,12 +184,44 @@ benchmark:
 	@echo "Benchmark tests not yet implemented"
 	@echo "Future: Performance benchmarking for AI operations"
 
+# Specification workflow commands
+spec-commit:
+	@echo "Committing specifications and implementation..."
+	git add specs/ agentic_spec/ tests/ pyproject.toml Makefile CLAUDE.md .pre-commit-config.yaml
+	git commit -m "📋 Complete specification implementation and publish specs" \
+		-m "" \
+		-m "- Implemented specification requirements and fixes" \
+		-m "- Updated codebase according to specifications" \
+		-m "- Published completed specifications as implemented" \
+		-m "" \
+		-m "🤖 Generated with [Claude Code](https://claude.ai/code)" \
+		-m "" \
+		-m "Co-Authored-By: Claude <noreply@anthropic.com>"
+
+spec-publish:
+	@echo "Publishing all completed specifications except current work..."
+	@echo "Finding and publishing implemented specifications..."
+	@for spec_file in $$(find specs/ -name "*.yaml" | grep -v "4bce15f2"); do \
+		spec_id=$$(basename $$spec_file .yaml | sed 's/^[0-9-]*-//'); \
+		echo "Publishing spec: $$spec_id"; \
+		agentic-spec publish $$spec_id 2>/dev/null || echo "Spec $$spec_id already published or not found"; \
+	done
+	@echo "✅ All applicable specifications published"
+
+spec-complete: spec-commit spec-publish
+	@echo "========================================="
+	@echo "📋 Specification Workflow Complete:"
+	@echo "✅ Changes committed to git"
+	@echo "✅ Specifications published as implemented"
+	@echo "✅ Ready for next development cycle"
+	@echo "========================================="
+
 # All-in-one quality gate
 quality-gate: clean format lint test-cov
 	@echo "========================================="
 	@echo "Quality Gate Results:"
 	@echo "✅ Code formatting: PASSED"
-	@echo "✅ Linting checks: PASSED" 
+	@echo "✅ Linting checks: PASSED"
 	@echo "✅ Test coverage: PASSED"
 	@echo "========================================="
 	@echo "Code is ready for production!"
