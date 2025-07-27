@@ -3,14 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from datetime import datetime
-
-# Import datetime for runtime usage
-import datetime as dt
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 

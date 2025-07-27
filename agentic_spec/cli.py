@@ -1,11 +1,13 @@
 """Command-line interface for agentic specification generator."""
 
 import asyncio
+from datetime import datetime
 import json
 import logging
 import logging.handlers
 from pathlib import Path
 import sys
+import uuid
 
 import typer
 from typer import Argument, Option
@@ -13,6 +15,7 @@ import yaml
 
 from .config import AgenticSpecConfig, get_config_manager, parse_cli_overrides
 from .core import SpecGenerator
+from .async_db import AsyncSpecManager, SQLiteBackend
 from .db import FileBasedSpecStorage
 from .exceptions import (
     AgenticSpecError,
@@ -24,7 +27,7 @@ from .exceptions import (
     ValidationError,
 )
 from .graph_visualization import get_spec_stats, print_spec_graph
-from .models import ApprovalLevel, ContextParameters
+from .models import ApprovalDB, ApprovalLevel, ContextParameters, TaskStatus
 from .prompt_editor import PromptEditor
 from .prompt_template_loader import PromptTemplateLoader
 from .template_loader import (
@@ -520,6 +523,14 @@ def generate_spec(
                 try:
                     spec_path = generator.save_spec(spec)
                     logger.info("Specification saved to %s", spec_path)
+                    
+                    # Also save to database
+                    db_path = Path(specs_dir) / "specifications.db"
+                    backend = SQLiteBackend(str(db_path))
+                    async with AsyncSpecManager(backend) as manager:
+                        await manager.save_spec_to_db(spec)
+                        logger.info("Specification saved to database")
+                    
                 except Exception as e:
                     logger.exception("Error saving specification")
                     msg = "Failed to save specification"
@@ -527,6 +538,7 @@ def generate_spec(
 
                 print(f"✅ Specification generated: {spec_path}")
                 print(f"📋 Spec ID: {spec.metadata.id}")
+                print("💾 Saved to database")
 
             # Auto-review if enabled in config (but skip in dry-run)
             if not dry_run and generator.config.workflow.auto_review:
@@ -537,6 +549,13 @@ def generate_spec(
                     if review_notes:
                         spec.review_notes = review_notes
                         generator.save_spec(spec)  # Save with review notes
+                        
+                        # Update database with review notes
+                        db_path = Path(specs_dir) / "specifications.db"
+                        backend = SQLiteBackend(str(db_path))
+                        async with AsyncSpecManager(backend) as manager:
+                            await manager.save_spec_to_db(spec)
+                        
                         logger.info("Review notes added to specification")
 
                         print("📝 Review feedback:")
@@ -555,6 +574,13 @@ def generate_spec(
                     if feedback_data:
                         spec.feedback_history.append(feedback_data)
                         generator.save_spec(spec)  # Save with feedback
+                        
+                        # Update database with feedback
+                        db_path = Path(specs_dir) / "specifications.db"
+                        backend = SQLiteBackend(str(db_path))
+                        async with AsyncSpecManager(backend) as manager:
+                            await manager.save_spec_to_db(spec)
+                        
                         print("💾 Feedback saved with specification")
                         logger.info("User feedback collected and saved")
                 except (ValidationError, FileSystemError) as e:
@@ -738,10 +764,18 @@ def expand_step(
                 # Save both specs (parent updated with child reference, new child spec)
                 generator.save_spec(parent_spec)
                 sub_spec_path = generator.save_spec(sub_spec)
+                
+                # Also save both specs to database
+                db_path = Path(specs_dir) / "specifications.db"
+                backend = SQLiteBackend(str(db_path))
+                async with AsyncSpecManager(backend) as manager:
+                    await manager.save_spec_to_db(parent_spec)
+                    await manager.save_spec_to_db(sub_spec)
 
                 print(f"✅ Sub-specification generated: {sub_spec_path}")
                 print(f"📋 Sub-spec ID: {sub_spec.metadata.id}")
                 print(f"🔗 Linked to parent step: {step_id}")
+                print("💾 Saved to database")
 
                 # Auto-review sub-spec
                 print("🔍 Reviewing sub-specification...")
@@ -750,6 +784,12 @@ def expand_step(
                 if review_notes:
                     sub_spec.review_notes = review_notes
                     generator.save_spec(sub_spec)
+                    
+                    # Update database with review notes
+                    db_path = Path(specs_dir) / "specifications.db"
+                    backend = SQLiteBackend(str(db_path))
+                    async with AsyncSpecManager(backend) as manager:
+                        await manager.save_spec_to_db(sub_spec)
 
                     print("📝 Review feedback:")
                     for note in review_notes:
@@ -1626,7 +1666,7 @@ async def _handle_template_selection(
 @app.command("task-start")
 def start_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    started_by: str = Option(..., "--by", help="Who is starting the task"),
+    started_by: str = Option("user", "--by", help="Who is starting the task"),
     notes: str | None = Option(
         None, "--notes", help="Optional notes for starting the task"
     ),
@@ -1636,67 +1676,186 @@ def start_task(
     ),
 ):
     """Start working on a task."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage, strict_mode=strict_mode)
+    
+    async def start_task_async():
+        try:
+            # Parse spec_id and step_index from step_id
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        # Parse spec_id from step_id
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            try:
+                step_index = int(step_index_str)
+            except ValueError:
+                raise typer.BadParameter("Step index must be a number")
 
-        spec_id = step_id.split(":")[0]
+            # Connect to database
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get specification
+                spec = await manager.get_specification(spec_id)
+                if not spec:
+                    print(f"❌ Specification {spec_id} not found")
+                    raise typer.Exit(1)
 
-        workflow.start_task(spec_id, step_id, started_by, notes)
-        print(f"✅ Task {step_id} started by {started_by}")
+                # Get tasks for this specification
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                
+                # Find the specific task
+                target_task = None
+                for task in tasks:
+                    if task.step_index == step_index:
+                        target_task = task
+                        break
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found for specification {spec_id}")
+                    raise typer.Exit(1)
 
-        if notes:
-            print(f"📝 Notes: {notes}")
+                # Check if task can be started
+                if target_task.status not in [TaskStatus.PENDING, TaskStatus.BLOCKED]:
+                    print(f"❌ Task {step_id} is already {target_task.status.value}")
+                    print(f"   Current status: {target_task.status.value}")
+                    if target_task.status == TaskStatus.IN_PROGRESS:
+                        print(f"   Started at: {target_task.started_at}")
+                    elif target_task.status == TaskStatus.COMPLETED:
+                        print(f"   Completed at: {target_task.completed_at}")
+                    raise typer.Exit(1)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        print(f"   Current status: {e.current_status}")
-        print(f"   Attempted action: {e.attempted_action}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error starting task: {e}")
-        raise typer.Exit(1)
+                # Strict mode enforcement - check if previous tasks are completed
+                if strict_mode and step_index > 0:
+                    for task in tasks:
+                        if task.step_index < step_index and task.status not in [TaskStatus.COMPLETED, TaskStatus.APPROVED]:
+                            print(f"❌ Strict mode violation: Task {task.step_index} must be completed before starting task {step_index}")
+                            print(f"   Blocking task status: {task.status.value}")
+                            print(f"   Use --no-strict to override, or complete task {spec_id}:{task.step_index} first")
+                            raise typer.Exit(1)
+
+                # Update task to in_progress
+                target_task.status = TaskStatus.IN_PROGRESS
+                target_task.started_at = datetime.now()
+                if notes:
+                    target_task.completion_notes = notes
+
+                await manager.backend.update_task(target_task)
+
+                print(f"✅ Task {step_id} started by {started_by}")
+                print(f"📋 Task: {target_task.task}")
+                
+                if notes:
+                    print(f"📝 Notes: {notes}")
+                
+                print(f"⏰ Started at: {target_task.started_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except typer.BadParameter:
+            raise
+        except typer.Exit:
+            raise
+        except Exception as e:
+            print(f"❌ Error starting task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(start_task_async())
 
 
 @app.command("task-complete")
 def complete_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    completed_by: str = Option(..., "--by", help="Who completed the task"),
+    completed_by: str = Option("user", "--by", help="Who completed the task"),
     notes: str | None = Option(None, "--notes", help="Completion notes"),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Mark a task as completed."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
+    
+    async def complete_task_async():
+        try:
+            # Parse spec_id and step_index from step_id
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            try:
+                step_index = int(step_index_str)
+            except ValueError:
+                raise typer.BadParameter("Step index must be a number")
 
-        spec_id = step_id.split(":")[0]
+            # Connect to database
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get specification
+                spec = await manager.get_specification(spec_id)
+                if not spec:
+                    print(f"❌ Specification {spec_id} not found")
+                    raise typer.Exit(1)
 
-        workflow.complete_task(spec_id, step_id, completed_by, notes)
-        print(f"✅ Task {step_id} completed by {completed_by}")
+                # Get tasks for this specification
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                
+                # Find the specific task
+                target_task = None
+                for task in tasks:
+                    if task.step_index == step_index:
+                        target_task = task
+                        break
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found for specification {spec_id}")
+                    raise typer.Exit(1)
 
-        if notes:
-            print(f"📝 Completion notes: {notes}")
+                # Check if task can be completed
+                if target_task.status != TaskStatus.IN_PROGRESS:
+                    print(f"❌ Task {step_id} is not in progress")
+                    print(f"   Current status: {target_task.status.value}")
+                    if target_task.status == TaskStatus.COMPLETED:
+                        print(f"   Already completed at: {target_task.completed_at}")
+                    elif target_task.status == TaskStatus.PENDING:
+                        print(f"   Task must be started first: agentic-spec task-start {step_id}")
+                    raise typer.Exit(1)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error completing task: {e}")
-        raise typer.Exit(1)
+                # Update task to completed
+                target_task.status = TaskStatus.COMPLETED
+                target_task.completed_at = datetime.now()
+                if notes:
+                    if target_task.completion_notes:
+                        target_task.completion_notes += f"\n\nCompletion notes by {completed_by}: {notes}"
+                    else:
+                        target_task.completion_notes = f"Completion notes by {completed_by}: {notes}"
+
+                await manager.backend.update_task(target_task)
+
+                print(f"✅ Task {step_id} completed by {completed_by}")
+                print(f"📋 Task: {target_task.task}")
+                
+                if notes:
+                    print(f"📝 Completion notes: {notes}")
+                
+                print(f"⏰ Completed at: {target_task.completed_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                
+                # Calculate duration if we have start time
+                if target_task.started_at:
+                    duration = target_task.completed_at - target_task.started_at
+                    hours = duration.total_seconds() / 3600
+                    print(f"⌛ Duration: {hours:.1f} hours")
+
+        except typer.BadParameter:
+            raise
+        except typer.Exit:
+            raise
+        except Exception as e:
+            print(f"❌ Error completing task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(complete_task_async())
 
 
 @app.command("task-approve")
 def approve_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    approved_by: str = Option(..., "--by", help="Who is approving the task"),
+    approved_by: str = Option("user", "--by", help="Who is approving the task"),
     level: str = Option(
         "self", "--level", help="Approval level: self, peer, ai, admin"
     ),
@@ -1707,74 +1866,185 @@ def approve_task(
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Approve a completed task."""
-    try:
-        # Validate approval level
+    
+    async def approve_task_async():
         try:
-            approval_level = ApprovalLevel(level.lower())
-        except ValueError:
-            valid_levels = [level.value for level in ApprovalLevel]
-            print(f"❌ Invalid approval level. Valid levels: {', '.join(valid_levels)}")
+            # Validate approval level
+            try:
+                approval_level = ApprovalLevel(level.lower())
+            except ValueError:
+                valid_levels = [level.value for level in ApprovalLevel]
+                print(f"❌ Invalid approval level. Valid levels: {', '.join(valid_levels)}")
+                raise typer.Exit(1)
+
+            # Parse spec_id and step_index from step_id
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+
+            spec_id, step_index_str = step_id.split(":", 1)
+            try:
+                step_index = int(step_index_str)
+            except ValueError:
+                raise typer.BadParameter("Step index must be a number")
+
+            # Connect to database
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get specification
+                spec = await manager.get_specification(spec_id)
+                if not spec:
+                    print(f"❌ Specification {spec_id} not found")
+                    raise typer.Exit(1)
+
+                # Get tasks for this specification
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                
+                # Find the specific task
+                target_task = None
+                for task in tasks:
+                    if task.step_index == step_index:
+                        target_task = task
+                        break
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found for specification {spec_id}")
+                    raise typer.Exit(1)
+
+                # Check if task can be approved
+                if target_task.status != TaskStatus.COMPLETED:
+                    print(f"❌ Task {step_id} is not completed")
+                    print(f"   Current status: {target_task.status.value}")
+                    if target_task.status == TaskStatus.PENDING:
+                        print(f"   Task must be started and completed first")
+                    elif target_task.status == TaskStatus.IN_PROGRESS:
+                        print(f"   Task must be completed first: agentic-spec task-complete {step_id}")
+                    raise typer.Exit(1)
+
+                # Create approval record
+                approval = ApprovalDB(
+                    id=str(uuid.uuid4()),
+                    task_id=target_task.id,
+                    level=approval_level,
+                    approved_by=approved_by,
+                    approved_at=datetime.now(),
+                    comments=comments,
+                    override_reason=override_reason,
+                )
+
+                await manager.backend.create_approval(approval)
+
+                # Update task status to approved
+                target_task.status = TaskStatus.APPROVED
+                target_task.approved_at = datetime.now()
+                await manager.backend.update_task(target_task)
+
+                print(f"✅ Task {step_id} approved by {approved_by} ({level})")
+                print(f"📋 Task: {target_task.task}")
+                
+                if comments:
+                    print(f"💬 Comments: {comments}")
+                if override_reason:
+                    print(f"⚠️  Override reason: {override_reason}")
+                
+                print(f"⏰ Approved at: {approval.approved_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except typer.BadParameter:
+            raise
+        except typer.Exit:
+            raise
+        except Exception as e:
+            print(f"❌ Error approving task: {e}")
             raise typer.Exit(1)
 
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
-
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
-
-        spec_id = step_id.split(":")[0]
-
-        workflow.approve_task(
-            spec_id, step_id, approval_level, approved_by, comments, override_reason
-        )
-        print(f"✅ Task {step_id} approved by {approved_by} ({level})")
-
-        if comments:
-            print(f"💬 Comments: {comments}")
-        if override_reason:
-            print(f"⚠️  Override reason: {override_reason}")
-
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error approving task: {e}")
-        raise typer.Exit(1)
+    asyncio.run(approve_task_async())
 
 
 @app.command("task-reject")
 def reject_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    rejected_by: str = Option(..., "--by", help="Who is rejecting the task"),
+    rejected_by: str = Option("user", "--by", help="Who is rejecting the task"),
     reason: str = Option(..., "--reason", help="Rejection reason"),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Reject a task, requiring rework."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
+    
+    async def reject_task_async():
+        try:
+            # Parse spec_id and step_index from step_id
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            try:
+                step_index = int(step_index_str)
+            except ValueError:
+                raise typer.BadParameter("Step index must be a number")
 
-        spec_id = step_id.split(":")[0]
+            # Connect to database
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get specification
+                spec = await manager.get_specification(spec_id)
+                if not spec:
+                    print(f"❌ Specification {spec_id} not found")
+                    raise typer.Exit(1)
 
-        workflow.reject_task(spec_id, step_id, rejected_by, reason)
-        print(f"❌ Task {step_id} rejected by {rejected_by}")
-        print(f"📝 Reason: {reason}")
+                # Get tasks for this specification
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                
+                # Find the specific task
+                target_task = None
+                for task in tasks:
+                    if task.step_index == step_index:
+                        target_task = task
+                        break
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found for specification {spec_id}")
+                    raise typer.Exit(1)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error rejecting task: {e}")
-        raise typer.Exit(1)
+                # Check if task can be rejected
+                if target_task.status not in [TaskStatus.COMPLETED, TaskStatus.APPROVED]:
+                    print(f"❌ Task {step_id} cannot be rejected")
+                    print(f"   Current status: {target_task.status.value}")
+                    print(f"   Only completed or approved tasks can be rejected")
+                    raise typer.Exit(1)
+
+                # Update task to rejected and reset to pending for rework
+                target_task.status = TaskStatus.REJECTED
+                target_task.rejected_at = datetime.now()
+                if target_task.completion_notes:
+                    target_task.completion_notes += f"\n\nRejected by {rejected_by}: {reason}"
+                else:
+                    target_task.completion_notes = f"Rejected by {rejected_by}: {reason}"
+
+                await manager.backend.update_task(target_task)
+
+                print(f"❌ Task {step_id} rejected by {rejected_by}")
+                print(f"📋 Task: {target_task.task}")
+                print(f"📝 Reason: {reason}")
+                print(f"⏰ Rejected at: {target_task.rejected_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                print(f"🔄 Task requires rework - reset to rejected status")
+
+        except typer.BadParameter:
+            raise
+        except typer.Exit:
+            raise
+        except Exception as e:
+            print(f"❌ Error rejecting task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(reject_task_async())
 
 
 @app.command("task-block")
 def block_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    blocked_by: str = Option(..., "--by", help="Who is blocking the task"),
+    blocked_by: str = Option("user", "--by", help="Who is blocking the task"),
     blockers: list[str] = Option(
         ..., "--blocker", help="Blocking issues (can specify multiple)"
     ),
@@ -1784,90 +2054,180 @@ def block_task(
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Block a task due to external dependencies or issues."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
+    
+    async def block_task_async():
+        try:
+            # Parse spec_id and step_index from step_id
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            try:
+                step_index = int(step_index_str)
+            except ValueError:
+                raise typer.BadParameter("Step index must be a number")
 
-        spec_id = step_id.split(":")[0]
+            # Connect to database
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get tasks for this specification
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                
+                # Find the specific task
+                target_task = None
+                for task in tasks:
+                    if task.step_index == step_index:
+                        target_task = task
+                        break
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found for specification {spec_id}")
+                    raise typer.Exit(1)
 
-        workflow.block_task(spec_id, step_id, blocked_by, blockers, notes)
-        print(f"🚫 Task {step_id} blocked by {blocked_by}")
-        print(f"🔒 Blockers: {', '.join(blockers)}")
+                # Update task to blocked
+                target_task.status = TaskStatus.BLOCKED
+                target_task.blocked_at = datetime.now()
+                target_task.blockers = blockers
+                if notes:
+                    if target_task.completion_notes:
+                        target_task.completion_notes += f"\n\nBlocked by {blocked_by}: {notes}"
+                    else:
+                        target_task.completion_notes = f"Blocked by {blocked_by}: {notes}"
 
-        if notes:
-            print(f"📝 Notes: {notes}")
+                await manager.backend.update_task(target_task)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error blocking task: {e}")
-        raise typer.Exit(1)
+                print(f"🚫 Task {step_id} blocked by {blocked_by}")
+                print(f"📋 Task: {target_task.task}")
+                print(f"🔒 Blockers: {', '.join(blockers)}")
+                if notes:
+                    print(f"📝 Notes: {notes}")
+                print(f"⏰ Blocked at: {target_task.blocked_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except typer.BadParameter:
+            raise
+        except typer.Exit:
+            raise
+        except Exception as e:
+            print(f"❌ Error blocking task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(block_task_async())
 
 
 @app.command("task-unblock")
 def unblock_task(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    unblocked_by: str = Option(..., "--by", help="Who is unblocking the task"),
+    unblocked_by: str = Option("user", "--by", help="Who is unblocking the task"),
     resolution: str = Option(
         ..., "--resolution", help="How the blockers were resolved"
     ),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Unblock a task and return it to pending status."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
+    
+    async def unblock_task_async():
+        try:
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            step_index = int(step_index_str)
 
-        spec_id = step_id.split(":")[0]
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                target_task = next((t for t in tasks if t.step_index == step_index), None)
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found")
+                    raise typer.Exit(1)
 
-        workflow.unblock_task(spec_id, step_id, unblocked_by, resolution)
-        print(f"✅ Task {step_id} unblocked by {unblocked_by}")
-        print(f"🔓 Resolution: {resolution}")
+                if target_task.status != TaskStatus.BLOCKED:
+                    print(f"❌ Task {step_id} is not blocked (status: {target_task.status.value})")
+                    raise typer.Exit(1)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error unblocking task: {e}")
-        raise typer.Exit(1)
+                target_task.status = TaskStatus.PENDING
+                target_task.unblocked_at = datetime.now()
+                target_task.blockers = []
+                if target_task.completion_notes:
+                    target_task.completion_notes += f"\n\nUnblocked by {unblocked_by}: {resolution}"
+                else:
+                    target_task.completion_notes = f"Unblocked by {unblocked_by}: {resolution}"
+
+                await manager.backend.update_task(target_task)
+
+                print(f"✅ Task {step_id} unblocked by {unblocked_by}")
+                print(f"🔓 Resolution: {resolution}")
+                print(f"⏰ Unblocked at: {target_task.unblocked_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except (typer.BadParameter, typer.Exit):
+            raise
+        except Exception as e:
+            print(f"❌ Error unblocking task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(unblock_task_async())
 
 
 @app.command("task-override")
 def override_strict_mode(
     step_id: str = Argument(..., help="Step ID in format 'spec_id:step_index'"),
-    override_by: str = Option(..., "--by", help="Who is overriding strict mode"),
+    override_by: str = Option("user", "--by", help="Who is overriding strict mode"),
     reason: str = Option(..., "--reason", help="Reason for override"),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Override strict mode to start a task out of sequence."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage, strict_mode=True)
+    
+    async def override_task_async():
+        try:
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            step_index = int(step_index_str)
 
-        spec_id = step_id.split(":")[0]
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                target_task = next((t for t in tasks if t.step_index == step_index), None)
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found")
+                    raise typer.Exit(1)
 
-        workflow.override_strict_mode(spec_id, step_id, override_by, reason)
-        print(f"⚠️  Strict mode overridden for task {step_id}")
-        print(f"👤 Override by: {override_by}")
-        print(f"📝 Reason: {reason}")
-        print("🚀 Task has been started with override")
+                if target_task.status != TaskStatus.PENDING:
+                    print(f"❌ Task {step_id} is not pending (status: {target_task.status.value})")
+                    raise typer.Exit(1)
 
-    except WorkflowViolationError as e:
-        print(f"❌ Workflow violation: {e}")
-        raise typer.Exit(1)
-    except Exception as e:
-        print(f"❌ Error overriding strict mode: {e}")
-        raise typer.Exit(1)
+                # Start the task with override
+                target_task.status = TaskStatus.IN_PROGRESS
+                target_task.started_at = datetime.now()
+                if target_task.completion_notes:
+                    target_task.completion_notes += f"\n\nStrict mode override by {override_by}: {reason}"
+                else:
+                    target_task.completion_notes = f"Strict mode override by {override_by}: {reason}"
+
+                await manager.backend.update_task(target_task)
+
+                print(f"⚠️  Strict mode overridden for task {step_id}")
+                print(f"👤 Override by: {override_by}")
+                print(f"📝 Reason: {reason}")
+                print("🚀 Task has been started with override")
+                print(f"⏰ Started at: {target_task.started_at.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except (typer.BadParameter, typer.Exit):
+            raise
+        except Exception as e:
+            print(f"❌ Error overriding strict mode: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(override_task_async())
 
 
 @app.command("task-status")
@@ -1876,58 +2236,84 @@ def show_task_status(
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Show detailed status information for a task."""
-    try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage)
+    
+    async def show_task_status_async():
+        try:
+            if ":" not in step_id:
+                raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
 
-        if ":" not in step_id:
-            raise typer.BadParameter("Step ID must be in format 'spec_id:step_index'")
+            spec_id, step_index_str = step_id.split(":", 1)
+            step_index = int(step_index_str)
 
-        spec_id = step_id.split(":")[0]
+            db_path = Path(specs_dir) / "specifications.db"
+            backend = SQLiteBackend(str(db_path))
+            
+            async with AsyncSpecManager(backend) as manager:
+                # Get specification and tasks
+                spec = await manager.get_specification(spec_id)
+                if not spec:
+                    print(f"❌ Specification {spec_id} not found")
+                    raise typer.Exit(1)
 
-        status = workflow.get_task_status(spec_id, step_id)
+                tasks = await manager.backend.get_tasks_for_spec(spec_id)
+                target_task = next((t for t in tasks if t.step_index == step_index), None)
+                
+                if not target_task:
+                    print(f"❌ Task at step {step_index} not found")
+                    raise typer.Exit(1)
 
-        print(f"📋 Task Status: {step_id}")
-        print(f"   Task: {status['task']}")
-        print(f"   Status: {status['status']}")
-        print(f"   Estimated Effort: {status['estimated_effort']}")
-        print(f"   Files: {', '.join(status['files'])}")
+                # Get approvals for this task
+                approvals = await manager.backend.get_approvals_for_task(target_task.id)
 
-        print("\n🚦 Actions Available:")
-        print(f"   Can start: {'✅' if status['can_start'] else '❌'}")
-        print(f"   Can complete: {'✅' if status['can_complete'] else '❌'}")
-        print(f"   Can approve: {'✅' if status['can_approve'] else '❌'}")
+                print(f"📋 Task Status: {step_id}")
+                print(f"   Task: {target_task.task}")
+                print(f"   Status: {target_task.status.value}")
+                print(f"   Estimated Effort: {target_task.estimated_effort}")
+                print(f"   Files: {', '.join(target_task.files)}")
 
-        if status.get("started_at"):
-            print("\n⏱️  Timing:")
-            print(f"   Started: {status['started_at']}")
-            if status.get("completed_at"):
-                print(f"   Completed: {status['completed_at']}")
-            if status.get("time_spent_minutes"):
-                print(f"   Time Spent: {status['time_spent_minutes']} minutes")
+                print("\n🚦 Actions Available:")
+                can_start = target_task.status in [TaskStatus.PENDING, TaskStatus.BLOCKED]
+                can_complete = target_task.status == TaskStatus.IN_PROGRESS
+                can_approve = target_task.status == TaskStatus.COMPLETED
+                print(f"   Can start: {'✅' if can_start else '❌'}")
+                print(f"   Can complete: {'✅' if can_complete else '❌'}")
+                print(f"   Can approve: {'✅' if can_approve else '❌'}")
 
-        if status.get("completion_notes"):
-            print(f"\n📝 Notes: {status['completion_notes']}")
+                if target_task.started_at:
+                    print("\n⏱️  Timing:")
+                    print(f"   Started: {target_task.started_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                    if target_task.completed_at:
+                        print(f"   Completed: {target_task.completed_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                        duration = target_task.completed_at - target_task.started_at
+                        hours = duration.total_seconds() / 3600
+                        print(f"   Duration: {hours:.1f} hours")
+                    if target_task.time_spent_minutes:
+                        print(f"   Time Spent: {target_task.time_spent_minutes} minutes")
 
-        if status.get("blockers"):
-            print("\n🚫 Blockers:")
-            for blocker in status["blockers"]:
-                print(f"   • {blocker}")
+                if target_task.completion_notes:
+                    print(f"\n📝 Notes: {target_task.completion_notes}")
 
-        if status.get("approvals"):
-            print("\n✅ Approvals:")
-            for approval in status["approvals"]:
-                print(
-                    f"   • {approval['level']} by {approval['approved_by']} at {approval['approved_at']}"
-                )
-                if approval["comments"]:
-                    print(f"     💬 {approval['comments']}")
-                if approval["override_reason"]:
-                    print(f"     ⚠️  Override: {approval['override_reason']}")
+                if target_task.blockers:
+                    print("\n🚫 Blockers:")
+                    for blocker in target_task.blockers:
+                        print(f"   • {blocker}")
 
-    except Exception as e:
-        print(f"❌ Error getting task status: {e}")
-        raise typer.Exit(1)
+                if approvals:
+                    print("\n✅ Approvals:")
+                    for approval in approvals:
+                        print(f"   • {approval.level.value} by {approval.approved_by} at {approval.approved_at.strftime('%Y-%m-%d %H:%M:%S')}")
+                        if approval.comments:
+                            print(f"     💬 {approval.comments}")
+                        if approval.override_reason:
+                            print(f"     ⚠️  Override: {approval.override_reason}")
+
+        except (typer.BadParameter, typer.Exit):
+            raise
+        except Exception as e:
+            print(f"❌ Error getting task status: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(show_task_status_async())
 
 
 @app.command("workflow-status")
@@ -1939,11 +2325,69 @@ def show_workflow_status(
     ),
 ):
     """Show comprehensive workflow status for a specification."""
+    import asyncio
+    from .async_db import AsyncSpecManager, SQLiteBackend
+    
+    async def get_workflow_status_async():
+        db_path = Path(specs_dir) / "specifications.db"
+        backend = SQLiteBackend(str(db_path))
+        
+        async with AsyncSpecManager(backend) as manager:
+            # Get specification
+            spec = await manager.get_specification(spec_id)
+            if not spec:
+                raise ValueError(f"Specification {spec_id} not found")
+            
+            # Get tasks
+            tasks = await manager.backend.get_tasks_for_spec(spec_id)
+            
+            # Calculate status
+            total_tasks = len(tasks)
+            completed_tasks = sum(1 for task in tasks if task.status in [TaskStatus.COMPLETED, TaskStatus.APPROVED])
+            completion_percentage = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            
+            # Count tasks by status
+            status_counts = {}
+            for task in tasks:
+                status = task.status.value
+                status_counts[status] = status_counts.get(status, 0) + 1
+            
+            # Find next available task
+            next_available_task = None
+            for task in tasks:
+                if task.status.value == "pending":
+                    next_available_task = f"{task.id}: {task.task}"
+                    break
+            
+            return {
+                "spec_title": spec.title,
+                "workflow_status": spec.workflow_status.value,
+                "is_completed": spec.is_completed,
+                "completion_percentage": completion_percentage,
+                "total_tasks": total_tasks,
+                "completed_tasks": completed_tasks,
+                "pending_tasks": total_tasks - completed_tasks,
+                "strict_mode": strict_mode,
+                "status_counts": status_counts,
+                "next_available_task": next_available_task,
+                "required_approval_levels": [],  # Empty for now
+                "tasks": [
+                    {
+                        "id": task.id,
+                        "step_id": task.id,  # Use task.id as step_id
+                        "task": task.task,
+                        "status": task.status.value,
+                        "is_completed": task.is_completed,
+                        "estimated_effort": task.estimated_effort,
+                        "can_start": task.status.value == "pending",  # Simple logic for now
+                        "required_approval_levels": [],  # Empty for now
+                    }
+                    for task in tasks
+                ],
+            }
+    
     try:
-        storage = FileBasedSpecStorage(specs_dir)
-        workflow = TaskWorkflowManager(storage, strict_mode=strict_mode)
-
-        status = workflow.get_workflow_status(spec_id)
+        status = asyncio.run(get_workflow_status_async())
 
         print(f"📊 Workflow Status: {spec_id}")
         print(f"   Title: {status['spec_title']}")

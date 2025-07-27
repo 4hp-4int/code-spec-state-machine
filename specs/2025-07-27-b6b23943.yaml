@@ -1,0 +1,196 @@
+metadata:
+  id: b6b23943
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T12:37:04.787190'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 17436f2c
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  files_involved:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/
+requirements:
+  functional:
+  - Provide HTTP endpoints for project listing, task listing (with filters), task
+    detail (with approval/timeline), and static asset serving.
+  - Render HTML views using Jinja2 templates for all endpoints.
+  - Support filtering of tasks by status, date range, and project via query parameters.
+  - Display task approval status and timeline in task detail view.
+  - Serve static assets (CSS, JS, images) from a dedicated endpoint.
+  non_functional:
+  - Ensure endpoints return informative error messages on failure.
+  - Maintain code readability and modularity for solo developer workflows.
+  - Support Windows and cross-platform file path handling for static assets and templates.
+  - Ensure all views are responsive and accessible for basic usability.
+  constraints:
+  - Do not introduce new dependencies outside those already listed.
+  - Use only Jinja2 for templating.
+  - Store all templates in agentic_spec/web_templates/.
+  - Follow established coding standards (async/await, type hints, error handling,
+    etc.).
+  - Do not use external databases; rely on file-based or in-memory data.
+implementation:
+- task: Scaffold web UI entrypoint and routing logic
+  details: Create the initial web_ui.py module with a minimal async web server setup
+    (e.g., using Typer or a minimal ASGI framework if already present in codebase).
+    Define route handlers for project list, task list, task detail, and static asset
+    serving. Ensure all routes are registered and return placeholder responses.
+  files:
+  - agentic_spec/web_ui.py
+  acceptance: web_ui.py contains route handlers for all required endpoints, each returning
+    a basic response; server can be started and responds to all routes.
+  estimated_effort: medium
+  step_id: b6b23943:0
+  sub_spec_id: null
+  decomposition_hint: 'composite: This task sets up the structure for all subsequent
+    endpoint and view logic.'
+  progress: null
+  approvals: null
+- task: Implement project list endpoint and view
+  details: Develop the endpoint to list all projects. Load project data from the appropriate
+    source (file or in-memory). Render the project list using a Jinja2 template. Ensure
+    the view displays project names and basic metadata.
+  files:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/project_list.html
+  acceptance: GET /projects returns an HTML page listing all projects with correct
+    data; template renders without errors.
+  estimated_effort: low
+  step_id: b6b23943:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement task list endpoint with filtering and view
+  details: Develop the endpoint to list tasks, supporting filtering by status, date
+    range, and project via query parameters. Load and filter task data accordingly.
+    Render the filtered task list using a Jinja2 template.
+  files:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/task_list.html
+  acceptance: GET /tasks returns an HTML page listing tasks, with filters applied
+    as per query parameters; template displays all relevant task fields.
+  estimated_effort: medium
+  step_id: b6b23943:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: Filtering logic and template rendering are distinct
+    concerns.'
+  progress: null
+  approvals: null
+- task: Implement task detail endpoint with approval and timeline view
+  details: Develop the endpoint to display detailed information for a single task,
+    including approval status and a timeline of events/updates. Render the detail
+    using a Jinja2 template.
+  files:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/task_detail.html
+  acceptance: GET /tasks/<task_id> returns an HTML page with all task details, approval
+    status, and timeline; template renders correctly for valid and invalid IDs.
+  estimated_effort: medium
+  step_id: b6b23943:3
+  sub_spec_id: null
+  decomposition_hint: 'composite: Data retrieval, error handling, and template rendering
+    are separable.'
+  progress: null
+  approvals: null
+- task: Implement static asset serving endpoint
+  details: Add an endpoint to serve static files (CSS, JS, images) from a designated
+    directory. Ensure correct MIME types and path handling for Windows compatibility.
+  files:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/static/
+  acceptance: Static assets are accessible via HTTP; assets load correctly in all
+    HTML views; no path errors on Windows.
+  estimated_effort: low
+  step_id: b6b23943:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Develop Jinja2 templates for all views
+  details: Create project_list.html, task_list.html, and task_detail.html templates
+    in the web_templates directory. Ensure templates are modular, readable, and support
+    all required data fields and UI elements.
+  files:
+  - agentic_spec/web_templates/project_list.html
+  - agentic_spec/web_templates/task_list.html
+  - agentic_spec/web_templates/task_detail.html
+  acceptance: All templates render without errors and display the correct data when
+    used by their respective endpoints.
+  estimated_effort: medium
+  step_id: b6b23943:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: Each template can be developed and tested independently.'
+  progress: null
+  approvals: null
+- task: Implement error handling and user feedback for all endpoints
+  details: Add comprehensive error handling for all endpoints, including 404 for missing
+    resources, 400 for invalid filters, and generic 500 errors. Ensure user-friendly
+    error messages are displayed in the UI.
+  files:
+  - agentic_spec/web_ui.py
+  - agentic_spec/web_templates/error.html
+  acceptance: All endpoints return appropriate error messages and status codes; error.html
+    template is used for user-facing errors.
+  estimated_effort: medium
+  step_id: b6b23943:6
+  sub_spec_id: null
+  decomposition_hint: 'composite: Error handling logic and error template are distinct
+    concerns.'
+  progress: null
+  approvals: null
+- task: Write unit and integration tests for web UI endpoints and views
+  details: Develop tests to verify endpoint responses, filtering logic, template rendering,
+    and error handling. Use pytest and any existing test utilities. Ensure coverage
+    for all major code paths.
+  files:
+  - tests/test_web_ui.py
+  acceptance: All endpoints and views are covered by tests; tests pass and verify
+    correct behavior for normal and error cases.
+  estimated_effort: medium
+  step_id: b6b23943:7
+  sub_spec_id: null
+  decomposition_hint: 'composite: Tests can be organized by endpoint/view.'
+  progress: null
+  approvals: null
+review_notes:
+- Consider using FastAPI instead of Typer for the web server implementation. FastAPI
+  is a modern, high-performance web framework that supports asynchronous programming
+  and integrates seamlessly with Jinja2 for templating. It also provides automatic
+  OpenAPI documentation, which can be beneficial for API development. This approach
+  aligns with current best practices and offers robust support for building web applications.
+  ([en.wikipedia.org](https://en.wikipedia.org/wiki/FastAPI?utm_source=openai))
+- Ensure that the Jinja2 version is updated to the latest stable release to benefit
+  from recent security patches and features. As of June 2024, Jinja2 version 3.1.2
+  is available. Regularly updating dependencies is crucial for maintaining application
+  security and performance.
+- Implement comprehensive error handling in the web_ui.py module. This includes returning
+  appropriate HTTP status codes and user-friendly error messages for scenarios such
+  as missing resources (404), invalid filters (400), and internal server errors (500).
+  Proper error handling enhances the user experience and aids in debugging.
+- Develop unit and integration tests for all endpoints and views using pytest. Testing
+  should cover normal and error cases to ensure the application behaves as expected
+  under various conditions. This practice helps in identifying issues early and maintaining
+  code quality.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

@@ -1,0 +1,86 @@
+metadata:
+  id: cdf60edf
+  title: Simple test for auto-database save
+  inherits: []
+  created: '2025-07-27T12:40:06.077726'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pytest-cov
+    version: 6.2.1
+    description: 'Core dependency: test coverage for Python'
+  files_involved:
+  - tests/test_auto_save.py
+  - agentic_spec/core.py
+requirements:
+  functional:
+  - Verify that the auto-save functionality correctly persists data to a YAML file
+    when triggered.
+  - Ensure that the saved file is human-readable and matches the expected data structure.
+  - Test should simulate a typical save operation without requiring external database
+    dependencies.
+  non_functional:
+  - Test must be idempotent and not leave residual files after execution.
+  - Test must run successfully on Windows and Unix-like systems (CRLF/LF compatibility).
+  - Test must provide clear error messages on failure.
+  constraints:
+  - Use only file-based storage (YAML) as per project requirements.
+  - Do not introduce new dependencies beyond those already present.
+  - Follow existing codebase structure and naming conventions.
+  - Implement tests using pytest and Python 3.12+ features.
+  - Maintain lint compliance with ruff and pre-commit hooks.
+implementation:
+- task: Create a unit test for auto-save functionality
+  details: Implement a pytest function that triggers the auto-save logic in agentic_spec/core.py,
+    writes a sample data structure to a temporary YAML file, and verifies the file
+    contents match the expected output. Use Python's tempfile and pathlib for file
+    handling. Clean up any files created during the test.
+  files:
+  - tests/test_auto_save.py
+  acceptance: Test passes, correctly verifies YAML output, and leaves no residual
+    files. Lint and pre-commit checks pass.
+  estimated_effort: low
+  step_id: cdf60edf:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Ensure auto-save logic is accessible and testable
+  details: Review agentic_spec/core.py to confirm that the auto-save function is modular
+    and can be invoked independently for testing. Refactor if necessary to allow injection
+    of file paths and data for testability, without changing core logic.
+  files:
+  - agentic_spec/core.py
+  acceptance: Auto-save function can be called with test data and file path. No breaking
+    changes to existing functionality.
+  estimated_effort: low
+  step_id: cdf60edf:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- "Check that the auto-save function in agentic_spec/core.py allows injection of both\
+  \ data and file path\u2014if not, refactor for testability without altering core\
+  \ logic."
+- Use tempfile.NamedTemporaryFile with delete=False and pathlib.Path for cross-platform
+  file handling; ensure explicit cleanup in the test to avoid residual files.
+- Verify that the YAML serialization uses safe_dump (from PyYAML) and enforces human-readable
+  formatting (indentation, no flow style); confirm PyYAML is present and up-to-date.
+- Linting with ruff and pre-commit should be run locally before PR; ensure test file
+  and any refactor maintain code style and naming conventions.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

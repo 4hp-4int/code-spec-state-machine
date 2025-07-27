@@ -383,7 +383,7 @@ class SQLiteBackend(AsyncDatabaseInterface):
         values = (
             spec.title,
             json.dumps(spec.inherits),
-            datetime.now(datetime.timezone.utc),
+            datetime.now(),
             spec.version,
             spec.status.value,
             spec.parent_spec_id,
@@ -853,7 +853,7 @@ class AsyncSpecManager:
             title=spec.metadata.title,
             inherits=spec.metadata.inherits,
             created=datetime.fromisoformat(spec.metadata.created),
-            updated=datetime.now(datetime.timezone.utc),
+            updated=datetime.now(),
             version=spec.metadata.version,
             status=SpecStatus(spec.metadata.status),
             parent_spec_id=spec.metadata.parent_spec_id,
@@ -874,13 +874,18 @@ class AsyncSpecManager:
             tags=[],
         )
 
-        # Save specification
-        await self.backend.create_specification(spec_db)
+        # Save specification (create or update)
+        existing_spec = await self.backend.get_specification(spec_db.id)
+        if existing_spec:
+            await self.backend.update_specification(spec_db)
+        else:
+            await self.backend.create_specification(spec_db)
 
-        # Save tasks
+        # Save tasks (create or update)
         for i, step in enumerate(spec.implementation):
+            task_id = step.step_id or f"{spec.metadata.id}:{i}"
             task_db = TaskDB(
-                id=step.step_id or f"{spec.metadata.id}:{i}",
+                id=task_id,
                 spec_id=spec.metadata.id,
                 step_index=i,
                 task=step.task,
@@ -901,7 +906,13 @@ class AsyncSpecManager:
                 else None,
                 blockers=step.progress.blockers or [] if step.progress else [],
             )
-            await self.backend.create_task(task_db)
+            
+            # Check if task already exists
+            existing_task = await self.backend.get_task(task_id)
+            if existing_task:
+                await self.backend.update_task(task_db)
+            else:
+                await self.backend.create_task(task_db)
 
             # Save approvals if any
             if step.approvals:

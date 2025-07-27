@@ -1267,19 +1267,14 @@ Return a simple JSON array of strings - no markdown formatting."""
             if dry_run:
                 return {"success": True, "action": "validated", "spec_id": spec_db.id}
 
-            # Check if spec already exists
-            existing_spec = await spec_manager.get_specification(spec_db.id)
+            # Check if spec already exists to determine action
+            existing_spec = await spec_manager.get_specification(spec.metadata.id)
+            action = "updated" if existing_spec else "created"
 
-            if existing_spec:
-                # Update existing specification
-                await spec_manager.update_specification(spec_db)
-                action = "updated"
-            else:
-                # Create new specification
-                await spec_manager.create_specification(spec_db)
-                action = "created"
+            # Use save_spec_to_db which handles both specification and tasks
+            await spec_manager.save_spec_to_db(spec)
 
-            return {"success": True, "action": action, "spec_id": spec_db.id}
+            return {"success": True, "action": action, "spec_id": spec.metadata.id}
 
         except Exception as e:
             return {
