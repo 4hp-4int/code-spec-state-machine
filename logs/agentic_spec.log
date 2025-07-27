@@ -375,3 +375,6 @@ Traceback (most recent call last):
 TypeError: agentic_spec.models.ImplementationStep() argument after ** must be a mapping, not str
 2025-07-26 21:19:23,018 - agentic_spec - INFO - Starting agentic-spec CLI
 2025-07-26 21:20:13,871 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:22:58,226 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:24:29,809 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:24:46,918 - agentic_spec - INFO - Starting agentic-spec CLI

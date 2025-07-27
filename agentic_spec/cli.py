@@ -817,7 +817,9 @@ def sync_foundation_spec(
 
             if success:
                 print("✅ Foundation spec successfully synced")
-                print(f"📄 Updated: {templates_dir / 'agentic-spec-foundation.yaml'}")
+                print(
+                    f"📄 Updated: {Path(templates_dir) / 'agentic-spec-foundation.yaml'}"
+                )
 
                 # Show what was updated
                 try:
