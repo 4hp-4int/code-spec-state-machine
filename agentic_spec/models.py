@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from datetime import datetime
+
+if TYPE_CHECKING:
+    pass
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,6 +44,21 @@ class SpecStatus(str, Enum):
     APPROVED = "approved"
     IMPLEMENTED = "implemented"
     ARCHIVED = "archived"
+
+
+class WorkflowStatus(str, Enum):
+    """Workflow status for tracking specification lifecycle."""
+
+    CREATED = "created"
+    IN_PROGRESS = "in_progress"
+    READY_FOR_REVIEW = "ready_for_review"
+    UNDER_REVIEW = "under_review"
+    CHANGES_REQUESTED = "changes_requested"
+    READY_FOR_IMPLEMENTATION = "ready_for_implementation"
+    IMPLEMENTING = "implementing"
+    TESTING = "testing"
+    COMPLETED = "completed"
+    ON_HOLD = "on_hold"
 
 
 class DependencyModel(BaseModel):
@@ -344,9 +365,7 @@ class ProgrammingSpec:
             ctx_params = ContextParameters(**data["context_parameters"])
 
         # Create feedback history
-        feedback = []
-        for fb in data.get("feedback_history", []):
-            feedback.append(FeedbackData(**fb))
+        feedback = [FeedbackData(**fb) for fb in data.get("feedback_history", [])]
 
         # Create work logs if present
         work_logs = None
@@ -367,7 +386,7 @@ class ProgrammingSpec:
 
 # Database-specific models for future SQL implementation
 class SpecificationDB(BaseModel):
-    """Database model for specifications."""
+    """Database model for specifications with enhanced tracking fields."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -381,6 +400,24 @@ class SpecificationDB(BaseModel):
     parent_spec_id: str | None = None
     child_spec_ids: list[str] = Field(default_factory=list)
 
+    # Enhanced tracking fields
+    workflow_status: WorkflowStatus = WorkflowStatus.CREATED
+    is_completed: bool = False
+    completed_at: datetime | None = None
+    last_accessed: datetime | None = None
+    completion_percentage: float = Field(default=0.0, ge=0.0, le=100.0)
+    priority: int = Field(default=5, ge=1, le=10)  # 1=highest, 10=lowest
+
+    # Lifecycle timestamps
+    reviewed_at: datetime | None = None
+    approved_at: datetime | None = None
+    implemented_at: datetime | None = None
+
+    # Metadata tracking
+    created_by: str = "system"
+    last_updated_by: str = "system"
+    tags: list[str] = Field(default_factory=list)
+
     # JSON fields for complex data
     context: dict[str, Any]
     requirements: dict[str, Any]
@@ -393,7 +430,7 @@ class SpecificationDB(BaseModel):
 
 
 class TaskDB(BaseModel):
-    """Database model for implementation tasks."""
+    """Database model for implementation tasks with enhanced tracking."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -408,13 +445,28 @@ class TaskDB(BaseModel):
     sub_spec_id: str | None = None
     decomposition_hint: str | None = None
 
-    # Progress tracking
+    # Enhanced progress tracking
     status: TaskStatus = TaskStatus.PENDING
     started_at: datetime | None = None
     completed_at: datetime | None = None
     time_spent_minutes: int | None = None
     completion_notes: str | None = None
     blockers: list[str] = Field(default_factory=list)
+
+    # Enhanced tracking fields
+    is_completed: bool = False
+    assigned_to: str = "unassigned"
+    priority: int = Field(default=5, ge=1, le=10)  # 1=highest, 10=lowest
+    last_accessed: datetime | None = None
+    estimated_completion_date: datetime | None = None
+    actual_effort_minutes: int | None = None
+    dependencies: list[str] = Field(default_factory=list)  # Other task IDs
+
+    # Lifecycle timestamps
+    blocked_at: datetime | None = None
+    unblocked_at: datetime | None = None
+    approved_at: datetime | None = None
+    rejected_at: datetime | None = None
 
     # Relationships
     approvals: list[ApprovalDB] = Field(default_factory=list)

@@ -162,7 +162,22 @@ class SQLiteBackend(AsyncDatabaseInterface):
                 context TEXT NOT NULL,
                 requirements TEXT NOT NULL,
                 review_notes TEXT DEFAULT '[]',
-                context_parameters TEXT
+                context_parameters TEXT,
+                -- Enhanced tracking fields
+                workflow_status TEXT DEFAULT 'created',
+                is_completed BOOLEAN DEFAULT FALSE,
+                completed_at TIMESTAMP,
+                last_accessed TIMESTAMP,
+                completion_percentage REAL DEFAULT 0.0,
+                priority INTEGER DEFAULT 5,
+                -- Lifecycle timestamps
+                reviewed_at TIMESTAMP,
+                approved_at TIMESTAMP,
+                implemented_at TIMESTAMP,
+                -- Metadata tracking
+                created_by TEXT DEFAULT 'system',
+                last_updated_by TEXT DEFAULT 'system',
+                tags TEXT DEFAULT '[]'
             )
             """,
             """
@@ -183,6 +198,19 @@ class SQLiteBackend(AsyncDatabaseInterface):
                 time_spent_minutes INTEGER,
                 completion_notes TEXT,
                 blockers TEXT DEFAULT '[]',
+                -- Enhanced tracking fields
+                is_completed BOOLEAN DEFAULT FALSE,
+                assigned_to TEXT DEFAULT 'unassigned',
+                priority INTEGER DEFAULT 5,
+                last_accessed TIMESTAMP,
+                estimated_completion_date TIMESTAMP,
+                actual_effort_minutes INTEGER,
+                dependencies TEXT DEFAULT '[]',
+                -- Lifecycle timestamps
+                blocked_at TIMESTAMP,
+                unblocked_at TIMESTAMP,
+                approved_at TIMESTAMP,
+                rejected_at TIMESTAMP,
                 FOREIGN KEY (spec_id) REFERENCES specifications (id) ON DELETE CASCADE
             )
             """,
@@ -216,6 +244,42 @@ class SQLiteBackend(AsyncDatabaseInterface):
 
         for table_sql in tables:
             await self.connection.execute(table_sql)
+
+        # Create indexes for performance optimization
+        indexes = [
+            # Specifications indexes
+            "CREATE INDEX IF NOT EXISTS idx_specs_status ON specifications (status)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_workflow_status ON specifications (workflow_status)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_is_completed ON specifications (is_completed)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_priority ON specifications (priority)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_created ON specifications (created)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_updated ON specifications (updated)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_completed_at ON specifications (completed_at)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_parent_id ON specifications (parent_spec_id)",
+            "CREATE INDEX IF NOT EXISTS idx_specs_tags ON specifications (tags)",
+            # Tasks indexes
+            "CREATE INDEX IF NOT EXISTS idx_tasks_spec_id ON tasks (spec_id)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks (status)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_is_completed ON tasks (is_completed)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks (priority)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to ON tasks (assigned_to)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_started_at ON tasks (started_at)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_completed_at ON tasks (completed_at)",
+            "CREATE INDEX IF NOT EXISTS idx_tasks_step_index ON tasks (step_index)",
+            # Work logs indexes
+            "CREATE INDEX IF NOT EXISTS idx_work_logs_spec_id ON work_logs (spec_id)",
+            "CREATE INDEX IF NOT EXISTS idx_work_logs_task_id ON work_logs (task_id)",
+            "CREATE INDEX IF NOT EXISTS idx_work_logs_timestamp ON work_logs (timestamp)",
+            "CREATE INDEX IF NOT EXISTS idx_work_logs_action ON work_logs (action)",
+            # Approvals indexes
+            "CREATE INDEX IF NOT EXISTS idx_approvals_task_id ON approvals (task_id)",
+            "CREATE INDEX IF NOT EXISTS idx_approvals_level ON approvals (level)",
+            "CREATE INDEX IF NOT EXISTS idx_approvals_approved_at ON approvals (approved_at)",
+        ]
+
+        for index_sql in indexes:
+            await self.connection.execute(index_sql)
+
         await self.connection.commit()
 
     @asynccontextmanager
@@ -249,8 +313,10 @@ class SQLiteBackend(AsyncDatabaseInterface):
         INSERT INTO specifications (
             id, title, inherits, created, updated, version, status,
             parent_spec_id, child_spec_ids, context, requirements,
-            review_notes, context_parameters
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            review_notes, context_parameters, workflow_status, is_completed,
+            completed_at, last_accessed, completion_percentage, priority,
+            reviewed_at, approved_at, implemented_at, created_by, last_updated_by, tags
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         values = (
@@ -267,6 +333,18 @@ class SQLiteBackend(AsyncDatabaseInterface):
             json.dumps(spec.requirements),
             json.dumps(spec.review_notes),
             json.dumps(spec.context_parameters) if spec.context_parameters else None,
+            spec.workflow_status.value,
+            spec.is_completed,
+            spec.completed_at,
+            spec.last_accessed,
+            spec.completion_percentage,
+            spec.priority,
+            spec.reviewed_at,
+            spec.approved_at,
+            spec.implemented_at,
+            spec.created_by,
+            spec.last_updated_by,
+            json.dumps(spec.tags),
         )
 
         await self.connection.execute(sql, values)
@@ -305,7 +383,7 @@ class SQLiteBackend(AsyncDatabaseInterface):
         values = (
             spec.title,
             json.dumps(spec.inherits),
-            datetime.now(),
+            datetime.now(datetime.timezone.utc),
             spec.version,
             spec.status.value,
             spec.parent_spec_id,
@@ -362,7 +440,10 @@ class SQLiteBackend(AsyncDatabaseInterface):
 
     def _row_to_specification(self, row) -> SpecificationDB:
         """Convert database row to SpecificationDB model."""
-        return SpecificationDB(
+        from .models import WorkflowStatus
+
+        # Handle both old and new database schemas
+        base_spec = SpecificationDB(
             id=row[0],
             title=row[1],
             inherits=json.loads(row[2]),
@@ -377,6 +458,36 @@ class SQLiteBackend(AsyncDatabaseInterface):
             review_notes=json.loads(row[11]),
             context_parameters=json.loads(row[12]) if row[12] else None,
         )
+
+        # Check if we have the enhanced tracking fields (new schema)
+        if len(row) >= 25:
+            # Enhanced tracking fields
+            base_spec.workflow_status = (
+                WorkflowStatus(row[13]) if row[13] else WorkflowStatus.CREATED
+            )
+            base_spec.is_completed = bool(row[14]) if row[14] is not None else False
+            base_spec.completed_at = (
+                datetime.fromisoformat(row[15]) if row[15] else None
+            )
+            base_spec.last_accessed = (
+                datetime.fromisoformat(row[16]) if row[16] else None
+            )
+            base_spec.completion_percentage = (
+                float(row[17]) if row[17] is not None else 0.0
+            )
+            base_spec.priority = int(row[18]) if row[18] is not None else 5
+            # Lifecycle timestamps
+            base_spec.reviewed_at = datetime.fromisoformat(row[19]) if row[19] else None
+            base_spec.approved_at = datetime.fromisoformat(row[20]) if row[20] else None
+            base_spec.implemented_at = (
+                datetime.fromisoformat(row[21]) if row[21] else None
+            )
+            # Metadata tracking
+            base_spec.created_by = row[22] if row[22] else "system"
+            base_spec.last_updated_by = row[23] if row[23] else "system"
+            base_spec.tags = json.loads(row[24]) if row[24] else []
+
+        return base_spec
 
     async def create_task(self, task: TaskDB) -> str:
         """Create a new task."""
@@ -624,6 +735,87 @@ class SQLiteBackend(AsyncDatabaseInterface):
 
         return [self._row_to_work_log(row) for row in rows]
 
+    # Enhanced query methods leveraging new indexes
+    async def get_specifications_by_workflow_status(
+        self, workflow_status: "WorkflowStatus", limit: int | None = None
+    ) -> list[SpecificationDB]:
+        """Get specifications by workflow status (uses index)."""
+        if not self.connection:
+            msg = "Database not initialized"
+            raise DatabaseError(msg)
+
+        sql = "SELECT * FROM specifications WHERE workflow_status = ? ORDER BY priority, updated DESC"
+        params = [workflow_status.value]
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+
+        return [self._row_to_specification(row) for row in rows]
+
+    async def get_completed_specifications(
+        self, limit: int | None = None
+    ) -> list[SpecificationDB]:
+        """Get completed specifications (uses index)."""
+        if not self.connection:
+            msg = "Database not initialized"
+            raise DatabaseError(msg)
+
+        sql = "SELECT * FROM specifications WHERE is_completed = TRUE ORDER BY completed_at DESC"
+        params = []
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+
+        return [self._row_to_specification(row) for row in rows]
+
+    async def get_high_priority_tasks(
+        self, priority_threshold: int = 3, limit: int | None = None
+    ) -> list[TaskDB]:
+        """Get high priority tasks (uses index)."""
+        if not self.connection:
+            msg = "Database not initialized"
+            raise DatabaseError(msg)
+
+        sql = "SELECT * FROM tasks WHERE priority <= ? ORDER BY priority, started_at"
+        params = [priority_threshold]
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+
+        return [self._row_to_task(row) for row in rows]
+
+    async def get_tasks_by_assignee(
+        self, assigned_to: str, limit: int | None = None
+    ) -> list[TaskDB]:
+        """Get tasks by assignee (uses index)."""
+        if not self.connection:
+            msg = "Database not initialized"
+            raise DatabaseError(msg)
+
+        sql = "SELECT * FROM tasks WHERE assigned_to = ? ORDER BY priority, started_at"
+        params = [assigned_to]
+
+        if limit:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        async with self.connection.execute(sql, params) as cursor:
+            rows = await cursor.fetchall()
+
+        return [self._row_to_task(row) for row in rows]
+
     def _row_to_work_log(self, row) -> WorkLogDB:
         """Convert database row to WorkLogDB model."""
         return WorkLogDB(
@@ -655,13 +847,13 @@ class AsyncSpecManager:
 
     async def save_spec_to_db(self, spec: ProgrammingSpec) -> str:
         """Convert ProgrammingSpec to database format and save."""
-        # Convert to database model
+        # Convert to database model with enhanced tracking
         spec_db = SpecificationDB(
             id=spec.metadata.id,
             title=spec.metadata.title,
             inherits=spec.metadata.inherits,
             created=datetime.fromisoformat(spec.metadata.created),
-            updated=datetime.now(),
+            updated=datetime.now(datetime.timezone.utc),
             version=spec.metadata.version,
             status=SpecStatus(spec.metadata.status),
             parent_spec_id=spec.metadata.parent_spec_id,
@@ -672,6 +864,14 @@ class AsyncSpecManager:
             context_parameters=spec.context_parameters.to_dict()
             if spec.context_parameters
             else None,
+            # Enhanced tracking fields with intelligent defaults
+            workflow_status=self._determine_workflow_status(spec.metadata.status),
+            is_completed=spec.metadata.status in ["implemented", "archived"],
+            completion_percentage=self._calculate_completion_percentage(spec),
+            priority=5,  # Default priority
+            created_by="migration",
+            last_updated_by="migration",
+            tags=[],
         )
 
         # Save specification
@@ -733,6 +933,36 @@ class AsyncSpecManager:
                 await self.backend.create_work_log(log_db)
 
         return spec.metadata.id
+
+    def _determine_workflow_status(self, status: str) -> "WorkflowStatus":
+        """Map specification status to workflow status."""
+        from .models import WorkflowStatus
+
+        mapping = {
+            "draft": WorkflowStatus.CREATED,
+            "reviewed": WorkflowStatus.READY_FOR_REVIEW,
+            "approved": WorkflowStatus.READY_FOR_IMPLEMENTATION,
+            "implemented": WorkflowStatus.COMPLETED,
+            "archived": WorkflowStatus.COMPLETED,
+        }
+        return mapping.get(status, WorkflowStatus.CREATED)
+
+    def _calculate_completion_percentage(self, spec: ProgrammingSpec) -> float:
+        """Calculate completion percentage based on implementation steps."""
+        if not spec.implementation:
+            return 0.0
+
+        completed_steps = 0
+        total_steps = len(spec.implementation)
+
+        for step in spec.implementation:
+            if step.progress and step.progress.status.value in [
+                "completed",
+                "approved",
+            ]:
+                completed_steps += 1
+
+        return (completed_steps / total_steps) * 100.0 if total_steps > 0 else 0.0
 
     async def get_specification(self, spec_id: str) -> SpecificationDB | None:
         """Get specification by ID."""
