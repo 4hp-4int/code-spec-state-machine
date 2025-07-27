@@ -79,19 +79,18 @@ class ConfigManager:
                     file_config = yaml.safe_load(f) or {}
                 config_data = self._deep_merge(config_data, file_config)
             except yaml.YAMLError as e:
-                raise ValueError(
-                    f"Invalid YAML in config file {self.config_file}: {e}"
-                ) from e
+                msg = f"Invalid YAML in config file {self.config_file}: {e}"
+                raise ValueError(msg) from e
             except (OSError, UnicodeDecodeError, PermissionError) as e:
-                raise ValueError(
-                    f"Error reading config file {self.config_file}: {e}"
-                ) from e
+                msg = f"Error reading config file {self.config_file}: {e}"
+                raise ValueError(msg) from e
 
         # Validate and create config object
         try:
             self._config = AgenticSpecConfig(**config_data)
         except ValidationError as e:
-            raise ValueError(f"Configuration validation failed: {e}") from e
+            msg = f"Configuration validation failed: {e}"
+            raise ValueError(msg) from e
 
         return self._config
 
@@ -109,9 +108,8 @@ class ConfigManager:
         try:
             return AgenticSpecConfig(**merged_dict)
         except ValidationError as e:
-            raise ValueError(
-                f"Configuration validation failed after CLI overrides: {e}"
-            ) from e
+            msg = f"Configuration validation failed after CLI overrides: {e}"
+            raise ValueError(msg) from e
 
     def _deep_merge(
         self, target: dict[str, Any], source: dict[str, Any]
@@ -148,9 +146,8 @@ class ConfigManager:
     def create_default_config_file(self, force: bool = False) -> Path:
         """Create a default configuration file."""
         if self.config_file.exists() and not force:
-            raise FileExistsError(
-                f"Configuration file {self.config_file} already exists"
-            )
+            msg = f"Configuration file {self.config_file} already exists"
+            raise FileExistsError(msg)
 
         default_config = AgenticSpecConfig()
         return self.save_config(default_config)

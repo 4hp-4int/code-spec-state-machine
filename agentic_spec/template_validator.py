@@ -22,7 +22,8 @@ class TemplateValidator:
         """Initialize the template validator.
 
         Args:
-            templates_dir: Directory containing templates. Defaults to agentic_spec/templates/
+            templates_dir: Directory containing templates.
+                Defaults to agentic_spec/templates/
         """
         if templates_dir is None:
             package_dir = Path(__file__).parent
@@ -228,9 +229,8 @@ class TemplateValidator:
                     "Base template should define a 'content' block"
                 )
 
-        elif template_type == "child":
-            if not result["extends"]:
-                result["errors"].append("Child template must extend a parent template")
+        elif template_type == "child" and not result["extends"]:
+            result["errors"].append("Child template must extend a parent template")
 
     def _validate_inheritance(self, result: dict[str, Any]):
         """Validate template inheritance chain."""

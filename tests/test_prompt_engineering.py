@@ -1,6 +1,6 @@
 """Tests for the prompt engineering module."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import pytest
 
@@ -213,7 +213,7 @@ class TestFeedbackData:
 
     def test_feedback_data_with_values(self):
         """Test FeedbackData creation with values."""
-        timestamp = datetime.now(tz=datetime.timezone.utc).isoformat()
+        timestamp = datetime.now(tz=UTC).isoformat()
         feedback = FeedbackData(
             rating=4,
             accuracy_score=5,

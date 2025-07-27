@@ -129,27 +129,27 @@ class TestPromptInputHandling:
         with (
             patch("sys.stdin.isatty", return_value=True),
             patch("builtins.input", side_effect=EOFError),
+            pytest.raises(ValidationError, match="No prompt provided"),
         ):
-            with pytest.raises(ValidationError, match="No prompt provided"):
-                get_prompt_input(None)
+            get_prompt_input(None)
 
     def test_get_prompt_input_keyboard_interrupt(self):
         """Test handling of keyboard interrupt during interactive input."""
         with (
             patch("sys.stdin.isatty", return_value=True),
             patch("builtins.input", side_effect=KeyboardInterrupt),
+            pytest.raises(SystemExit),
         ):
-            with pytest.raises(SystemExit):
-                get_prompt_input(None)
+            get_prompt_input(None)
 
     def test_get_prompt_input_piped_error(self):
         """Test handling of piped input errors."""
         with (
             patch("sys.stdin.isatty", return_value=False),
             patch("sys.stdin.read", side_effect=OSError("Read error")),
+            pytest.raises(FileSystemError, match="Failed to read piped input"),
         ):
-            with pytest.raises(FileSystemError, match="Failed to read piped input"):
-                get_prompt_input(None)
+            get_prompt_input(None)
 
     def test_get_prompt_input_piped_success(self):
         """Test successful piped input."""

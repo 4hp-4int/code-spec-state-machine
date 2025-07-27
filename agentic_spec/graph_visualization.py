@@ -184,7 +184,7 @@ def get_spec_stats(specs_dir: Path) -> dict[str, Any]:
         status_counts[status] = status_counts.get(status, 0) + 1
 
     # Calculate depth
-    def get_depth(spec_id: str, visited: set = None) -> int:
+    def get_depth(spec_id: str, visited: set | None = None) -> int:
         if visited is None:
             visited = set()
         if spec_id in visited or spec_id not in spec_graph:
@@ -197,7 +197,7 @@ def get_spec_stats(specs_dir: Path) -> dict[str, Any]:
 
         return 1 + max_child_depth
 
-    max_depth = max([get_depth(spec_id) for spec_id in spec_graph.keys()], default=0)
+    max_depth = max([get_depth(spec_id) for spec_id in spec_graph], default=0)
 
     return {
         "total_specs": total_specs,

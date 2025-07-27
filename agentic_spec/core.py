@@ -106,7 +106,7 @@ class SpecGenerator:
         return parent_context
 
     def resolve_comprehensive_context(
-        self, inherits: list[str] = None, parent_spec_id: str = None
+        self, inherits: list[str] | None = None, parent_spec_id: str | None = None
     ) -> dict[str, Any]:
         """Resolve complete context including inheritance, parent specs, and foundation."""
         context = {}
@@ -165,7 +165,7 @@ class SpecGenerator:
         architecture = self._analyze_architecture(project_root)
 
         # Generate foundation data
-        foundation_data = {
+        return {
             "context": {
                 "project": "agentic-spec",
                 "domain": "Python CLI tool for AI-powered specification generation",
@@ -183,8 +183,6 @@ class SpecGenerator:
             "_last_synced": datetime.now().isoformat(),
             "_sync_version": "1.0",
         }
-
-        return foundation_data
 
     def _extract_dependencies(self, project_root: Path) -> list[dict[str, str]]:
         """Extract dependencies from pyproject.toml."""
@@ -273,7 +271,7 @@ class SpecGenerator:
             ],
         }
 
-    def _extract_coding_standards(self, python_files: list[Path]) -> list[str]:
+    def _extract_coding_standards(self, _python_files: list[Path]) -> list[str]:
         """Extract coding standards from Python files."""
         return [
             "Use dataclasses and Pydantic models for data structures",
@@ -285,7 +283,7 @@ class SpecGenerator:
             "Use configuration-driven behavior over hard-coded values",
         ]
 
-    def _extract_design_patterns(self, python_files: list[Path]) -> list[str]:
+    def _extract_design_patterns(self, _python_files: list[Path]) -> list[str]:
         """Extract key design patterns from codebase."""
         return [
             "Template inheritance with deep merging strategy",
@@ -322,10 +320,10 @@ class SpecGenerator:
     async def generate_spec(
         self,
         prompt: str,
-        inherits: list[str] = None,
+        inherits: list[str] | None = None,
         project_name: str = "project",
         context_params: ContextParameters | None = None,
-        parent_spec_id: str = None,
+        parent_spec_id: str | None = None,
     ) -> ProgrammingSpec:
         """Generate a detailed programming specification from a prompt."""
 
@@ -373,7 +371,7 @@ class SpecGenerator:
             step.step_id = f"{spec_id}:{i}"
             implementation_steps.append(step)
 
-        spec = ProgrammingSpec(
+        return ProgrammingSpec(
             metadata=SpecMetadata(
                 id=spec_id,
                 inherits=inherits or [],
@@ -385,8 +383,6 @@ class SpecGenerator:
             implementation=implementation_steps,
             context_parameters=context_params,
         )
-
-        return spec
 
     async def _generate_with_ai(
         self,

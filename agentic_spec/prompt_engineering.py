@@ -20,7 +20,7 @@ class PromptEngineer:
         self,
         base_prompt: str,
         context_params: ContextParameters | None = None,
-        existing_context: dict[str, Any] | None = None,
+        _existing_context: dict[str, Any] | None = None,
     ) -> str:
         """Build an enhanced prompt with context parameters."""
 
@@ -73,15 +73,13 @@ class PromptEngineer:
             return base_prompt
 
         # Build enhanced prompt
-        enhanced_prompt = f"""CONTEXT PARAMETERS:
+        return f"""CONTEXT PARAMETERS:
 {chr(10).join(f"- {section}" for section in context_sections)}
 
 TASK:
 {base_prompt}
 
 Please consider the above context parameters when generating your response to ensure maximum relevance and accuracy for the specified user and situation."""
-
-        return enhanced_prompt
 
     def collect_feedback(
         self, output_content: str, interactive: bool = True

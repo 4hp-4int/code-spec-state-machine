@@ -181,12 +181,12 @@ async def initialize_generator(
 
         generator = SpecGenerator(final_templates_dir, final_specs_dir, config)
         logger.debug("SpecGenerator initialized successfully")
-        return generator
-
     except Exception as e:
         logger.exception("Error initializing SpecGenerator")
         msg = "Failed to initialize application"
         raise FileSystemError(msg, str(e)) from e
+    else:
+        return generator
 
 
 @app.command("generate")
@@ -195,8 +195,8 @@ def generate_spec(
         None,
         help="Programming task prompt (optional - can use stdin or interactive input)",
     ),
-    inherits: list[str] = Option(
-        [], "--inherits", help="Base templates to inherit from"
+    inherits: list[str] | None = Option(
+        None, "--inherits", help="Base templates to inherit from"
     ),
     project: str = Option("project", "--project", help="Project name for context"),
     user_role: str | None = Option(
@@ -222,15 +222,13 @@ def generate_spec(
     feedback: bool = Option(
         False, "--feedback", help="Enable interactive feedback collection"
     ),
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
-    set_options: list[str] = Option(
-        [],
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
+    set_options: list[str] | None = Option(
+        None,
         "--set",
         help="Override config values (e.g., --set prompt_settings.temperature=0.2)",
     ),
@@ -247,10 +245,19 @@ def generate_spec(
     async def _generate():
         logger = logging.getLogger("agentic_spec")
 
+        # Initialize mutable defaults
+        inherits_list = inherits if inherits is not None else []
+        set_options_list = set_options if set_options is not None else []
+
+        # Convert string paths to Path objects
+        templates_dir_path = Path(templates_dir)
+        specs_dir_path = Path(specs_dir)
+        config_path = Path(config) if config else None
+
         try:
             try:
                 generator = await initialize_generator(
-                    templates_dir, specs_dir, config, set_options
+                    templates_dir_path, specs_dir_path, config_path, set_options_list
                 )
             except (ConfigurationError, FileSystemError) as e:
                 logger.exception("Failed to initialize")
@@ -265,7 +272,8 @@ def generate_spec(
             final_prompt = get_prompt_input(prompt)
             if not final_prompt:
                 logger.warning("No prompt provided for generation")
-                raise ValidationError("No prompt provided")
+                msg = "No prompt provided"
+                raise ValidationError(msg)
 
             logger.info(
                 "Starting specification generation for prompt: %s...",
@@ -290,7 +298,7 @@ def generate_spec(
             # AI generation with fallback handling
             try:
                 spec = await generator.generate_spec(
-                    final_prompt, inherits, project, context_params
+                    final_prompt, inherits_list, project, context_params
                 )
                 logger.info("Specification generated successfully")
             except Exception as e:
@@ -365,12 +373,10 @@ def generate_spec(
 
 @app.command("review")
 def review_specs(
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """List available specifications for review.
 
@@ -379,14 +385,17 @@ def review_specs(
     logger = logging.getLogger("agentic_spec")
 
     try:
-        logger.info("Listing specifications in %s", specs_dir)
+        # Convert string to Path object
+        specs_dir_path = Path(specs_dir)
+
+        logger.info("Listing specifications in %s", specs_dir_path)
         # List available specs for review
-        if not specs_dir.exists():
-            logger.warning("Specs directory does not exist: %s", specs_dir)
+        if not specs_dir_path.exists():
+            logger.warning("Specs directory does not exist: %s", specs_dir_path)
             msg = "Specifications directory not found"
             raise FileSystemError(msg)
 
-        specs = list(specs_dir.glob("*.yaml"))
+        specs = list(specs_dir_path.glob("*.yaml"))
         if not specs:
             logger.info("No specifications found for review")
             print("❌ No specifications found")
@@ -411,8 +420,8 @@ def review_specs(
 @app.command("templates")
 def create_templates(
     project: str = Option("project", "--project", help="Project name for context"),
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
 ):
     """Create base templates for common project patterns.
@@ -423,8 +432,11 @@ def create_templates(
     logger = logging.getLogger("agentic_spec")
 
     try:
-        logger.info("Creating base templates in %s", templates_dir)
-        create_base_templates(templates_dir, project)
+        # Convert string to Path object
+        templates_dir_path = Path(templates_dir)
+
+        logger.info("Creating base templates in %s", templates_dir_path)
+        create_base_templates(templates_dir_path, project)
         print(f"✅ Base templates created in {templates_dir}")
         logger.info("Base templates created successfully")
     except Exception:
@@ -435,9 +447,7 @@ def create_templates(
 
 @app.command("graph")
 def show_graph(
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
 ):
     """Display specification dependency graph and statistics.
 
@@ -463,13 +473,11 @@ def expand_step(
         ...,
         help="Step ID in format 'spec_id:step_index' to expand into a detailed sub-specification",
     ),
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
 ):
     """Expand an implementation step into a detailed sub-specification.
@@ -538,10 +546,8 @@ def expand_step(
 @app.command("publish")
 def publish_spec(
     spec_id: str = Argument(..., help="Specification ID to mark as implemented"),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
 ):
     """Mark a specification as implemented and update its status.
@@ -592,7 +598,7 @@ def manage_config(
     action: str = Argument(
         ..., help="Configuration action: 'init', 'show', or 'validate'"
     ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
 ):
     """Manage application configuration.
 
@@ -661,8 +667,8 @@ def manage_templates(
     template_name: str | None = Option(
         None, "--template", help="Template name for info command"
     ),
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
 ):
     """Manage and inspect templates.
@@ -712,8 +718,8 @@ def manage_templates(
 
 @app.command("validate")
 def validate_templates(
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
 ):
     """Validate all templates for correctness and structure.
@@ -765,13 +771,11 @@ def validate_templates(
 
 @app.command("sync-foundation")
 def sync_foundation_spec(
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
     force: bool = Option(
         False, "--force", help="Force sync even if foundation spec is current"
@@ -832,13 +836,11 @@ def sync_foundation_spec(
 
 @app.command("check-foundation")
 def check_foundation_status(
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
 ):
     """Check if foundation specification needs to be synced.
@@ -897,13 +899,11 @@ def render_spec(
     output: Path | None = Option(
         None, "--output", help="Output file path for rendered template"
     ),
-    templates_dir: Path = Option(
-        Path("templates"), "--templates-dir", help="Templates directory"
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
     ),
-    specs_dir: Path = Option(
-        Path("specs"), "--specs-dir", help="Generated specs directory"
-    ),
-    config: Path | None = Option(None, "--config", help="Path to configuration file"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    config: str | None = Option(None, "--config", help="Path to configuration file"),
     set_options: list[str] = Option([], "--set", help="Override configuration values"),
 ):
     """Render a specification using a template.

@@ -199,14 +199,22 @@ spec-commit:
 		-m "Co-Authored-By: Claude <noreply@anthropic.com>"
 
 spec-publish:
-	@echo "Publishing all completed specifications except current work..."
-	@echo "Finding and publishing implemented specifications..."
-	@for spec_file in $$(find specs/ -name "*.yaml" | grep -v "4bce15f2"); do \
+	@echo "Publishing new draft specifications..."
+	@published_count=0; \
+	graph_output=$$(agentic-spec graph 2>/dev/null); \
+	for spec_file in $$(find specs/ -name "*.yaml"); do \
 		spec_id=$$(basename $$spec_file .yaml | sed 's/^[0-9-]*-//'); \
-		echo "Publishing spec: $$spec_id"; \
-		agentic-spec publish $$spec_id 2>/dev/null || echo "Spec $$spec_id already published or not found"; \
-	done
-	@echo "✅ All applicable specifications published"
+		status=$$(echo "$$graph_output" | grep "$$spec_id" | head -1 | cut -c1-2); \
+		if [ "$$status" = "📝" ]; then \
+			echo "📋 Publishing draft spec: $$spec_id"; \
+			agentic-spec publish $$spec_id 2>/dev/null && published_count=$$((published_count + 1)) || echo "Failed to publish $$spec_id"; \
+		fi; \
+	done; \
+	if [ $$published_count -eq 0 ]; then \
+		echo "✅ No new specifications to publish"; \
+	else \
+		echo "✅ Published $$published_count new specifications"; \
+	fi
 
 spec-complete: spec-commit spec-publish
 	@echo "========================================="

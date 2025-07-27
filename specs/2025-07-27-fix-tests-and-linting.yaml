@@ -1,0 +1,230 @@
+id: "2025-07-27-fix-tests-and-linting"
+version: "1.0.0"
+created_at: "2025-07-27T20:58:00Z"
+updated_at: "2025-07-27T20:58:00Z"
+
+metadata:
+  title: "Fix Broken Tests and Resolve Remaining Linting Issues"
+  description: "Fix 13 failing tests caused by linting changes and resolve 77 remaining linting errors"
+  domain: "code-quality"
+  complexity: "intermediate"
+  estimated_effort: "4-6 hours"
+  status: "pending"
+  priority: "high"
+  inherits_from: []
+
+context:
+  project_info:
+    name: "agentic-spec"
+    type: "Python CLI tool"
+    description: "AI-powered tool for generating detailed programming specifications"
+    current_state: "Has 13 failing tests and 77 linting errors after recent B008 fixes"
+
+  affected_files:
+    - "agentic_spec/cli.py"
+    - "agentic_spec/prompt_engineering.py"
+    - "agentic_spec/template_loader.py"
+    - "tests/test_cli.py"
+    - "tests/test_prompt_engineering.py"
+    - "tests/test_typer_integration.py"
+
+  dependencies:
+    - "typer>=0.12.0"
+    - "ruff>=0.8.0"
+    - "pytest>=8.4.1"
+    - "pytest-asyncio>=0.23.2"
+
+requirements:
+  functional:
+    - "All 90 tests must pass after fixes"
+    - "CLI functionality must remain unchanged for users"
+    - "Typer Option calls must be compliant with B008 linting rules"
+    - "Variable reference errors (F823) must be resolved"
+    - "Template and configuration systems must work correctly"
+
+  non_functional:
+    - "Code must pass ruff linting with <20 errors (down from 77)"
+    - "Pre-commit hooks must pass"
+    - "Maintain code readability and maintainability"
+    - "Keep existing API compatibility"
+    - "Performance must not degrade"
+
+  constraints:
+    - "Cannot break existing CLI interface"
+    - "Must maintain all previous linting fixes"
+    - "No new dependencies allowed"
+    - "Must work on Windows environment"
+
+implementation:
+  steps:
+    - id: 1
+      title: "Fix F823 Variable Reference Errors in CLI"
+      description: "Resolve 'local variable referenced before assignment' errors for inherits and set_options parameters"
+      acceptance_criteria:
+        - "Function parameters properly declared with correct defaults"
+        - "No F823 errors in ruff linting output"
+        - "agentic-spec generate command works without UnboundLocalError"
+      estimated_effort: "30 minutes"
+      files_to_modify:
+        - "agentic_spec/cli.py"
+      implementation_notes:
+        - "Change Option() defaults to proper None/empty values"
+        - "Initialize variables at function start before any conditional checks"
+        - "Ensure all mutable defaults are handled correctly"
+
+    - id: 2
+      title: "Fix All Remaining B008 Linting Violations"
+      description: "Resolve remaining 'Do not perform function call in argument defaults' errors"
+      acceptance_criteria:
+        - "No B008 errors in ruff output"
+        - "All Typer Option calls moved inside functions or use proper defaults"
+        - "CLI functionality preserved"
+      estimated_effort: "45 minutes"
+      files_to_modify:
+        - "agentic_spec/cli.py"
+      implementation_notes:
+        - "Replace Option([]) with Option(None) and initialize inside function"
+        - "Handle list/dict defaults properly to avoid mutable default issues"
+
+    - id: 3
+      title: "Fix Test Failures in test_cli.py"
+      description: "Resolve 8 failing tests in CLI test suite caused by parameter changes"
+      acceptance_criteria:
+        - "All test_cli.py tests pass"
+        - "Mock calls match new function signatures"
+        - "Path handling tests work correctly"
+      estimated_effort: "60 minutes"
+      files_to_modify:
+        - "tests/test_cli.py"
+      implementation_notes:
+        - "Update mock assertions for changed Path vs string handling"
+        - "Fix UnboundLocalError issues in test scenarios"
+        - "Ensure proper exception handling in tests"
+
+    - id: 4
+      title: "Fix Test Failures in Other Test Files"
+      description: "Resolve failing tests in test_prompt_engineering.py and test_typer_integration.py"
+      acceptance_criteria:
+        - "All tests in test_prompt_engineering.py pass"
+        - "All tests in test_typer_integration.py pass"
+        - "No test regressions introduced"
+      estimated_effort: "45 minutes"
+      files_to_modify:
+        - "tests/test_prompt_engineering.py"
+        - "tests/test_typer_integration.py"
+      implementation_notes:
+        - "Fix Path vs string mock assertion mismatches"
+        - "Update any tests affected by CLI parameter changes"
+
+    - id: 5
+      title: "Address Critical Linting Issues"
+      description: "Fix remaining high-priority linting errors blocking commits"
+      acceptance_criteria:
+        - "PLR0912 (too many branches) errors reduced"
+        - "TRY300/TRY301 exception handling errors fixed"
+        - "ARG001/ARG002 unused argument errors resolved"
+        - "E501 line length errors fixed"
+        - "DTZ005 datetime timezone errors fixed"
+      estimated_effort: "90 minutes"
+      files_to_modify:
+        - "agentic_spec/cli.py"
+        - "agentic_spec/prompt_engineering.py"
+        - "agentic_spec/template_loader.py"
+      implementation_notes:
+        - "Break down complex functions to reduce branch count"
+        - "Move raise statements to inner functions for TRY301"
+        - "Remove or mark unused parameters appropriately"
+        - "Break long lines appropriately"
+        - "Add timezone awareness to datetime calls"
+
+    - id: 6
+      title: "Address Remaining Code Quality Issues"
+      description: "Fix lower-priority linting issues for overall code quality"
+      acceptance_criteria:
+        - "PLC0415 (import placement) errors fixed"
+        - "TRY300 (consider else block) suggestions addressed"
+        - "Total linting errors <20"
+      estimated_effort: "45 minutes"
+      files_to_modify:
+        - "agentic_spec/cli.py"
+        - "agentic_spec/prompt_engineering.py"
+        - "agentic_spec/template_loader.py"
+      implementation_notes:
+        - "Move imports to top-level where possible"
+        - "Refactor try/except blocks to use else clauses"
+        - "Clean up any remaining minor issues"
+
+    - id: 7
+      title: "Run Complete Test Suite and Validation"
+      description: "Ensure all tests pass and linting issues are resolved"
+      acceptance_criteria:
+        - "make test passes with 90/90 tests"
+        - "make lint passes with <20 errors"
+        - "make pre-commit passes"
+        - "agentic-spec CLI works correctly"
+      estimated_effort: "30 minutes"
+      implementation_notes:
+        - "Run full test suite"
+        - "Verify linting compliance"
+        - "Test CLI functionality manually"
+        - "Confirm pre-commit hooks work"
+
+testing:
+  unit_tests:
+    - "All existing test suites must pass"
+    - "Test CLI parameter handling"
+    - "Test exception handling paths"
+
+  integration_tests:
+    - "Test agentic-spec generate command end-to-end"
+    - "Test template inheritance functionality"
+    - "Test configuration loading"
+
+  validation_tests:
+    - "Run make test to verify 90/90 tests pass"
+    - "Run make lint to verify <20 linting errors"
+    - "Run make pre-commit to verify hooks pass"
+
+review_notes:
+  strengths:
+    - "Clear understanding of root cause (F823 variable reference errors)"
+    - "Comprehensive analysis of test failures and linting issues"
+    - "Maintains focus on not breaking existing functionality"
+
+  concerns:
+    - "Large number of files affected increases risk of regressions"
+    - "B008 fixes need careful handling to avoid breaking Typer integration"
+    - "Test fixes may require understanding subtle mock behavior changes"
+
+  recommendations:
+    - "Fix F823 errors first as they block all CLI functionality"
+    - "Test each change incrementally to avoid introducing new issues"
+    - "Consider running subset of tests after each major change"
+    - "Keep backup of working test files before making changes"
+
+  implementation_order:
+    - "Start with F823 variable reference fixes (highest priority)"
+    - "Address remaining B008 violations next"
+    - "Fix tests in dependency order (cli.py changes first, then tests)"
+    - "Address linting issues from most critical to least critical"
+
+risks:
+  - name: "Test Regression Risk"
+    impact: "medium"
+    mitigation: "Run tests after each major change, fix incrementally"
+
+  - name: "CLI Breaking Changes"
+    impact: "high"
+    mitigation: "Careful parameter handling, maintain exact API compatibility"
+
+  - name: "New Linting Issues"
+    impact: "low"
+    mitigation: "Run linting frequently during development"
+
+success_criteria:
+  - "All 90 tests passing"
+  - "Linting errors reduced to <20"
+  - "Pre-commit hooks passing"
+  - "agentic-spec CLI functionality working"
+  - "No regression in existing features"
+  - "Code ready for successful commits"

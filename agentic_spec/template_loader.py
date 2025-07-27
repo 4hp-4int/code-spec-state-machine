@@ -4,7 +4,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
+from jinja2 import (
+    Environment,
+    FileSystemLoader,
+    TemplateNotFound,
+    TemplateSyntaxError,
+    select_autoescape,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -79,15 +85,15 @@ class TemplateLoader:
             logger.debug("Successfully loaded template: %s", template_name)
             return template
 
-        except TemplateNotFound as e:
+        except TemplateNotFound:
             logger.exception("Template not found: %s", template_name)
             available = self.list_available_templates()
             logger.info("Available templates: %s", available)
-            raise e
+            raise
 
-        except Exception as e:
+        except Exception:
             logger.exception("Error loading template: %s", template_name)
-            raise e
+            raise
 
     def render_template(self, template_name: str, context: dict[str, Any]) -> str:
         """Render a template with the given context.
@@ -108,9 +114,9 @@ class TemplateLoader:
             logger.debug("Successfully rendered template: %s", template_name)
             return rendered
 
-        except Exception as e:
+        except Exception:
             logger.exception("Error rendering template: %s", template_name)
-            raise e
+            raise
 
     def template_exists(self, template_name: str) -> bool:
         """Check if a template exists.
