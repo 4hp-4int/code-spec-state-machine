@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from datetime import datetime
-
 if TYPE_CHECKING:
-    pass
+    from datetime import datetime
+
+# Import datetime for runtime usage
+import datetime as dt
 
 from pydantic import BaseModel, ConfigDict, Field
 
