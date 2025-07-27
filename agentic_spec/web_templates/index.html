@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Dashboard</h2>
+<ul>
+  <li>Total specs: {{ total_specs }}</li>
+  <li>Completed specs: {{ completed_specs }}</li>
+  <li>In-progress specs: {{ in_progress_specs }}</li>
+</ul>
+<h3>Recent Specifications</h3>
+<ul>
+{% for s in recent_specs %}
+  <li><a href="/specs/{{ s.id }}">{{ s.title }}</a> ({{ s.status.value }})</li>
+{% endfor %}
+</ul>
+{% endblock %}

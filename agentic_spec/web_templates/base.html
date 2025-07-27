@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>{{ title or 'Agentic Spec' }}</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+    <header>
+        <h1><a href="/">Agentic Spec</a></h1>
+        <nav>
+            <a href="/projects">Projects</a> |
+            <a href="/tasks">Tasks</a>
+        </nav>
+        <hr />
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <hr />
+        <p>Generated {{ now().strftime('%Y-%m-%d') }}</p>
+    </footer>
+</body>
+</html>

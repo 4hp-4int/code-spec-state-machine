@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Task {{ task.id }}</h2>
+<p><strong>Description:</strong> {{ task.task }}</p>
+<p><strong>Status:</strong> {{ task.status.value }}</p>
+<p><strong>Specification:</strong> <a href="/specs/{{ spec.id }}">{{ spec.title }}</a></p>
+
+<h3>Approvals</h3>
+{% if approvals %}
+<ul>
+  {% for a in approvals %}
+  <li>{{ a.level.value }} by {{ a.approved_by }} at {{ a.approved_at }}{% if a.comments %} – {{ a.comments }}{% endif %}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No approvals yet.</p>
+{% endif %}
+
+<h3>Timeline</h3>
+{% if work_logs %}
+<ul>
+  {% for log in work_logs %}
+  <li>{{ log.timestamp }} – {{ log.action }}{% if log.notes %}: {{ log.notes }}{% endif %}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No activity recorded.</p>
+{% endif %}
+{% endblock %}

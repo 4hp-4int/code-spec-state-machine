@@ -37,7 +37,7 @@ yaml_schema_analysis:
         acceptance: str
         estimated_effort: "str (enum-like: low, medium, high)"
         step_id: "str | null"
-        sub_spec_id: "str | null" 
+        sub_spec_id: "str | null"
         decomposition_hint: "str | null"
         progress: "dict | null (Pydantic model serialized)"
         approvals: "list[dict] | null (Pydantic model serialized)"
@@ -49,7 +49,7 @@ yaml_schema_analysis:
         target_audience: "str | null"
         desired_tone: "str | null"
         complexity_level: "str | null"
-        time_constraints: "str | null" 
+        time_constraints: "str | null"
         existing_codebase_context: "str | null"
         custom_parameters: dict
       feedback_history: "list[dict] | null"
@@ -193,7 +193,7 @@ migration_logic:
       - Serialize context dict to JSON for storage
       - Preserve all fields even if not explicitly modeled
     edge_cases:
-      - Mixed dependency formats: convert strings to {name: str} objects
+      - "Mixed dependency formats: convert strings to {name: str} objects"
       - Missing project/domain: use 'unknown' defaults
       - Invalid dependency structure: log warning, store as-is
 

@@ -1,0 +1,40 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+- **Specification generation**
+  • Always create or expand specifications with the `agentic-spec` CLI (or its `/spec …` slash-command aliases).
+  • Never hand-write YAML specifications; keep generation deterministic.
+
+- **Task lifecycle (strict-mode)**
+  1. Before touching code, run `agentic-spec workflow-status <spec_id>` to understand current progress.
+  2. Start work on a step via `agentic-spec task-start <spec_id>:<step_index>`.
+  3. When the coding is done, execute `agentic-spec task-complete <spec_id>:<step_index>` and supply `--notes` as needed.
+  4. If approvals are required, call `agentic-spec task-approve …` (or `task-reject`, `task-block`, `task-unblock`).
+  5. Maintain strict sequential execution; to work out of order use `agentic-spec task-override … --reason "<why>"`.
+
+- **Composite tasks**
+  • When a step’s `decomposition_hint` is `"composite:*"` or it obviously bundles multiple concerns, decompose it with
+    `agentic-spec expand <spec_id>:<step_index>`.
+  • Limit nesting depth to **3**; request human approval before going deeper.
+
+- **Database synchronisation**
+  • Keep YAML and SQLite (`specs/specifications.db`) in sync by running:
+    `agentic-spec migrate-bulk` → `agentic-spec migration-status`.
+  • Do this before and after large batches of spec edits.
+
+- **Completion & publishing**
+  • After all steps in a spec reach **approved/completed**, run `make spec-complete`.
+  • This commits changes and marks the spec as implemented.
+
+- **Graph & reporting**
+  • Whenever you finish a spec or a set of sub-specs, generate an updated dependency graph with `agentic-spec graph` and surface it to the user.
+
+- **Development conventions**
+  • Use Makefile targets for dev tasks (`make install-dev`, `make quality-gate`, etc.)—avoid calling formatters, linters, or tests directly.
+  • Do **not** edit spec YAML files manually; always mutate state via the CLI.
+
+References
+@Makefile
+@CLAUDE.md

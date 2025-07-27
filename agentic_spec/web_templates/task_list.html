@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Tasks{% if filters.status %} – {{ filters.status|capitalize }}{% endif %}</h2>
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Spec</th>
+      <th>Task</th>
+      <th>Status</th>
+      <th>Started</th>
+      <th>Completed</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tasks %}
+    <tr>
+      <td><a href="/tasks/{{ t.id }}">{{ t.id.split(':')[-1] }}</a></td>
+      <td><a href="/specs/{{ t.spec_id }}">{{ t.spec_id }}</a></td>
+      <td>{{ t.task }}</td>
+      <td>{{ t.status.value }}</td>
+      <td>{{ t.started_at }}</td>
+      <td>{{ t.completed_at }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No tasks found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
