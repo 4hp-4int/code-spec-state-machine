@@ -422,3 +422,16 @@ TypeError: agentic_spec.models.ImplementationStep() argument after ** must be a 
 2025-07-26 21:45:33,324 - agentic_spec - INFO - Starting agentic-spec CLI
 2025-07-26 21:45:33,327 - agentic_spec - INFO - Listing specifications in specs
 2025-07-26 21:45:33,328 - agentic_spec - INFO - Listed 25 specifications
+2025-07-26 21:45:52,108 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:45:52,111 - agentic_spec - INFO - Listing specifications in specs
+2025-07-26 21:45:52,112 - agentic_spec - INFO - Listed 25 specifications
+2025-07-26 21:47:12,172 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:47:12,483 - agentic_spec - INFO - Starting specification generation for prompt: create a simple web API...
+2025-07-26 21:47:25,408 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:47:25,413 - agentic_spec - INFO - Specification saved to specs\2025-07-26-0ea106cd.yaml
+2025-07-26 21:47:27,581 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 21:47:37,002 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:47:37,305 - agentic_spec - INFO - Starting specification generation for prompt: build a basic web API service...
+2025-07-26 21:47:37,322 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:47:37,324 - agentic_spec - INFO - Specification saved to specs\2025-07-26-faf57377.yaml
+2025-07-26 21:47:43,369 - agentic_spec - INFO - Review notes added to specification

@@ -120,7 +120,10 @@ class SpecGenerator:
                     cache_key TEXT PRIMARY KEY,
                     response_data TEXT NOT NULL,
                     created_at REAL NOT NULL,
-                    ttl_hours INTEGER DEFAULT 24
+                    ttl_hours INTEGER DEFAULT 24,
+                    input_text TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    temperature REAL NOT NULL
                 )
             """)
             conn.commit()
@@ -128,43 +131,96 @@ class SpecGenerator:
     def _get_cache_key(
         self, model: str, input_text: str, tools: list = None, temperature: float = 0.7
     ) -> str:
-        """Generate cache key from API parameters."""
-        cache_data = {
+        """Generate semantic cache key using embeddings."""
+        # For semantic caching, we'll use a simpler approach:
+        # Extract key semantic elements from the input text
+        semantic_elements = {
             "model": model,
-            "input": input_text,
             "tools": tools or [],
-            "temperature": temperature,
+            "temperature": round(temperature, 1),  # Round temperature to reduce variation
+            # Extract core prompt elements for semantic similarity
+            "word_count": len(input_text.split()),
+            "has_system_prompt": "system" in input_text.lower(),
+            "has_json_request": "json" in input_text.lower(),
+            "content_type": self._classify_prompt_type(input_text),
         }
-        cache_string = json.dumps(cache_data, sort_keys=True)
+        cache_string = json.dumps(semantic_elements, sort_keys=True)
         return hashlib.md5(cache_string.encode()).hexdigest()
 
-    def _get_cached_response(self, cache_key: str) -> dict[str, Any] | None:
-        """Retrieve cached response if valid."""
+    def _classify_prompt_type(self, text: str) -> str:
+        """Classify prompt type for semantic caching."""
+        text_lower = text.lower()
+        if "specification" in text_lower and "generate" in text_lower:
+            return "spec_generation"
+        elif "review" in text_lower:
+            return "spec_review"
+        elif "template" in text_lower:
+            return "template_related"
+        else:
+            return "general"
+
+    def _get_cached_response(self, model: str, input_text: str, temperature: float = 0.7) -> dict[str, Any] | None:
+        """Retrieve semantically similar cached response if valid."""
         with sqlite3.connect(self.cache_db_path) as conn:
+            # First try exact match
+            exact_key = self._get_cache_key(model, input_text, temperature=temperature)
             cursor = conn.execute(
                 "SELECT response_data, created_at, ttl_hours FROM api_cache WHERE cache_key = ?",
-                (cache_key,),
+                (exact_key,),
             )
             row = cursor.fetchone()
-
+            
             if row:
                 response_data, created_at, ttl_hours = row
-                # Check if cache is still valid
                 if time.time() - created_at < (ttl_hours * 3600):
                     return json.loads(response_data)
                 # Remove expired cache
-                conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (cache_key,))
+                conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (exact_key,))
                 conn.commit()
+            
+            # If no exact match, try semantic similarity for similar models and temperatures
+            cursor = conn.execute(
+                "SELECT response_data, created_at, ttl_hours, input_text FROM api_cache WHERE model = ? AND ABS(temperature - ?) < 0.1",
+                (model, temperature),
+            )
+            
+            for row in cursor.fetchall():
+                response_data, created_at, ttl_hours, cached_input = row
+                if time.time() - created_at < (ttl_hours * 3600):
+                    # Simple semantic similarity check
+                    if self._is_semantically_similar(input_text, cached_input):
+                        return json.loads(response_data)
+                else:
+                    # Clean up expired cache
+                    conn.execute("DELETE FROM api_cache WHERE input_text = ?", (cached_input,))
+                    conn.commit()
         return None
+        
+    def _is_semantically_similar(self, text1: str, text2: str, threshold: float = 0.8) -> bool:
+        """Simple semantic similarity check using word overlap."""
+        # Extract key words (longer than 3 chars, not common words)
+        common_words = {"the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "its", "new", "now", "old", "see", "two", "who", "boy", "did", "man", "may", "she", "use", "way", "what", "when", "with"}
+        
+        words1 = {word.lower().strip('.,!?";') for word in text1.split() if len(word) > 3 and word.lower() not in common_words}
+        words2 = {word.lower().strip('.,!?";') for word in text2.split() if len(word) > 3 and word.lower() not in common_words}
+        
+        if not words1 or not words2:
+            return False
+            
+        # Calculate Jaccard similarity
+        intersection = len(words1.intersection(words2))
+        union = len(words1.union(words2))
+        
+        return (intersection / union) > threshold if union > 0 else False
 
     def _store_cached_response(
-        self, cache_key: str, response_data: dict[str, Any], ttl_hours: int = 24
+        self, cache_key: str, response_data: dict[str, Any], input_text: str, model: str, temperature: float, ttl_hours: int = 24
     ) -> None:
         """Store response in cache."""
         with sqlite3.connect(self.cache_db_path) as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO api_cache (cache_key, response_data, created_at, ttl_hours) VALUES (?, ?, ?, ?)",
-                (cache_key, json.dumps(response_data), time.time(), ttl_hours),
+                "INSERT OR REPLACE INTO api_cache (cache_key, response_data, created_at, ttl_hours, input_text, model, temperature) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (cache_key, json.dumps(response_data), time.time(), ttl_hours, input_text, model, temperature),
             )
             conn.commit()
 
@@ -183,8 +239,8 @@ class SpecGenerator:
         # Generate cache key
         cache_key = self._get_cache_key(model, input_text, tools, temperature)
 
-        # Try to get cached response
-        cached_response = self._get_cached_response(cache_key)
+        # Try to get semantically similar cached response
+        cached_response = self._get_cached_response(model, input_text, temperature)
         if cached_response:
             # Create a mock response object from cached data
             class MockResponse:
@@ -205,7 +261,7 @@ class SpecGenerator:
 
         # Convert response to dict and cache it
         response_dict = response.model_dump()
-        self._store_cached_response(cache_key, response_dict, ttl_hours)
+        self._store_cached_response(cache_key, response_dict, input_text, model, temperature, ttl_hours)
 
         return response
 

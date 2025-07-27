@@ -11,7 +11,9 @@
       "Bash(sed:*)",
       "Bash(agentic-spec generate:*)",
       "Bash(pip install:*)",
-      "Bash(agentic-spec:*)"
+      "Bash(agentic-spec:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
