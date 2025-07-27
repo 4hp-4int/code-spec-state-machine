@@ -55,6 +55,9 @@ class SpecGenerator:
         # Initialize SQLite cache
         self.cache_db_path = self.specs_dir / "openai_cache.db"
         self._init_cache_db()
+        
+        # Cache foundation template to avoid duplicate loading
+        self._foundation_context_cache = None
 
     def load_template(self, template_name: str) -> dict[str, Any]:
         """Load a base template by name with version validation."""
@@ -77,6 +80,15 @@ class SpecGenerator:
 
             return template_data
         return {}
+
+    def _get_foundation_context(self) -> dict[str, Any]:
+        """Get foundation context with caching to avoid duplicate loading."""
+        if self._foundation_context_cache is None:
+            try:
+                self._foundation_context_cache = self.load_template("agentic-spec-foundation")
+            except (FileNotFoundError, KeyError, ValueError):
+                self._foundation_context_cache = {}
+        return self._foundation_context_cache
 
     def _is_valid_semver(self, version: str) -> bool:
         """Validate semantic version format (MAJOR.MINOR.PATCH)."""
@@ -173,7 +185,14 @@ class SpecGenerator:
             if row:
                 response_data, created_at, ttl_hours = row
                 if time.time() - created_at < (ttl_hours * 3600):
-                    return json.loads(response_data)
+                    try:
+                        return json.loads(response_data)
+                    except (json.JSONDecodeError, TypeError) as e:
+                        # Remove corrupted cache entry
+                        conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (exact_key,))
+                        conn.commit()
+                        print(f"Warning: Corrupted cache entry removed: {e}")
+                        return None
                 # Remove expired cache
                 conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (exact_key,))
                 conn.commit()
@@ -189,7 +208,14 @@ class SpecGenerator:
                 if time.time() - created_at < (ttl_hours * 3600):
                     # Simple semantic similarity check
                     if self._is_semantically_similar(input_text, cached_input):
-                        return json.loads(response_data)
+                        try:
+                            return json.loads(response_data)
+                        except (json.JSONDecodeError, TypeError) as e:
+                            # Remove corrupted cache entry
+                            conn.execute("DELETE FROM api_cache WHERE input_text = ?", (cached_input,))
+                            conn.commit()
+                            print(f"Warning: Corrupted cache entry removed: {e}")
+                            continue
                 else:
                     # Clean up expired cache
                     conn.execute("DELETE FROM api_cache WHERE input_text = ?", (cached_input,))
@@ -319,11 +345,11 @@ class SpecGenerator:
         """Resolve complete context including inheritance, parent specs, and foundation."""
         context = {}
 
-        # 1. Load foundation spec context (always include)
-        try:
-            foundation_context = self.load_template("agentic-spec-foundation")
+        # 1. Load foundation spec context (always include) - use cached version
+        foundation_context = self._get_foundation_context()
+        if foundation_context:
             self._deep_merge(context, {"foundation": foundation_context})
-        except (FileNotFoundError, KeyError, ValueError):
+        else:
             # Foundation spec not found - this indicates it needs to be synced
             context["foundation_sync_needed"] = True
 
@@ -504,8 +530,8 @@ class SpecGenerator:
 
     def check_foundation_sync_needed(self) -> bool:
         """Check if foundation spec needs to be synced with current codebase."""
-        try:
-            foundation = self.load_template("agentic-spec-foundation")
+        foundation = self._get_foundation_context()
+        if foundation:
             last_synced = foundation.get("_last_synced")
             if not last_synced:
                 return True
@@ -520,9 +546,8 @@ class SpecGenerator:
             # Check if codebase has changed significantly
             # (Could be enhanced to check git commits, file mtimes, etc.)
             return False
-
-        except (OSError, UnicodeDecodeError, KeyError, ValueError, TypeError):
-            # Foundation spec not found or corrupted
+        else:
+            # Foundation spec not found
             return True
 
     async def generate_spec(

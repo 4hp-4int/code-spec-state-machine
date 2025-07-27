@@ -435,3 +435,36 @@ TypeError: agentic_spec.models.ImplementationStep() argument after ** must be a 
 2025-07-26 21:47:37,322 - agentic_spec - INFO - Specification generated successfully
 2025-07-26 21:47:37,324 - agentic_spec - INFO - Specification saved to specs\2025-07-26-faf57377.yaml
 2025-07-26 21:47:43,369 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 21:50:26,671 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:50:26,967 - agentic_spec - INFO - Starting specification generation for prompt: Implement robust semantic caching system for OpenAI API calls in agentic-spec with proper error hand...
+2025-07-26 21:50:26,983 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:50:26,985 - agentic_spec - INFO - Specification saved to specs\2025-07-26-dcdeb7d2.yaml
+2025-07-26 21:50:26,989 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 21:50:37,049 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:50:37,053 - agentic_spec.template_loader - INFO - Template loader initialized with directory: C:\Users\Khalen\Code\agentic-spec\agentic_spec\templates
+2025-07-26 21:50:46,509 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:50:51,867 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:50:58,269 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:50:58,572 - agentic_spec - INFO - Starting specification generation for prompt: Implement robust semantic caching system for OpenAI API calls in agentic-spec with proper error hand...
+2025-07-26 21:50:58,598 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:50:58,600 - agentic_spec - INFO - Specification saved to specs\2025-07-26-c70dc73f.yaml
+2025-07-26 21:50:58,605 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 21:52:08,700 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:52:08,704 - agentic_spec - INFO - Listing specifications in specs
+2025-07-26 21:52:08,704 - agentic_spec - INFO - Listed 27 specifications
+2025-07-26 21:52:38,573 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:52:39,335 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:53:03,501 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:53:10,061 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:53:10,369 - agentic_spec - INFO - Starting specification generation for prompt: Create SemanticCache class with embedding generation, similarity calculation, and cache management. ...
+2025-07-26 21:53:10,385 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:53:10,388 - agentic_spec - INFO - Specification saved to specs\2025-07-26-2f95c8ae.yaml
+2025-07-26 21:53:10,392 - agentic_spec - INFO - Review notes added to specification
+2025-07-26 21:53:16,676 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:53:16,679 - agentic_spec - INFO - Listing specifications in specs
+2025-07-26 21:53:16,680 - agentic_spec - INFO - Listed 30 specifications
+2025-07-26 21:55:19,570 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:55:20,057 - agentic_spec - INFO - Starting specification generation for prompt: test fixed caching system...
+2025-07-26 21:55:20,078 - agentic_spec - INFO - Specification generated successfully
+2025-07-26 21:55:20,080 - agentic_spec - INFO - Specification saved to specs\2025-07-26-ea2c8116.yaml
+2025-07-26 21:55:20,085 - agentic_spec - INFO - Review notes added to specification
