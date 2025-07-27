@@ -1,0 +1,17 @@
+dependencies:
+- scikit-learn
+- pandas
+- numpy
+- joblib
+domain: machine learning
+files_involved:
+- train.py
+- predict.py
+- models/
+- features/
+- evaluation/
+patterns:
+  evaluation: cross-validation and metrics tracking
+  feature_engineering: sklearn preprocessing pipelines
+  model_persistence: joblib for sklearn models
+  model_training: train/validation/test splits

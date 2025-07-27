@@ -1,0 +1,18 @@
+coding_standards:
+  general:
+    documentation: inline comments + README
+    error_handling: comprehensive with logging
+    version_control: semantic commits
+  javascript:
+    style: ESLint + Prettier
+    testing: Jest
+    typescript: recommended
+  python:
+    docstrings: Google style
+    style: PEP 8
+    testing: pytest
+    type_hints: required
+logging:
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  level: INFO
+project: project

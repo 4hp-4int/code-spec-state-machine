@@ -1,0 +1,63 @@
+metadata:
+  id: a6c1733c
+  inherits: []
+  created: '2025-07-26T18:41:59.212600'
+  version: '1.0'
+  status: draft
+  parent_spec_id: f998adbd
+  child_spec_ids: null
+context:
+  project: agentic-spec CLI Enhancement
+  domain: general
+  dependencies: []
+  files_involved: []
+requirements:
+  functional:
+  - "Implement: \n        Expand this implementation step into a detailed sub-specification:\n\
+    \        \n        Parent Spec: f998adbd\n        Step: Code Quality and Testing\n\
+    \        Details: Enforce code quality using Ruff and Black for linting and formatting.\
+    \ Develop unit tests with pytest to ensure functionality.\n        Files: agentic_spec/cli.py,\
+    \ tests/\n        \n        Context from parent spec:\n        - Project: agentic-spec\
+    \ CLI Enhancement\n        - Domain: Python CLI tool for specification generation\n\
+    \        \n        Create a focused sub-specification that breaks down this step\
+    \ into concrete, actionable tasks.\n        "
+  non_functional:
+  - Follow coding standards
+  - Include tests
+  constraints: []
+implementation:
+- task: "Implement \n        Expand this implementation step into a detailed sub-specification:\n\
+    \        \n        Parent Spec: f998adbd\n        Step: Code Quality and Testing\n\
+    \        Details: Enforce code quality using Ruff and Black for linting and formatting.\
+    \ Develop unit tests with pytest to ensure functionality.\n        Files: agentic_spec/cli.py,\
+    \ tests/\n        \n        Context from parent spec:\n        - Project: agentic-spec\
+    \ CLI Enhancement\n        - Domain: Python CLI tool for specification generation\n\
+    \        \n        Create a focused sub-specification that breaks down this step\
+    \ into concrete, actionable tasks.\n        "
+  details: Implementation details to be refined
+  files: []
+  acceptance: Implementation complete and tested
+  estimated_effort: medium
+  step_id: a6c1733c:0
+  sub_spec_id: null
+review_notes:
+- Consider using Ruff exclusively for both linting and formatting, as it offers significant
+  performance improvements over Black and is compatible with its style guide. ([astral.sh](https://astral.sh/blog/the-ruff-formatter?utm_source=openai))
+- Ensure that Ruff is properly configured in your `pyproject.toml` file to align with
+  your project's coding standards and to avoid conflicts between linting and formatting
+  rules. ([gpxz.io](https://www.gpxz.io/blog/ruff?utm_source=openai))
+- Implement a `Makefile` or similar automation to separate formatting (`ruff format`)
+  and linting (`ruff check`) tasks, facilitating clear workflows and integration with
+  CI/CD pipelines. ([gpxz.io](https://www.gpxz.io/blog/ruff?utm_source=openai))
+- Regularly update Ruff to benefit from the latest features and improvements, and
+  pin its version in your dependencies to maintain consistency across development
+  environments. ([gpxz.io](https://www.gpxz.io/blog/ruff?utm_source=openai))
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

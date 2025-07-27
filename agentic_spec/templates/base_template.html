@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Agentic Spec{% endblock %}</title>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        {% block header %}
+        <h1>{% block header_title %}Agentic Specification{% endblock %}</h1>
+        <nav>
+            {% block navigation %}
+            <ul>
+                <li><a href="#context">Context</a></li>
+                <li><a href="#requirements">Requirements</a></li>
+                <li><a href="#implementation">Implementation</a></li>
+            </ul>
+            {% endblock %}
+        </nav>
+        {% endblock %}
+    </header>
+    
+    <main>
+        {% block content %}
+        <section id="context">
+            {% block context_section %}
+            <h2>Context</h2>
+            {% if context %}
+            <div class="context-info">
+                <p><strong>Project:</strong> {{ context.project }}</p>
+                <p><strong>Domain:</strong> {{ context.domain }}</p>
+                {% if context.dependencies %}
+                <p><strong>Dependencies:</strong> {{ context.dependencies | join(', ') }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endblock %}
+        </section>
+        
+        <section id="requirements">
+            {% block requirements_section %}
+            <h2>Requirements</h2>
+            {% if requirements %}
+                {% if requirements.functional %}
+                <h3>Functional Requirements</h3>
+                <ul>
+                {% for req in requirements.functional %}
+                    <li>{{ req }}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+                
+                {% if requirements.non_functional %}
+                <h3>Non-Functional Requirements</h3>
+                <ul>
+                {% for req in requirements.non_functional %}
+                    <li>{{ req }}</li>
+                {% endfor %}
+                </ul>
+                {% endif %}
+            {% endif %}
+            {% endblock %}
+        </section>
+        
+        <section id="implementation">
+            {% block implementation_section %}
+            <h2>Implementation</h2>
+            {% if implementation %}
+            <div class="implementation-steps">
+                {% for step in implementation %}
+                <div class="step">
+                    <h3>{{ step.task }}</h3>
+                    <p>{{ step.details }}</p>
+                    {% if step.files %}
+                    <p><strong>Files:</strong> {{ step.files | join(', ') }}</p>
+                    {% endif %}
+                    <p><strong>Acceptance:</strong> {{ step.acceptance }}</p>
+                    <p><strong>Effort:</strong> {{ step.estimated_effort }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endblock %}
+        </section>
+        {% endblock %}
+    </main>
+    
+    <footer>
+        {% block footer %}
+        <p>&copy; 2025 Agentic Spec. Generated at {{ metadata.created if metadata else 'Unknown' }}</p>
+        {% endblock %}
+    </footer>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

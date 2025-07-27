@@ -1,0 +1,68 @@
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+    description: 'Core dependency: openai'
+  - name: pyyaml
+    version: 6.0.2
+    description: 'Core dependency: pyyaml'
+  - name: networkx
+    version: '3.3'
+    description: 'Core dependency: networkx'
+  - name: matplotlib
+    version: 3.9.2
+    description: 'Core dependency: matplotlib'
+  - name: jinja2
+    version: 3.1.0
+    description: 'Core dependency: jinja2'
+  - name: typer
+    version: 0.12.0
+    description: 'Core dependency: typer'
+  - name: pytest-cov
+    version: 6.2.1
+    description: 'Core dependency: pytest-cov'
+  architecture_overview: agentic-spec is a Python CLI tool that generates detailed
+    programming specifications using AI with template inheritance and review workflows.
+  current_codebase_structure: "agentic_spec/\n\u251C\u2500\u2500 cli.py\n\u251C\u2500\
+    \u2500 config.py\n\u251C\u2500\u2500 core.py\n\u251C\u2500\u2500 exceptions.py\n\
+    \u251C\u2500\u2500 graph_visualization.py\n\u251C\u2500\u2500 models.py\n\u251C\
+    \u2500\u2500 prompt_engineering.py\n\u251C\u2500\u2500 template_loader.py\n\u251C\
+    \u2500\u2500 template_validator.py\ntemplates/              # YAML template files\n\
+    specs/                  # Generated specification files\ntests/              \
+    \    # Test files"
+requirements:
+  functional:
+  - Generate detailed specifications from high-level prompts
+  - Support hierarchical sub-specifications with parent-child relationships
+  - Enable template inheritance for reusable specification patterns
+  - Provide context-aware AI prompting with user role parameters
+  - Track specification relationships and implementation status
+  non_functional:
+  - Maintain file-based storage for simplicity and transparency
+  - Ensure graceful degradation when AI services are unavailable
+  - Provide comprehensive error handling and informative messages
+  - Support solo developer workflows with minimal setup
+  constraints:
+  - Use Python 3.12+ for modern language features
+  - Maintain CLI interface for automation and scripting
+  - Store all data in human-readable YAML format
+  - Avoid external databases to keep deployment simple
+coding_standards:
+- Use dataclasses and Pydantic models for data structures
+- Implement async/await for AI API calls
+- Follow Python type hints throughout codebase
+- Use pathlib.Path for all file operations
+- Implement comprehensive error handling with informative messages
+- Write unit tests for all new functionality
+- Use configuration-driven behavior over hard-coded values
+key_design_patterns:
+- Template inheritance with deep merging strategy
+- Context-aware AI prompting with parameter injection
+- Configuration-driven workflow behavior
+- Graph-based specification relationships
+- Graceful AI fallback mechanisms
+- Step-based implementation tracking with unique IDs
+_last_synced: '2025-07-26T19:40:35.921402'
+_sync_version: '1.0'

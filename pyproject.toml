@@ -1,0 +1,161 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-spec"
+version = "0.1.0"
+description = "AI-powered programming specification generator with inheritance and review workflows"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Khalen Fredieu", email = "khalen@4hp-4int.com"}
+]
+dependencies = [
+    "openai>=1.97.1",
+    "pyyaml>=6.0.2",
+    "networkx>=3.3",
+    "matplotlib>=3.9.2",
+    "jinja2>=3.1.0",
+    "typer>=0.12.0",
+    "pytest-cov>=6.2.1",
+]
+
+[project.scripts]
+agentic-spec = "agentic_spec.cli:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+    "pytest>=8.4.1",
+    "pytest-cov>=6.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+# Ruff configuration
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+# Enable comprehensive rule sets
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+    "BLE",  # flake8-blind-except
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "COM",  # flake8-commas
+    "C4",   # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "EM",   # flake8-errmsg
+    "EXE",  # flake8-executable
+    "FA",   # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
+    "G",    # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PYI",  # flake8-pyi
+    "PT",   # flake8-pytest-style
+    "Q",    # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SLOT", # flake8-slots
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "TCH",  # flake8-type-checking
+    "INT",  # flake8-gettext
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "TD",   # flake8-todos
+    "FIX",  # flake8-fixme
+    "ERA",  # eradicate
+    "PD",   # pandas-vet
+    "PGH",  # pygrep-hooks
+    "PL",   # Pylint
+    "TRY",  # tryceratops
+    "FLY",  # flynt
+    "NPY",  # NumPy-specific rules
+    "AIR",  # Airflow
+    "PERF", # Perflint
+    "FURB", # refurb
+    "LOG",  # flake8-logging
+    "RUF",  # Ruff-specific rules
+]
+
+# Ignore specific rules that conflict with project patterns
+ignore = [
+    "COM812",  # trailing comma (handled by formatter)
+    "ISC001",  # single line implicit string concat (handled by formatter)
+    "T201",    # print statements (needed for CLI output)
+    "T203",    # pprint statements
+    "PLR0913", # too many arguments (common in CLI functions)
+    "PLR0917", # too many positional arguments
+    "TD002",   # missing TODO author
+    "TD003",   # missing TODO link
+    "FIX002",  # TODO comments are allowed
+    "ERA001",  # commented out code (sometimes needed for examples)
+    "PGH003",  # specific type ignore comments
+    "PLR2004", # magic value comparison (common in tests)
+    "SLF001",  # private member access (needed for testing)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files can have additional flexibility
+"tests/**/*.py" = [
+    "ARG001",  # unused function arguments (fixtures)
+    "PLR0915", # too many statements
+    "S101",    # assert statements
+    "SLF001",  # private member access
+]
+
+# CLI module specific ignores
+"agentic_spec/cli.py" = [
+    "PLR0915", # too many statements (CLI commands are naturally long)
+    "C901",    # complex function (CLI parsing is complex)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agentic_spec"]
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+[tool.ruff.lint.pylint]
+max-args = 8  # CLI functions often need many parameters
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]

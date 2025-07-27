@@ -1,0 +1,23 @@
+prompt_settings:
+  model: gpt-4.1
+  temperature: 0.1
+  max_tokens: null
+  enable_web_search: true
+  system_prompt_template: null
+default_context:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+workflow:
+  auto_review: true
+  collect_feedback: false
+  save_intermediate_steps: true
+  enable_step_ids: true
+  max_recursion_depth: 3
+directories:
+  templates_dir: templates
+  specs_dir: specs
+  config_dir: .
+custom_settings: {}

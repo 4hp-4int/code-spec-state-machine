@@ -1,0 +1,15 @@
+dependencies:
+- fastapi
+- pydantic
+- uvicorn
+domain: web API
+files_involved:
+- main.py
+- models.py
+- routes/
+- tests/
+patterns:
+  architecture: REST API with OpenAPI documentation
+  error_handling: HTTP status codes with detailed error responses
+  testing: pytest with test client
+  validation: Pydantic models for request/response validation

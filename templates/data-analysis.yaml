@@ -1,0 +1,16 @@
+dependencies:
+- pandas
+- numpy
+- matplotlib
+- jupyter
+domain: data analysis
+files_involved:
+- analysis.py
+- data/
+- notebooks/
+- visualizations/
+patterns:
+  data_loading: pandas for structured data, numpy for arrays
+  notebooks: jupyter for exploration, scripts for production
+  processing: vectorized operations, avoid loops
+  visualization: matplotlib/seaborn for plots, plotly for interactive
