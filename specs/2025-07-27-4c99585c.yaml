@@ -1,0 +1,39 @@
+metadata:
+  id: 4c99585c
+  inherits: []
+  created: '2025-07-27T05:41:43.151744'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: project
+  domain: general
+  dependencies: []
+  files_involved: []
+requirements:
+  functional:
+  - 'Implement: Create agentic-spec init command for bootstrapping projects'
+  non_functional:
+  - Follow coding standards
+  - Include tests
+  constraints: []
+implementation:
+- task: Implement Create agentic-spec init command for bootstrapping projects
+  details: Implementation details to be refined
+  files: []
+  acceptance: Implementation complete and tested
+  estimated_effort: medium
+  step_id: 4c99585c:0
+  sub_spec_id: null
+review_notes:
+- Failed to generate review - API/cache unavailable
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

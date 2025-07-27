@@ -275,7 +275,13 @@ class SpecGenerator:
                     for key, value in data.items():
                         setattr(self, key, value)
 
-            return MockResponse(cached_response)
+            mock_response = MockResponse(cached_response)
+            # Verify the mock response has valid output_text
+            if not hasattr(mock_response, 'output_text') or not mock_response.output_text:
+                print(f"Warning: Cached response has no valid output_text, skipping cache")
+                # Remove the invalid cache entry
+                return None
+            return mock_response
 
         # Make API call
         response = await self.client.responses.create(
@@ -729,6 +735,10 @@ Return ONLY valid JSON matching this structure:
                 input_text=f"{system_prompt}\n\n{enhanced_user_prompt}",
                 temperature=self.config.prompt_settings.temperature,
             )
+            
+            if response is None:
+                print("Warning: Failed to get response from cache/API, falling back to basic generation")
+                return self._generate_basic(prompt, legacy_inherited_context, project_name)
 
             content = response.output_text
             # Extract JSON from the response if it's wrapped in markdown
@@ -837,6 +847,9 @@ Return a simple JSON array of strings - no markdown formatting."""
                 temperature=0.1,
                 ttl_hours=48,  # Cache reviews longer since they're less likely to change
             )
+            
+            if response is None:
+                return ["Failed to generate review - API/cache unavailable"]
 
             content = response.output_text
             # Try to parse as JSON, fallback to text

@@ -468,3 +468,80 @@ TypeError: agentic_spec.models.ImplementationStep() argument after ** must be a 
 2025-07-26 21:55:20,078 - agentic_spec - INFO - Specification generated successfully
 2025-07-26 21:55:20,080 - agentic_spec - INFO - Specification saved to specs\2025-07-26-ea2c8116.yaml
 2025-07-26 21:55:20,085 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:34:50,805 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:34:51,152 - agentic_spec - INFO - Starting specification generation for prompt: Design project-agnostic semantic caching system for agentic-spec that can be initialized in any proj...
+2025-07-27 05:34:51,164 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:34:51,166 - agentic_spec - INFO - Specification saved to specs\2025-07-27-f2673b04.yaml
+2025-07-27 05:34:51,171 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:35:06,660 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:35:13,389 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:35:21,177 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:35:21,535 - agentic_spec - INFO - Starting specification generation for prompt: Design project-agnostic semantic caching system for agentic-spec that can be initialized in any proj...
+2025-07-27 05:35:21,551 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:35:21,553 - agentic_spec - INFO - Specification saved to specs\2025-07-27-0a5931f0.yaml
+2025-07-27 05:35:21,558 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:36:42,101 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:36:48,426 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:36:48,430 - agentic_spec - INFO - Listing specifications in specs
+2025-07-27 05:36:48,431 - agentic_spec - INFO - Listed 32 specifications
+2025-07-27 05:37:22,989 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:37:23,334 - agentic_spec - INFO - Starting specification generation for prompt: simple test to check error...
+2025-07-27 05:37:23,347 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:37:23,349 - agentic_spec - INFO - Specification saved to specs\2025-07-27-56e33638.yaml
+2025-07-27 05:37:23,353 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:39:24,255 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:39:24,614 - agentic_spec - INFO - Starting specification generation for prompt: Create a simple REST API service...
+2025-07-27 05:39:44,933 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:39:44,939 - agentic_spec - INFO - Specification saved to specs\2025-07-27-6f8d545f.yaml
+2025-07-27 05:39:50,306 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:40:01,094 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:40:01,433 - agentic_spec - INFO - Starting specification generation for prompt: Design project-agnostic semantic caching system for agentic-spec that can be initialized in any proj...
+2025-07-27 05:40:01,446 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:40:01,449 - agentic_spec - INFO - Specification saved to specs\2025-07-27-e95ff00c.yaml
+2025-07-27 05:40:04,094 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:40:26,733 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:40:27,074 - agentic_spec - INFO - Starting specification generation for prompt: Create modular semantic caching system with project initialization tools and cross-project cache sha...
+2025-07-27 05:40:27,086 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:40:27,088 - agentic_spec - INFO - Specification saved to specs\2025-07-27-39f509ec.yaml
+2025-07-27 05:40:27,092 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:41:03,272 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:41:03,612 - agentic_spec - INFO - Starting specification generation for prompt: Create agentic-spec init command for bootstrapping projects with semantic caching and development wo...
+2025-07-27 05:41:03,624 - agentic_spec - ERROR - AI generation failed
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 312, in _generate
+    spec = await generator.generate_spec(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 600, in generate_spec
+    spec_data = await self._generate_with_ai(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 740, in _generate_with_ai
+    raise RuntimeError("Failed to get response from OpenAI API")
+RuntimeError: Failed to get response from OpenAI API
+2025-07-27 05:41:03,625 - agentic_spec - ERROR - Application error
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 312, in _generate
+    spec = await generator.generate_spec(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 600, in generate_spec
+    spec_data = await self._generate_with_ai(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 740, in _generate_with_ai
+    raise RuntimeError("Failed to get response from OpenAI API")
+RuntimeError: Failed to get response from OpenAI API
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 319, in _generate
+    raise AIServiceError(msg, str(e)) from e
+agentic_spec.exceptions.AIServiceError: Failed to generate specification using AI
+2025-07-27 05:41:42,818 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:41:43,140 - agentic_spec - INFO - Starting specification generation for prompt: Create agentic-spec init command for bootstrapping projects...
+2025-07-27 05:41:43,151 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:41:43,153 - agentic_spec - INFO - Specification saved to specs\2025-07-27-4c99585c.yaml
+2025-07-27 05:41:43,157 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:42:39,903 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:42:40,260 - agentic_spec - INFO - Starting specification generation for prompt: Create project-agnostic semantic caching system with init command...
+2025-07-27 05:42:54,253 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:42:54,259 - agentic_spec - INFO - Specification saved to specs\2025-07-27-3f81bb4a.yaml
+2025-07-27 05:42:59,127 - agentic_spec - INFO - Review notes added to specification
