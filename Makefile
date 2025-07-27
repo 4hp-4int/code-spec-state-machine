@@ -190,7 +190,7 @@ spec-commit:
 	@echo "Committing specifications and implementation..."
 	git add .
 	git add specs/ agentic_spec/ tests/ pyproject.toml Makefile CLAUDE.md .pre-commit-config.yaml
-	git commit -m "📋 Complete specification implementation and publish specs" \
+	@git diff --quiet --cached || git commit -m "📋 Complete specification implementation and publish specs" \
 		-m "" \
 		-m "- Implemented specification requirements and fixes" \
 		-m "- Updated codebase according to specifications" \
@@ -198,7 +198,7 @@ spec-commit:
 		-m "" \
 		-m "🤖 Generated with [Claude Code](https://claude.ai/code)" \
 		-m "" \
-		-m "Co-Authored-By: Claude <noreply@anthropic.com>"
+		-m "Co-Authored-By: Claude <noreply@anthropic.com>" || echo "No changes to commit"
 
 spec-publish:
 	@echo "Publishing new draft specifications..."
