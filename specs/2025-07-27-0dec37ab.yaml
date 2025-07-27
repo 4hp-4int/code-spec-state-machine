@@ -1,0 +1,39 @@
+metadata:
+  id: 0dec37ab
+  inherits: []
+  created: '2025-07-27T05:56:42.589728'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids:
+  - 249aefa1
+context:
+  project: project
+  domain: general
+  dependencies: []
+  files_involved: []
+requirements:
+  functional:
+  - 'Implement: Remove all caching functionality from agentic-spec including SQLite
+    database operations, cache-related methods, cache configuration, and any cache-related
+    dependencies. Ensure all OpenAI API calls are made directly without any caching
+    layer.'
+  non_functional:
+  - Follow coding standards
+  - Include tests
+  constraints: []
+implementation:
+- task: Implement Remove all caching functionality from agentic-spec including SQLite
+    database operations, cache-related methods, cache configuration, and any cache-related
+    dependencies. Ensure all OpenAI API calls are made directly without any caching
+    layer.
+  details: Implementation details to be refined
+  files: []
+  acceptance: Implementation complete and tested
+  estimated_effort: medium
+  step_id: 0dec37ab:0
+  sub_spec_id: 249aefa1
+review_notes:
+- Failed to generate review - API/cache unavailable
+context_parameters: null
+feedback_history: []

@@ -6,8 +6,6 @@ import hashlib
 import json
 from pathlib import Path
 import re
-import sqlite3
-import time
 from typing import Any
 
 import yaml
@@ -52,12 +50,6 @@ class SpecGenerator:
         else:
             self.client = None
 
-        # Initialize SQLite cache
-        self.cache_db_path = self.specs_dir / "openai_cache.db"
-        self._init_cache_db()
-        
-        # Cache foundation template to avoid duplicate loading
-        self._foundation_context_cache = None
 
     def load_template(self, template_name: str) -> dict[str, Any]:
         """Load a base template by name with version validation."""
@@ -80,15 +72,6 @@ class SpecGenerator:
 
             return template_data
         return {}
-
-    def _get_foundation_context(self) -> dict[str, Any]:
-        """Get foundation context with caching to avoid duplicate loading."""
-        if self._foundation_context_cache is None:
-            try:
-                self._foundation_context_cache = self.load_template("agentic-spec-foundation")
-            except (FileNotFoundError, KeyError, ValueError):
-                self._foundation_context_cache = {}
-        return self._foundation_context_cache
 
     def _is_valid_semver(self, version: str) -> bool:
         """Validate semantic version format (MAJOR.MINOR.PATCH)."""
@@ -123,179 +106,6 @@ class SpecGenerator:
         if v1 > v2:
             return 1
         return 0
-
-    def _init_cache_db(self) -> None:
-        """Initialize SQLite cache database."""
-        with sqlite3.connect(self.cache_db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS api_cache (
-                    cache_key TEXT PRIMARY KEY,
-                    response_data TEXT NOT NULL,
-                    created_at REAL NOT NULL,
-                    ttl_hours INTEGER DEFAULT 24,
-                    input_text TEXT NOT NULL,
-                    model TEXT NOT NULL,
-                    temperature REAL NOT NULL
-                )
-            """)
-            conn.commit()
-
-    def _get_cache_key(
-        self, model: str, input_text: str, tools: list = None, temperature: float = 0.7
-    ) -> str:
-        """Generate semantic cache key using embeddings."""
-        # For semantic caching, we'll use a simpler approach:
-        # Extract key semantic elements from the input text
-        semantic_elements = {
-            "model": model,
-            "tools": tools or [],
-            "temperature": round(temperature, 1),  # Round temperature to reduce variation
-            # Extract core prompt elements for semantic similarity
-            "word_count": len(input_text.split()),
-            "has_system_prompt": "system" in input_text.lower(),
-            "has_json_request": "json" in input_text.lower(),
-            "content_type": self._classify_prompt_type(input_text),
-        }
-        cache_string = json.dumps(semantic_elements, sort_keys=True)
-        return hashlib.md5(cache_string.encode()).hexdigest()
-
-    def _classify_prompt_type(self, text: str) -> str:
-        """Classify prompt type for semantic caching."""
-        text_lower = text.lower()
-        if "specification" in text_lower and "generate" in text_lower:
-            return "spec_generation"
-        elif "review" in text_lower:
-            return "spec_review"
-        elif "template" in text_lower:
-            return "template_related"
-        else:
-            return "general"
-
-    def _get_cached_response(self, model: str, input_text: str, temperature: float = 0.7) -> dict[str, Any] | None:
-        """Retrieve semantically similar cached response if valid."""
-        with sqlite3.connect(self.cache_db_path) as conn:
-            # First try exact match
-            exact_key = self._get_cache_key(model, input_text, temperature=temperature)
-            cursor = conn.execute(
-                "SELECT response_data, created_at, ttl_hours FROM api_cache WHERE cache_key = ?",
-                (exact_key,),
-            )
-            row = cursor.fetchone()
-            
-            if row:
-                response_data, created_at, ttl_hours = row
-                if time.time() - created_at < (ttl_hours * 3600):
-                    try:
-                        return json.loads(response_data)
-                    except (json.JSONDecodeError, TypeError) as e:
-                        # Remove corrupted cache entry
-                        conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (exact_key,))
-                        conn.commit()
-                        print(f"Warning: Corrupted cache entry removed: {e}")
-                        return None
-                # Remove expired cache
-                conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (exact_key,))
-                conn.commit()
-            
-            # If no exact match, try semantic similarity for similar models and temperatures
-            cursor = conn.execute(
-                "SELECT response_data, created_at, ttl_hours, input_text FROM api_cache WHERE model = ? AND ABS(temperature - ?) < 0.1",
-                (model, temperature),
-            )
-            
-            for row in cursor.fetchall():
-                response_data, created_at, ttl_hours, cached_input = row
-                if time.time() - created_at < (ttl_hours * 3600):
-                    # Simple semantic similarity check
-                    if self._is_semantically_similar(input_text, cached_input):
-                        try:
-                            return json.loads(response_data)
-                        except (json.JSONDecodeError, TypeError) as e:
-                            # Remove corrupted cache entry
-                            conn.execute("DELETE FROM api_cache WHERE input_text = ?", (cached_input,))
-                            conn.commit()
-                            print(f"Warning: Corrupted cache entry removed: {e}")
-                            continue
-                else:
-                    # Clean up expired cache
-                    conn.execute("DELETE FROM api_cache WHERE input_text = ?", (cached_input,))
-                    conn.commit()
-        return None
-        
-    def _is_semantically_similar(self, text1: str, text2: str, threshold: float = 0.8) -> bool:
-        """Simple semantic similarity check using word overlap."""
-        # Extract key words (longer than 3 chars, not common words)
-        common_words = {"the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her", "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "its", "new", "now", "old", "see", "two", "who", "boy", "did", "man", "may", "she", "use", "way", "what", "when", "with"}
-        
-        words1 = {word.lower().strip('.,!?";') for word in text1.split() if len(word) > 3 and word.lower() not in common_words}
-        words2 = {word.lower().strip('.,!?";') for word in text2.split() if len(word) > 3 and word.lower() not in common_words}
-        
-        if not words1 or not words2:
-            return False
-            
-        # Calculate Jaccard similarity
-        intersection = len(words1.intersection(words2))
-        union = len(words1.union(words2))
-        
-        return (intersection / union) > threshold if union > 0 else False
-
-    def _store_cached_response(
-        self, cache_key: str, response_data: dict[str, Any], input_text: str, model: str, temperature: float, ttl_hours: int = 24
-    ) -> None:
-        """Store response in cache."""
-        with sqlite3.connect(self.cache_db_path) as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO api_cache (cache_key, response_data, created_at, ttl_hours, input_text, model, temperature) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (cache_key, json.dumps(response_data), time.time(), ttl_hours, input_text, model, temperature),
-            )
-            conn.commit()
-
-    async def _cached_openai_call(
-        self,
-        model: str,
-        input_text: str,
-        tools: list = None,
-        temperature: float = 0.7,
-        ttl_hours: int = 24,
-    ) -> dict[str, Any]:
-        """Make OpenAI API call with caching."""
-        if not self.client:
-            raise RuntimeError("OpenAI client not available")
-
-        # Generate cache key
-        cache_key = self._get_cache_key(model, input_text, tools, temperature)
-
-        # Try to get semantically similar cached response
-        cached_response = self._get_cached_response(model, input_text, temperature)
-        if cached_response:
-            # Create a mock response object from cached data
-            class MockResponse:
-                def __init__(self, data):
-                    self.output_text = data.get("output_text", "")
-                    for key, value in data.items():
-                        setattr(self, key, value)
-
-            mock_response = MockResponse(cached_response)
-            # Verify the mock response has valid output_text
-            if not hasattr(mock_response, 'output_text') or not mock_response.output_text:
-                print(f"Warning: Cached response has no valid output_text, skipping cache")
-                # Remove the invalid cache entry
-                return None
-            return mock_response
-
-        # Make API call
-        response = await self.client.responses.create(
-            model=model,
-            tools=tools or [],
-            input=input_text,
-            temperature=temperature,
-        )
-
-        # Convert response to dict and cache it
-        response_dict = response.model_dump()
-        self._store_cached_response(cache_key, response_dict, input_text, model, temperature, ttl_hours)
-
-        return response
 
     def resolve_inheritance(self, inherits: list[str]) -> dict[str, Any]:
         """Resolve inheritance chain and merge templates."""
@@ -351,11 +161,11 @@ class SpecGenerator:
         """Resolve complete context including inheritance, parent specs, and foundation."""
         context = {}
 
-        # 1. Load foundation spec context (always include) - use cached version
-        foundation_context = self._get_foundation_context()
-        if foundation_context:
+        # 1. Load foundation spec context (always include)
+        try:
+            foundation_context = self.load_template("agentic-spec-foundation")
             self._deep_merge(context, {"foundation": foundation_context})
-        else:
+        except (FileNotFoundError, KeyError, ValueError):
             # Foundation spec not found - this indicates it needs to be synced
             context["foundation_sync_needed"] = True
 
@@ -536,8 +346,8 @@ class SpecGenerator:
 
     def check_foundation_sync_needed(self) -> bool:
         """Check if foundation spec needs to be synced with current codebase."""
-        foundation = self._get_foundation_context()
-        if foundation:
+        try:
+            foundation = self.load_template("agentic-spec-foundation")
             last_synced = foundation.get("_last_synced")
             if not last_synced:
                 return True
@@ -552,8 +362,9 @@ class SpecGenerator:
             # Check if codebase has changed significantly
             # (Could be enhanced to check git commits, file mtimes, etc.)
             return False
-        else:
-            # Foundation spec not found
+
+        except (OSError, UnicodeDecodeError, KeyError, ValueError, TypeError):
+            # Foundation spec not found or corrupted
             return True
 
     async def generate_spec(
@@ -729,16 +540,12 @@ Return ONLY valid JSON matching this structure:
                 if self.config.prompt_settings.enable_web_search
                 else []
             )
-            response = await self._cached_openai_call(
+            response = await self.client.responses.create(
                 model=self.config.prompt_settings.model,
                 tools=tools,
-                input_text=f"{system_prompt}\n\n{enhanced_user_prompt}",
+                input=f"{system_prompt}\n\n{enhanced_user_prompt}",
                 temperature=self.config.prompt_settings.temperature,
             )
-            
-            if response is None:
-                print("Warning: Failed to get response from cache/API, falling back to basic generation")
-                return self._generate_basic(prompt, legacy_inherited_context, project_name)
 
             content = response.output_text
             # Extract JSON from the response if it's wrapped in markdown
@@ -838,18 +645,14 @@ Return a simple JSON array of strings - no markdown formatting."""
 
         try:
             # Use Responses API with web search for current best practices
-            response = await self._cached_openai_call(
+            response = await self.client.responses.create(
                 model="gpt-4.1",  # Use model that supports web search
                 tools=[
                     {"type": "web_search_preview"}
                 ],  # Enable web search for current practices
-                input_text=f"{system_prompt}\n\nReview this specification:\n\n{spec_yaml}",
+                input=f"{system_prompt}\n\nReview this specification:\n\n{spec_yaml}",
                 temperature=0.1,
-                ttl_hours=48,  # Cache reviews longer since they're less likely to change
             )
-            
-            if response is None:
-                return ["Failed to generate review - API/cache unavailable"]
 
             content = response.output_text
             # Try to parse as JSON, fallback to text

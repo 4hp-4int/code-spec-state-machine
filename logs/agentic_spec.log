@@ -545,3 +545,22 @@ agentic_spec.exceptions.AIServiceError: Failed to generate specification using A
 2025-07-27 05:42:54,253 - agentic_spec - INFO - Specification generated successfully
 2025-07-27 05:42:54,259 - agentic_spec - INFO - Specification saved to specs\2025-07-27-3f81bb4a.yaml
 2025-07-27 05:42:59,127 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:51:36,429 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:51:36,432 - agentic_spec - INFO - Listing specifications in specs
+2025-07-27 05:51:36,434 - agentic_spec - INFO - Listed 38 specifications
+2025-07-27 05:52:38,096 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:52:38,436 - agentic_spec - INFO - Starting specification generation for prompt: Remove semantic caching system from agentic-spec including all related code, dependencies, and datab...
+2025-07-27 05:52:38,448 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:52:38,450 - agentic_spec - INFO - Specification saved to specs\2025-07-27-cff0c970.yaml
+2025-07-27 05:52:44,138 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:56:42,251 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 05:56:42,577 - agentic_spec - INFO - Starting specification generation for prompt: Remove all caching functionality from agentic-spec including SQLite database operations, cache-relat...
+2025-07-27 05:56:42,589 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 05:56:42,591 - agentic_spec - INFO - Specification saved to specs\2025-07-27-0dec37ab.yaml
+2025-07-27 05:56:42,596 - agentic_spec - INFO - Review notes added to specification
+2025-07-27 05:56:55,118 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 06:01:14,716 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-27 06:01:15,037 - agentic_spec - INFO - Starting specification generation for prompt: Test system without caching...
+2025-07-27 06:01:26,046 - agentic_spec - INFO - Specification generated successfully
+2025-07-27 06:01:26,051 - agentic_spec - INFO - Specification saved to specs\2025-07-27-0f2cc667.yaml
+2025-07-27 06:01:28,541 - agentic_spec - INFO - Review notes added to specification
