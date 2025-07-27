@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "machine-learning"
+description: "Machine learning project template with scikit-learn and model lifecycle"
+
 dependencies:
 - scikit-learn
 - pandas

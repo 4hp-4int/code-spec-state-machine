@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "base-coding-standards"
+description: "Foundation coding standards and practices for consistent development"
+
 coding_standards:
   general:
     documentation: inline comments + README

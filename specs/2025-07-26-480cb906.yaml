@@ -1,0 +1,109 @@
+metadata:
+  id: 480cb906
+  inherits: []
+  created: '2025-07-26T21:35:34.443552'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 1d8de70e
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pre-commit
+    description: Framework for managing and maintaining multi-language pre-commit
+      hooks
+    version: compatible with current pre-commit workflow
+  files_involved:
+  - .pre-commit-config.yaml
+  - agentic_spec/cli.py
+  - tests/
+requirements:
+  functional:
+  - Automatically run `agentic-spec review` as a pre-commit hook before every commit.
+  - Block commits if any specification files are incomplete or fail the review.
+  - Provide clear, actionable error messages to the developer if the review fails.
+  - Allow the hook to be bypassed with standard git mechanisms (e.g., --no-verify).
+  non_functional:
+  - Maintain compatibility with existing pre-commit hooks and workflows.
+  - Ensure the hook runs efficiently to avoid slowing down the commit process.
+  - Support both Windows (CRLF) and Unix (LF) line endings.
+  - Provide comprehensive unit tests for hook logic and error handling.
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary; prefer shell or
+    Python hooks.
+  - "Do not modify the core agentic-spec review logic\u2014invoke it as a CLI command."
+  - Keep all configuration in .pre-commit-config.yaml; do not hard-code paths.
+  - Ensure the hook is non-blocking only if explicitly bypassed (e.g., with --no-verify).
+  - Follow the existing codebase structure and coding standards.
+implementation:
+- task: Define a new pre-commit hook entry for agentic-spec review
+  details: Add a new hook entry to .pre-commit-config.yaml that runs `agentic-spec
+    review` on staged specification files (e.g., specs/*.yaml). Configure the hook
+    to block commits if the review fails, and ensure it runs after linting/formatting
+    hooks.
+  files:
+  - .pre-commit-config.yaml
+  acceptance: The hook is listed in .pre-commit-config.yaml, runs automatically on
+    commit, and blocks commits with incomplete or failing specs.
+  estimated_effort: low
+  step_id: 480cb906:0
+  sub_spec_id: null
+- task: Implement a wrapper script for cross-platform compatibility (if needed)
+  details: Create a lightweight Python or shell script (e.g., scripts/precommit_agentic_spec_review.py)
+    to invoke `agentic-spec review` with proper environment handling, ensuring compatibility
+    with both Windows and Unix systems. The script should exit with a non-zero status
+    if the review fails.
+  files:
+  - scripts/precommit_agentic_spec_review.py
+  acceptance: The script runs successfully on both Windows and Unix, invoking the
+    CLI and propagating exit codes.
+  estimated_effort: medium
+  step_id: 480cb906:1
+  sub_spec_id: null
+- task: Update documentation for the new pre-commit hook
+  details: Add clear instructions to the README and/or CONTRIBUTING.md on the purpose
+    of the agentic-spec review hook, how to resolve failures, and how to bypass the
+    hook if necessary.
+  files:
+  - README.md
+  - CONTRIBUTING.md
+  acceptance: Documentation clearly explains the hook's function, troubleshooting
+    steps, and bypass instructions.
+  estimated_effort: low
+  step_id: 480cb906:2
+  sub_spec_id: null
+- task: Write unit tests for the pre-commit hook logic
+  details: Add tests to ensure the hook correctly invokes agentic-spec review, blocks
+    commits on failure, and handles edge cases (e.g., no spec files staged, review
+    CLI errors). Use mocking to simulate CLI behavior.
+  files:
+  - tests/test_precommit_agentic_spec_review.py
+  acceptance: Tests cover success, failure, and edge cases; all tests pass in CI.
+  estimated_effort: medium
+  step_id: 480cb906:3
+  sub_spec_id: null
+review_notes:
+- Ensure the wrapper script for invoking `agentic-spec review` is cross-platform by
+  using a shebang like `#!/usr/bin/env python` and handling path separators with `os.path.join`
+  to maintain compatibility across different operating systems. ([stackoverflow.com](https://stackoverflow.com/questions/72290449/conditional-shebang-for-git-hooks-cross-platform?utm_source=openai),
+  [github.com](https://github.com/AdnanEkici/pre-commit-platform-safe-path-enforcer?utm_source=openai))
+- To avoid potential issues with hard-coded paths in the pre-commit hook configuration,
+  consider using relative paths or environment variables to specify the location of
+  the wrapper script, ensuring flexibility and portability. ([stackoverflow.com](https://stackoverflow.com/questions/78852017/pre-commit-using-mypy-specify-venv-cross-platform?utm_source=openai))
+- Incorporate comprehensive error handling in the wrapper script to manage scenarios
+  where `agentic-spec review` encounters issues, providing clear and actionable error
+  messages to the developer. ([kinsta.com](https://kinsta.com/blog/git-hooks/?utm_source=openai))
+- Regularly update the `.pre-commit-config.yaml` file using `pre-commit autoupdate`
+  to ensure all hooks, including the new `agentic-spec review` hook, are using the
+  latest versions, maintaining compatibility and benefiting from recent improvements.
+  ([caparra.ai](https://caparra.ai/blog/the-pre-commit-playbook?utm_source=openai))
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

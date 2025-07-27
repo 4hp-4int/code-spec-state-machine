@@ -8,7 +8,10 @@
       "Bash(ruff check:*)",
       "Bash(agentic-spec publish:*)",
       "Bash(grep:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(agentic-spec generate:*)",
+      "Bash(pip install:*)",
+      "Bash(agentic-spec:*)"
     ],
     "deny": []
   }

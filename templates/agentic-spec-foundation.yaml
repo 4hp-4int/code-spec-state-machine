@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "agentic-spec-foundation"
+description: "Foundation specification automatically synced with codebase state"
+
 context:
   project: agentic-spec
   domain: Python CLI tool for AI-powered specification generation

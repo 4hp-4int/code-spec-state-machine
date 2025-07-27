@@ -1,0 +1,134 @@
+metadata:
+  id: a8694939
+  inherits: []
+  created: '2025-07-26T21:45:07.975951'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pytest-cov
+    version: 6.2.1
+    description: Testing and coverage
+  - name: pyyaml
+    version: 6.0.2
+    description: YAML parsing for config and cache
+  - name: openai
+    version: 1.97.1
+    description: AI API calls (mocked in tests)
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/config.py
+  - agentic_spec/exceptions.py
+  - tests/test_core.py
+  - tests/test_cache.py
+requirements:
+  functional:
+  - Implement a caching mechanism for AI-generated specification results to avoid
+    redundant API calls.
+  - Allow cache to be enabled/disabled via configuration (YAML-driven, no hard-coded
+    toggles).
+  - Ensure cache is file-based, human-readable (YAML), and stored in a predictable
+    location.
+  - Provide cache invalidation and refresh options for tests and CLI usage.
+  - Integrate cache logic into core AI call workflow without breaking async/await
+    patterns.
+  - Write unit tests to verify cache hits, misses, invalidation, and error handling.
+  non_functional:
+  - Maintain compatibility with Windows (CRLF/LF handling).
+  - Ensure all cache operations use pathlib.Path.
+  - Comprehensive error handling with informative messages for cache failures.
+  - Keep cache logic isolated and testable.
+  - Maintain lint compliance and follow pre-commit hooks.
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary; prefer PyYAML and
+    stdlib.
+  - Do not use external databases or non-human-readable formats.
+  - Do not break async/await or introduce blocking I/O in async code.
+  - Follow existing codebase structure and configuration-driven patterns.
+  - All new code must be covered by unit tests.
+implementation:
+- task: Design and implement cache interface and logic
+  details: Create a cache module or class in agentic_spec/core.py or a new agentic_spec/cache.py
+    if separation is warranted. Use YAML for serialization. Expose async-compatible
+    cache get/set/invalidate methods. Use pathlib.Path for all file operations. Read
+    cache location and enable/disable from config.yaml via agentic_spec/config.py.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/config.py
+  acceptance: Cache logic is accessible from core AI call workflow, respects config,
+    and is fully async-compatible.
+  estimated_effort: medium
+  step_id: a8694939:0
+  sub_spec_id: null
+- task: Integrate cache into AI specification generation workflow
+  details: Modify the AI call logic in agentic_spec/core.py to check the cache before
+    making an API call. On cache hit, return cached result. On miss, call AI, store
+    result in cache, and return. Ensure error handling for cache read/write failures.
+  files:
+  - agentic_spec/core.py
+  acceptance: AI calls are skipped when cache hit occurs; cache is updated on miss;
+    errors are handled gracefully.
+  estimated_effort: medium
+  step_id: a8694939:1
+  sub_spec_id: null
+- task: Implement cache invalidation and refresh logic
+  details: Provide methods to invalidate (delete) cache entries or refresh them (force
+    re-fetch from AI and update cache). Expose these via CLI options and for use in
+    tests.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  acceptance: Cache can be invalidated or refreshed via CLI and programmatically;
+    behavior is covered by tests.
+  estimated_effort: medium
+  step_id: a8694939:2
+  sub_spec_id: null
+- task: Write unit tests for caching behavior
+  details: Add tests in tests/test_core.py or tests/test_cache.py to cover cache hits,
+    misses, invalidation, refresh, and error scenarios. Use pytest and mock AI calls
+    to avoid real API usage.
+  files:
+  - tests/test_core.py
+  - tests/test_cache.py
+  acceptance: All cache logic is covered by tests; tests pass and do not require network
+    access.
+  estimated_effort: medium
+  step_id: a8694939:3
+  sub_spec_id: null
+- task: Document cache usage and configuration
+  details: Update README or add inline docstrings to explain cache configuration,
+    usage, and troubleshooting. Ensure documentation covers enabling/disabling cache,
+    cache location, and invalidation.
+  files:
+  - README.md
+  - agentic_spec/core.py
+  acceptance: Documentation is clear, accurate, and covers all cache-related features.
+  estimated_effort: low
+  step_id: a8694939:4
+  sub_spec_id: null
+review_notes:
+- "Missing Implementation Details: The spec does not clarify how cache keys are generated\
+  \ or how cache entries are uniquely identified per AI input\u2014define a deterministic,\
+  \ collision-resistant keying strategy (e.g., hash of input parameters)."
+- 'Technical Gotchas: YAML serialization/deserialization is not async; using PyYAML
+  in async code will block the event loop. Use run_in_executor or aiofiles for file
+  I/O to maintain async compatibility.'
+- 'Integration Points: Ensure config.yaml is loaded once and reused, not re-read on
+  every cache operation. If config access is synchronous, wrap it for async use or
+  document the sync boundary clearly.'
+- 'Current Best Practices: PyYAML 6.0.2 is current, but be aware of safe_load vs.
+  load for security. For CLI integration, prefer click or argparse, but do not introduce
+  click if not already present.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

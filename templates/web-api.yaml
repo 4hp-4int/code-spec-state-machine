@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "web-api"
+description: "REST API development template with FastAPI and modern practices"
+
 dependencies:
 - fastapi
 - pydantic

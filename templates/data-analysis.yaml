@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "data-analysis"
+description: "Data analysis and visualization template with scientific Python stack"
+
 dependencies:
 - pandas
 - numpy

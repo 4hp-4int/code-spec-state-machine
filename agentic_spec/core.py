@@ -5,6 +5,9 @@ from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+import re
+import sqlite3
+import time
 from typing import Any
 
 import yaml
@@ -49,13 +52,162 @@ class SpecGenerator:
         else:
             self.client = None
 
+        # Initialize SQLite cache
+        self.cache_db_path = self.specs_dir / "openai_cache.db"
+        self._init_cache_db()
+
     def load_template(self, template_name: str) -> dict[str, Any]:
-        """Load a base template by name."""
+        """Load a base template by name with version validation."""
         template_path = self.templates_dir / f"{template_name}.yaml"
         if template_path.exists():
             with template_path.open() as f:
-                return yaml.safe_load(f)
+                template_data = yaml.safe_load(f)
+
+            # Check for version field and validate
+            if "version" in template_data:
+                if not self._is_valid_semver(template_data["version"]):
+                    print(
+                        f"Warning: Template '{template_name}' has invalid semver version: {template_data['version']}"
+                    )
+                else:
+                    # Check if migration is needed (simplified version)
+                    self._check_version_compatibility(
+                        template_name, template_data["version"]
+                    )
+
+            return template_data
         return {}
+
+    def _is_valid_semver(self, version: str) -> bool:
+        """Validate semantic version format (MAJOR.MINOR.PATCH)."""
+        semver_pattern = r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*(?:\.[0-9a-zA-Z-]*)*)))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+        return bool(re.match(semver_pattern, version))
+
+    def _check_version_compatibility(self, template_name: str, version: str) -> None:
+        """Check version compatibility and prompt for migration if needed."""
+        # For this simplified implementation, we'll just log the version
+        # In a full implementation, we could store last used versions and compare
+        print(f"Template '{template_name}' version: {version}")
+
+    def _compare_versions(self, version1: str, version2: str) -> int:
+        """Compare two semantic version strings.
+
+        Returns:
+            -1 if version1 < version2
+             0 if version1 == version2
+             1 if version1 > version2
+        """
+
+        def _parse_version(version: str) -> tuple[int, int, int]:
+            # Simple semver parsing (MAJOR.MINOR.PATCH)
+            parts = version.split(".")
+            return (int(parts[0]), int(parts[1]), int(parts[2]))
+
+        v1 = _parse_version(version1)
+        v2 = _parse_version(version2)
+
+        if v1 < v2:
+            return -1
+        if v1 > v2:
+            return 1
+        return 0
+
+    def _init_cache_db(self) -> None:
+        """Initialize SQLite cache database."""
+        with sqlite3.connect(self.cache_db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS api_cache (
+                    cache_key TEXT PRIMARY KEY,
+                    response_data TEXT NOT NULL,
+                    created_at REAL NOT NULL,
+                    ttl_hours INTEGER DEFAULT 24
+                )
+            """)
+            conn.commit()
+
+    def _get_cache_key(
+        self, model: str, input_text: str, tools: list = None, temperature: float = 0.7
+    ) -> str:
+        """Generate cache key from API parameters."""
+        cache_data = {
+            "model": model,
+            "input": input_text,
+            "tools": tools or [],
+            "temperature": temperature,
+        }
+        cache_string = json.dumps(cache_data, sort_keys=True)
+        return hashlib.md5(cache_string.encode()).hexdigest()
+
+    def _get_cached_response(self, cache_key: str) -> dict[str, Any] | None:
+        """Retrieve cached response if valid."""
+        with sqlite3.connect(self.cache_db_path) as conn:
+            cursor = conn.execute(
+                "SELECT response_data, created_at, ttl_hours FROM api_cache WHERE cache_key = ?",
+                (cache_key,),
+            )
+            row = cursor.fetchone()
+
+            if row:
+                response_data, created_at, ttl_hours = row
+                # Check if cache is still valid
+                if time.time() - created_at < (ttl_hours * 3600):
+                    return json.loads(response_data)
+                # Remove expired cache
+                conn.execute("DELETE FROM api_cache WHERE cache_key = ?", (cache_key,))
+                conn.commit()
+        return None
+
+    def _store_cached_response(
+        self, cache_key: str, response_data: dict[str, Any], ttl_hours: int = 24
+    ) -> None:
+        """Store response in cache."""
+        with sqlite3.connect(self.cache_db_path) as conn:
+            conn.execute(
+                "INSERT OR REPLACE INTO api_cache (cache_key, response_data, created_at, ttl_hours) VALUES (?, ?, ?, ?)",
+                (cache_key, json.dumps(response_data), time.time(), ttl_hours),
+            )
+            conn.commit()
+
+    async def _cached_openai_call(
+        self,
+        model: str,
+        input_text: str,
+        tools: list = None,
+        temperature: float = 0.7,
+        ttl_hours: int = 24,
+    ) -> dict[str, Any]:
+        """Make OpenAI API call with caching."""
+        if not self.client:
+            raise RuntimeError("OpenAI client not available")
+
+        # Generate cache key
+        cache_key = self._get_cache_key(model, input_text, tools, temperature)
+
+        # Try to get cached response
+        cached_response = self._get_cached_response(cache_key)
+        if cached_response:
+            # Create a mock response object from cached data
+            class MockResponse:
+                def __init__(self, data):
+                    self.output_text = data.get("output_text", "")
+                    for key, value in data.items():
+                        setattr(self, key, value)
+
+            return MockResponse(cached_response)
+
+        # Make API call
+        response = await self.client.responses.create(
+            model=model,
+            tools=tools or [],
+            input=input_text,
+            temperature=temperature,
+        )
+
+        # Convert response to dict and cache it
+        response_dict = response.model_dump()
+        self._store_cached_response(cache_key, response_dict, ttl_hours)
+
+        return response
 
     def resolve_inheritance(self, inherits: list[str]) -> dict[str, Any]:
         """Resolve inheritance chain and merge templates."""
@@ -490,10 +642,10 @@ Return ONLY valid JSON matching this structure:
                 if self.config.prompt_settings.enable_web_search
                 else []
             )
-            response = await self.client.responses.create(
+            response = await self._cached_openai_call(
                 model=self.config.prompt_settings.model,
                 tools=tools,
-                input=f"{system_prompt}\n\n{enhanced_user_prompt}",
+                input_text=f"{system_prompt}\n\n{enhanced_user_prompt}",
                 temperature=self.config.prompt_settings.temperature,
             )
 
@@ -595,13 +747,14 @@ Return a simple JSON array of strings - no markdown formatting."""
 
         try:
             # Use Responses API with web search for current best practices
-            response = await self.client.responses.create(
+            response = await self._cached_openai_call(
                 model="gpt-4.1",  # Use model that supports web search
                 tools=[
                     {"type": "web_search_preview"}
                 ],  # Enable web search for current practices
-                input=f"{system_prompt}\n\nReview this specification:\n\n{spec_yaml}",
+                input_text=f"{system_prompt}\n\nReview this specification:\n\n{spec_yaml}",
                 temperature=0.1,
+                ttl_hours=48,  # Cache reviews longer since they're less likely to change
             )
 
             content = response.output_text

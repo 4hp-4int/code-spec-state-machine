@@ -1,3 +1,7 @@
+version: "1.0.0"
+name: "cli-application"
+description: "Command-line interface development template with modern CLI frameworks"
+
 dependencies:
 - click
 - rich

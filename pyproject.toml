@@ -24,6 +24,12 @@ dependencies = [
 [project.scripts]
 agentic-spec = "agentic_spec.cli:main"
 
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.package-data]
+agentic_spec = ["templates/*.yaml"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.8.0",

@@ -35,6 +35,17 @@ repos:
       - id: python-no-log-warn
       - id: python-use-type-annotations
 
+  # Agentic-spec review hook
+  - repo: local
+    hooks:
+      - id: agentic-spec-review
+        name: Agentic Spec Review
+        entry: python scripts/precommit_agentic_spec_review.py
+        language: system
+        files: ^specs/.*\.yaml$
+        pass_filenames: false
+        description: "Run agentic-spec review to check specification completeness"
+
 # Configure to run on commit
 default_stages: [pre-commit]
 
