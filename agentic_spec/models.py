@@ -9,6 +9,7 @@ class SpecMetadata:
     """Metadata for a programming specification."""
 
     id: str
+    title: str
     inherits: list[str]
     created: str
     version: str

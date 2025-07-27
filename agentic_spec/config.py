@@ -45,6 +45,31 @@ class DirectorySettings(BaseModel):
     config_dir: str = "."
 
 
+class AIProviderConfig(BaseModel):
+    """Configuration for a specific AI provider."""
+
+    provider_type: str  # e.g., "openai", "anthropic", "local"
+    api_key: str | None = None
+    base_url: str | None = None
+    default_model: str | None = None
+    timeout: float = 120.0
+    custom_settings: dict[str, Any] = Field(default_factory=dict)
+
+
+class AISettings(BaseModel):
+    """Configuration for AI providers."""
+
+    default_provider: str = "openai"
+    providers: dict[str, AIProviderConfig] = Field(
+        default_factory=lambda: {
+            "openai": AIProviderConfig(
+                provider_type="openai",
+                default_model="gpt-4o-mini",
+            )
+        }
+    )
+
+
 class AgenticSpecConfig(BaseModel):
     """Complete configuration for agentic-spec."""
 
@@ -54,6 +79,7 @@ class AgenticSpecConfig(BaseModel):
     )
     workflow: WorkflowSettings = Field(default_factory=WorkflowSettings)
     directories: DirectorySettings = Field(default_factory=DirectorySettings)
+    ai_settings: AISettings = Field(default_factory=AISettings)
     custom_settings: dict[str, Any] = Field(default_factory=dict)
 
 

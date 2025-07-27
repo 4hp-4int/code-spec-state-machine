@@ -1,0 +1,119 @@
+metadata:
+  id: e59de6d2
+  title: Test the AI provider abstraction
+  inherits: []
+  created: '2025-07-27T06:44:30.457930'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pytest-cov
+    version: 6.2.1
+  - name: openai
+    version: 1.97.1
+  - name: pytest
+    version: 7.4.0
+  - name: asyncio
+    version: builtin
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/exceptions.py
+  - tests/test_core_ai_provider.py
+requirements:
+  functional:
+  - Verify that the AI provider abstraction correctly delegates calls to the underlying
+    AI API (e.g., OpenAI).
+  - Ensure async/await patterns are respected in all AI provider methods.
+  - 'Test error handling: confirm that exceptions from the AI provider are raised
+    with informative messages.'
+  - Validate configuration-driven behavior (e.g., model selection, API key usage)
+    in the AI provider.
+  - Test graceful fallback or error messaging when the AI service is unavailable.
+  non_functional:
+  - Tests must be isolated, deterministic, and not require actual API calls (use mocking).
+  - Tests should be readable and maintainable for a solo developer.
+  - All new tests must pass linting and formatting checks (ruff, pre-commit hooks).
+  - Tests must be compatible with Windows and Unix line endings.
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary; prefer pytest and
+    unittest.mock.
+  - 'Follow the existing codebase structure: place tests in the tests/ directory.'
+  - Use Python 3.12+ features and type hints.
+  - Do not use mutable default arguments.
+  - Maintain comprehensive error handling and informative exception messages.
+  - Ensure all tests are compatible with async/await patterns.
+implementation:
+- task: Identify and analyze the AI provider abstraction in the codebase
+  details: Review agentic_spec/core.py to locate the AI provider abstraction (class
+    or function) responsible for interfacing with OpenAI or other AI APIs. Document
+    its public interface, async methods, and configuration points.
+  files:
+  - agentic_spec/core.py
+  acceptance: A clear mapping of the AI provider's interface and configuration options
+    is documented as code comments or in a developer note.
+  estimated_effort: low
+  step_id: e59de6d2:0
+  sub_spec_id: null
+- task: Design and implement unit tests for the AI provider abstraction
+  details: 'Create a new test file tests/test_core_ai_provider.py. Use pytest and
+    unittest.mock (AsyncMock) to mock all external API calls. Cover the following
+    scenarios: successful response, API error/exception, invalid configuration, and
+    service unavailability. Ensure all async methods are tested using pytest-asyncio
+    or equivalent.'
+  files:
+  - tests/test_core_ai_provider.py
+  acceptance: All relevant AI provider methods are tested for success, error, and
+    edge cases. Tests run without real API calls and pass on both Windows and Unix.
+  estimated_effort: medium
+  step_id: e59de6d2:1
+  sub_spec_id: null
+- task: Test configuration-driven behavior and error handling
+  details: Write tests that simulate different configuration scenarios (e.g., missing
+    API key, invalid model name) and verify that the AI provider responds with informative
+    exceptions as per agentic_spec/exceptions.py. Ensure error messages do not use
+    string literals in raise statements.
+  files:
+  - tests/test_core_ai_provider.py
+  - agentic_spec/exceptions.py
+  acceptance: Tests confirm that configuration errors are handled gracefully and exceptions
+    are raised with proper messages.
+  estimated_effort: medium
+  step_id: e59de6d2:2
+  sub_spec_id: null
+- task: Ensure code quality and compliance with project standards
+  details: Run make lint, make test, and make format to ensure all new and modified
+    files comply with ruff linting, formatting, and pre-commit hooks. Refactor tests
+    as needed to resolve any warnings or errors.
+  files:
+  - tests/test_core_ai_provider.py
+  acceptance: No new lint or formatting errors are introduced. All tests pass and
+    are compatible with the project's quality gate.
+  estimated_effort: low
+  step_id: e59de6d2:3
+  sub_spec_id: null
+review_notes:
+- "The spec assumes familiarity with async mocking; ensure you use unittest.mock.AsyncMock\
+  \ for all async methods, and pytest-asyncio for async test functions\u2014double-check\
+  \ that pytest-asyncio is available or add a dev dependency if missing."
+- Clarify how configuration is injected into the AI provider abstraction (e.g., via
+  constructor, environment variables, or config files); missing this detail could
+  block test setup and error simulation.
+- "Explicitly document or enforce that exception messages are not hardcoded string\
+  \ literals in raise statements\u2014use constants or exception classes from agentic_spec/exceptions.py\
+  \ to avoid accidental violations."
+- Testing for Windows/Unix compatibility mainly concerns line endings in test files;
+  add a .gitattributes entry or a pre-commit check if not already present, as this
+  is easy to overlook and can cause CI failures.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

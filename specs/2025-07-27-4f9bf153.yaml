@@ -1,0 +1,166 @@
+metadata:
+  id: 4f9bf153
+  inherits: []
+  created: '2025-07-27T06:37:02.068170'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 2a65633c
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+requirements:
+  functional:
+  - Refactor code to reduce cyclomatic complexity and improve logical flow.
+  - Enhance code readability by applying consistent formatting and naming conventions.
+  - Ensure all functions and classes use Python type hints.
+  - Replace mutable default arguments with None pattern where applicable.
+  - Centralize configuration-driven behavior and remove hard-coded values.
+  - Improve error handling with informative, non-literal exception messages.
+  - Add or update docstrings for all public functions and classes.
+  - Write or update unit tests to cover refactored code paths.
+  non_functional:
+  - Maintain full compatibility with Python 3.12+.
+  - Ensure all changes pass pre-commit hooks and linting (ruff, ruff-format).
+  - Preserve existing CLI interface and user-facing behaviors.
+  - Maintain or improve test coverage for all refactored modules.
+  - Ensure Windows compatibility (CRLF/LF handling).
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary and justified.
+  - Follow established codebase structure and file organization.
+  - Adhere to project coding standards (dataclasses, Pydantic, async/await, pathlib.Path,
+    etc.).
+  - Do not break existing API or CLI contracts.
+  - All configuration must be file-based and human-readable (YAML).
+  - Maintain lint error count below 30.
+  - All error messages must be informative and avoid string literals in raise statements.
+implementation:
+- task: Analyze and document current complexity hotspots
+  details: Use static analysis tools (e.g., ruff, pylint, or built-in Python tools)
+    to identify functions and classes with high cyclomatic complexity or deep nesting.
+    Document these hotspots and prioritize them for refactoring.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: A markdown or YAML summary of complexity hotspots is created and added
+    to the project root or docs directory.
+  estimated_effort: low
+  step_id: 4f9bf153:0
+  sub_spec_id: null
+- task: Refactor complex functions and classes
+  details: Break down large functions into smaller, single-responsibility functions.
+    Extract repeated logic into helper functions or methods. Ensure all refactored
+    code uses type hints and follows naming conventions.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: All identified hotspots are refactored, and code passes linting and
+    tests. No function exceeds a reasonable complexity threshold (e.g., cyclomatic
+    complexity <10).
+  estimated_effort: medium
+  step_id: 4f9bf153:1
+  sub_spec_id: null
+- task: Standardize error handling and messaging
+  details: Review all exception raising and handling. Replace string literals in raise
+    statements with properly formatted exception messages. Ensure all errors provide
+    actionable information for the user or developer.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: All error messages are informative, consistent, and compliant with project
+    standards. No string literals are used directly in raise statements.
+  estimated_effort: low
+  step_id: 4f9bf153:2
+  sub_spec_id: null
+- task: Centralize and externalize configuration
+  details: Identify hard-coded values (e.g., file paths, API parameters, thresholds)
+    and move them to configuration files or constants modules. Ensure all configuration
+    is loaded from YAML files using pathlib.Path.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  - agentic_spec/config.py
+  acceptance: All configuration is file-based and human-readable. No hard-coded values
+    remain in the main logic files.
+  estimated_effort: medium
+  step_id: 4f9bf153:3
+  sub_spec_id: null
+- task: Update and expand docstrings and inline documentation
+  details: Ensure all public functions, classes, and modules have clear, concise docstrings
+    following PEP 257. Add inline comments where logic is non-obvious.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: All public interfaces are documented. Docstrings are present and pass
+    linting checks.
+  estimated_effort: low
+  step_id: 4f9bf153:4
+  sub_spec_id: null
+- task: Write or update unit tests for refactored code
+  details: Ensure all new or modified functions are covered by unit tests. Use mocking
+    for async/await and external API calls. Maintain or improve overall test coverage.
+  files:
+  - tests/
+  acceptance: All tests pass, and coverage reports show no decrease in coverage. New
+    logic is properly tested.
+  estimated_effort: medium
+  step_id: 4f9bf153:5
+  sub_spec_id: null
+- task: Run and verify pre-commit hooks and linting
+  details: Run make lint, make format, and make quality-gate to ensure all code changes
+    comply with project standards. Fix any issues reported by pre-commit hooks.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: No new linting errors are introduced. All pre-commit hooks pass without
+    blocking warnings.
+  estimated_effort: low
+  step_id: 4f9bf153:6
+  sub_spec_id: null
+review_notes:
+- "The spec assumes static analysis tools (like ruff or pylint) are already configured,\
+  \ but does not specify which complexity metric or threshold tool to use\u2014clarify\
+  \ which tool and config to standardize results and avoid ambiguity."
+- "Moving all configuration to YAML is practical, but ensure that dynamic or secret\
+  \ values (e.g., API keys) are handled securely and not just dumped into plain YAML\u2014\
+  consider documenting how to handle secrets."
+- Refactoring for complexity reduction may impact function signatures and internal
+  logic; ensure that all CLI and API contracts are covered by regression tests to
+  catch accidental breakage, especially since the CLI interface must not change.
+- "No mention is made of how to handle legacy or deprecated code paths during refactoring\u2014\
+  add a step to identify and either update or clearly deprecate such paths to avoid\
+  \ silent breakage."
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

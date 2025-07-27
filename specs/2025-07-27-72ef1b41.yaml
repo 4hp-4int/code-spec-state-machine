@@ -1,0 +1,155 @@
+metadata:
+  id: 72ef1b41
+  inherits: []
+  created: '2025-07-27T06:36:38.408528'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 2a65633c
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+    description: Core dependency for AI interactions
+  - name: pyyaml
+    version: 6.0.2
+    description: For YAML parsing and serialization
+  - name: networkx
+    version: '3.3'
+    description: For graph-based specification relationships
+  - name: matplotlib
+    version: 3.9.2
+    description: For visualization of specification graphs
+  - name: jinja2
+    version: 3.1.0
+    description: For template rendering
+  - name: typer
+    version: 0.12.0
+    description: For building CLI applications
+  - name: pytest-cov
+    version: 6.2.1
+    description: For testing coverage
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/prompt_engineering.py
+  - agentic_spec/config.py
+requirements:
+  functional:
+  - Abstract the AI interaction layer to support multiple AI service providers.
+  - Ensure seamless integration with existing AI service providers without disrupting
+    current functionality.
+  - Provide a configuration-driven approach to select and manage different AI providers.
+  non_functional:
+  - Maintain code readability and modularity to facilitate future enhancements.
+  - Ensure comprehensive error handling with informative messages for different AI
+    providers.
+  - Implement unit tests to validate the functionality of the abstracted AI interaction
+    layer.
+  constraints:
+  - Use Python 3.12+ for modern language features.
+  - Maintain CLI interface for automation and scripting.
+  - Store all data in human-readable YAML format.
+  - Avoid external databases to keep deployment simple.
+  - Maintain Windows compatibility (CRLF/LF handling).
+  - Keep lint error count minimal (currently <30 from original 134).
+  - Use non-blocking pre-commit hooks to show warnings without stopping commits.
+implementation:
+- task: Design an abstract base class for AI service providers.
+  details: Create an abstract base class (ABC) that defines the common interface for
+    all AI service providers, including methods for sending prompts and receiving
+    responses.
+  files:
+  - agentic_spec/ai_providers/base.py
+  acceptance: The abstract base class is defined with all necessary methods and docstrings,
+    and it is ready for subclassing by specific AI provider implementations.
+  estimated_effort: medium
+  step_id: 72ef1b41:0
+  sub_spec_id: null
+- task: Implement concrete classes for existing AI service providers.
+  details: Develop concrete classes that inherit from the abstract base class, implementing
+    the specific details for interacting with each AI service provider.
+  files:
+  - agentic_spec/ai_providers/openai_provider.py
+  acceptance: Concrete classes for existing AI service providers are implemented,
+    tested, and integrated without disrupting current functionality.
+  estimated_effort: medium
+  step_id: 72ef1b41:1
+  sub_spec_id: null
+- task: Refactor existing AI interaction code to use the new abstraction layer.
+  details: Modify the existing codebase to utilize the new abstracted AI interaction
+    layer, ensuring that all AI interactions go through the appropriate provider class.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/prompt_engineering.py
+  acceptance: All AI interactions in the codebase are refactored to use the new abstraction
+    layer, and existing functionality remains intact.
+  estimated_effort: high
+  step_id: 72ef1b41:2
+  sub_spec_id: null
+- task: Update configuration management to support multiple AI providers.
+  details: Enhance the configuration system to allow selection and management of different
+    AI service providers, including specifying API keys and other necessary parameters.
+  files:
+  - agentic_spec/config.py
+  acceptance: The configuration system supports multiple AI providers, and users can
+    select and configure their preferred provider through configuration files.
+  estimated_effort: medium
+  step_id: 72ef1b41:3
+  sub_spec_id: null
+- task: Implement comprehensive error handling for AI provider interactions.
+  details: Develop error handling mechanisms that provide informative messages and
+    gracefully handle issues specific to each AI provider.
+  files:
+  - agentic_spec/ai_providers/base.py
+  - agentic_spec/ai_providers/openai_provider.py
+  acceptance: Error handling is implemented for all AI provider interactions, with
+    clear and informative messages for different error scenarios.
+  estimated_effort: medium
+  step_id: 72ef1b41:4
+  sub_spec_id: null
+- task: Write unit tests for the abstract base class and concrete provider classes.
+  details: Develop unit tests to validate the functionality of the abstract base class
+    and each concrete AI provider class, ensuring they meet the defined interface
+    and handle errors appropriately.
+  files:
+  - tests/test_ai_providers.py
+  acceptance: Unit tests cover all methods of the abstract base class and concrete
+    provider classes, with high code coverage and successful test runs.
+  estimated_effort: medium
+  step_id: 72ef1b41:5
+  sub_spec_id: null
+- task: Update documentation to reflect the new AI provider abstraction.
+  details: Revise the project's documentation to include information about the new
+    AI provider abstraction, how to add new providers, and how to configure existing
+    ones.
+  files:
+  - docs/ai_providers.md
+  acceptance: Documentation is updated with clear instructions on the AI provider
+    abstraction, including examples and configuration details.
+  estimated_effort: low
+  step_id: 72ef1b41:6
+  sub_spec_id: null
+review_notes:
+- "Missing Implementation Details: The spec does not clarify how provider-specific\
+  \ configuration (e.g., API keys, endpoints) will be injected into provider classes\u2014\
+  ensure a clear interface for passing config from YAML to each provider."
+- "Technical Gotchas: Refactoring all AI interactions to use the new abstraction may\
+  \ expose hidden coupling or assumptions in core.py and prompt_engineering.py\u2014\
+  plan for a thorough audit and incremental migration to avoid breaking changes."
+- "Integration Points: If existing code directly uses OpenAI SDK objects or responses,\
+  \ you\u2019ll need adapters or translation layers to maintain compatibility with\
+  \ the new abstraction\u2014identify these early."
+- 'Current Best Practices: All listed libraries are current as of mid-2024, but verify
+  that openai 1.97.1 supports all required features and error handling hooks for your
+  abstraction layer; recent OpenAI SDKs have breaking changes in response formats.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []

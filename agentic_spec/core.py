@@ -10,7 +10,9 @@ from typing import Any
 
 import yaml
 
+from .ai_providers import AIProviderFactory
 from .config import AgenticSpecConfig
+from .exceptions import ConfigurationError
 from .models import (
     ContextParameters,
     ImplementationStep,
@@ -20,13 +22,6 @@ from .models import (
     SpecRequirement,
 )
 from .prompt_engineering import PromptEngineer
-
-try:
-    from openai import AsyncOpenAI
-
-    OPENAI_AVAILABLE = True
-except ImportError:
-    OPENAI_AVAILABLE = False
 
 
 class SpecGenerator:
@@ -45,11 +40,22 @@ class SpecGenerator:
         self.prompt_engineer = PromptEngineer()
         self.config = config or AgenticSpecConfig()
 
-        if OPENAI_AVAILABLE:
-            self.client = AsyncOpenAI()
-        else:
-            self.client = None
+        # Initialize AI provider
+        self.ai_provider = self._initialize_ai_provider()
 
+    def _initialize_ai_provider(self):
+        """Initialize the AI provider based on configuration."""
+        try:
+            provider_name = self.config.ai_settings.default_provider
+            provider_config = self.config.ai_settings.providers.get(provider_name)
+
+            if not provider_config:
+                raise ConfigurationError(f"Provider '{provider_name}' not configured")
+
+            return AIProviderFactory.create_provider(provider_config)
+        except Exception as e:
+            print(f"Warning: Failed to initialize AI provider: {e}")
+            return None
 
     def load_template(self, template_name: str) -> dict[str, Any]:
         """Load a base template by name with version validation."""
@@ -83,6 +89,27 @@ class SpecGenerator:
         # For this simplified implementation, we'll just log the version
         # In a full implementation, we could store last used versions and compare
         print(f"Template '{template_name}' version: {version}")
+
+    def _generate_title_from_prompt(self, prompt: str) -> str:
+        """Generate a human-readable title from the user prompt."""
+        # Clean up the prompt and create a concise title
+        title = prompt.strip()
+
+        # Remove common prefixes
+        prefixes = ["implement", "create", "add", "build", "develop", "write"]
+        for prefix in prefixes:
+            if title.lower().startswith(prefix.lower()):
+                title = title[len(prefix) :].strip()
+
+        # Capitalize first letter and limit length
+        if title:
+            title = title[0].upper() + title[1:] if len(title) > 1 else title.upper()
+
+        # Truncate if too long and add ellipsis
+        if len(title) > 80:
+            title = title[:77] + "..."
+
+        return title if title else "Programming Specification"
 
     def _compare_versions(self, version1: str, version2: str) -> int:
         """Compare two semantic version strings.
@@ -407,7 +434,7 @@ class SpecGenerator:
             )
 
         # Generate spec using AI if available
-        if self.client and OPENAI_AVAILABLE:
+        if self.ai_provider and self.ai_provider.is_available:
             spec_data = await self._generate_with_ai(
                 prompt, comprehensive_context, project_name, context_params
             )
@@ -424,6 +451,7 @@ class SpecGenerator:
         return ProgrammingSpec(
             metadata=SpecMetadata(
                 id=spec_id,
+                title=self._generate_title_from_prompt(prompt),
                 inherits=inherits or [],
                 created=datetime.now().isoformat(),
                 version="1.0",
@@ -540,14 +568,14 @@ Return ONLY valid JSON matching this structure:
                 if self.config.prompt_settings.enable_web_search
                 else []
             )
-            response = await self.client.responses.create(
+
+            content = await self.ai_provider.generate_response(
+                prompt=enhanced_user_prompt,
+                system_prompt=system_prompt,
+                temperature=self.config.prompt_settings.temperature,
                 model=self.config.prompt_settings.model,
                 tools=tools,
-                input=f"{system_prompt}\n\n{enhanced_user_prompt}",
-                temperature=self.config.prompt_settings.temperature,
             )
-
-            content = response.output_text
             # Extract JSON from the response if it's wrapped in markdown
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
@@ -609,8 +637,13 @@ Return ONLY valid JSON matching this structure:
         with spec_path.open() as f:
             data = yaml.safe_load(f)
 
+        # Handle backward compatibility for specs without title
+        metadata = data["metadata"]
+        if "title" not in metadata:
+            metadata["title"] = f"Specification {metadata['id']}"
+
         return ProgrammingSpec(
-            metadata=SpecMetadata(**data["metadata"]),
+            metadata=SpecMetadata(**metadata),
             context=SpecContext(**data["context"]),
             requirements=SpecRequirement(**data["requirements"]),
             implementation=[
@@ -621,7 +654,7 @@ Return ONLY valid JSON matching this structure:
 
     async def review_spec(self, spec: ProgrammingSpec) -> list[str]:
         """AI-powered specification review for solo developer workflow."""
-        if not self.client or not OPENAI_AVAILABLE:
+        if not self.ai_provider or not self.ai_provider.is_available:
             return ["Manual review required - AI not available"]
 
         system_prompt = """You are a pragmatic senior developer reviewing a specification for a solo developer.
@@ -644,17 +677,16 @@ Return a simple JSON array of strings - no markdown formatting."""
         spec_yaml = yaml.dump(asdict(spec), default_flow_style=False)
 
         try:
-            # Use Responses API with web search for current best practices
-            response = await self.client.responses.create(
+            # Use AI provider with web search for current best practices
+            content = await self.ai_provider.generate_response(
+                prompt=f"Review this specification:\n\n{spec_yaml}",
+                system_prompt=system_prompt,
+                temperature=0.1,
                 model="gpt-4.1",  # Use model that supports web search
                 tools=[
                     {"type": "web_search_preview"}
                 ],  # Enable web search for current practices
-                input=f"{system_prompt}\n\nReview this specification:\n\n{spec_yaml}",
-                temperature=0.1,
             )
-
-            content = response.output_text
             # Try to parse as JSON, fallback to text
             try:
                 return json.loads(content)

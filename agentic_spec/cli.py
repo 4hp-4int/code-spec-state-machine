@@ -230,6 +230,11 @@ def generate_spec(
     feedback: bool = Option(
         False, "--feedback", help="Enable interactive feedback collection"
     ),
+    dry_run: bool = Option(
+        False,
+        "--dry-run",
+        help="Preview what would be generated without saving to file",
+    ),
     templates_dir: str = Option(
         "templates", "--templates-dir", help="Templates directory"
     ),
@@ -318,20 +323,52 @@ def generate_spec(
                 msg = "Failed to generate specification using AI"
                 raise AIServiceError(msg, str(e)) from e
 
-            # Save specification with error handling
-            try:
-                spec_path = generator.save_spec(spec)
-                logger.info("Specification saved to %s", spec_path)
-            except Exception as e:
-                logger.exception("Error saving specification")
-                msg = "Failed to save specification"
-                raise FileSystemError(msg, str(e)) from e
+            # Handle dry-run vs normal save
+            if dry_run:
+                print("🔍 DRY RUN MODE - Specification preview:")
+                print("=" * 60)
+                print(f"📋 Title: {spec.metadata.title}")
+                print(f"🆔 ID: {spec.metadata.id}")
+                print(f"📁 Project: {spec.context.project}")
+                print(f"🏷️  Domain: {spec.context.domain}")
+                print(f"📦 Dependencies: {len(spec.context.dependencies)}")
+                print(
+                    f"✅ Functional Requirements: {len(spec.requirements.functional)}"
+                )
+                print(f"⚙️  Implementation Steps: {len(spec.implementation)}")
+                print("=" * 60)
+                print()
+                print("📄 Full YAML specification:")
+                print("-" * 40)
 
-            print(f"✅ Specification generated: {spec_path}")
-            print(f"📋 Spec ID: {spec.metadata.id}")
+                # Show the YAML content
+                from dataclasses import asdict
 
-            # Auto-review if enabled in config
-            if generator.config.workflow.auto_review:
+                import yaml
+
+                spec_yaml = yaml.dump(
+                    asdict(spec), default_flow_style=False, sort_keys=False
+                )
+                print(spec_yaml)
+
+                print("-" * 40)
+                print("💡 Use without --dry-run to save this specification")
+
+            else:
+                # Save specification with error handling
+                try:
+                    spec_path = generator.save_spec(spec)
+                    logger.info("Specification saved to %s", spec_path)
+                except Exception as e:
+                    logger.exception("Error saving specification")
+                    msg = "Failed to save specification"
+                    raise FileSystemError(msg, str(e)) from e
+
+                print(f"✅ Specification generated: {spec_path}")
+                print(f"📋 Spec ID: {spec.metadata.id}")
+
+            # Auto-review if enabled in config (but skip in dry-run)
+            if not dry_run and generator.config.workflow.auto_review:
                 try:
                     print("🔍 Reviewing specification...")
                     review_notes = await generator.review_spec(spec)
@@ -415,8 +452,20 @@ def review_specs(
             return
 
         print("📋 Available specifications:")
+
+        # Create a spec generator to load specs
+        spec_gen = SpecGenerator(Path(templates_dir), specs_dir_path)
+
         for i, spec_path in enumerate(specs):
-            print(f"  {i}: {spec_path.name}")
+            try:
+                spec = spec_gen.load_spec(spec_path)
+                title = spec.metadata.title
+                spec_id = spec.metadata.id
+                status_emoji = "🚀" if spec.metadata.status == "implemented" else "📝"
+                print(f"  {i}: {status_emoji} {title} ({spec_id})")
+            except Exception:
+                # Fallback to filename if loading fails
+                print(f"  {i}: {spec_path.name}")
 
         logger.info("Listed %d specifications", len(specs))
 
@@ -601,6 +650,136 @@ def publish_spec(
             raise typer.Exit(1) from None
 
     asyncio.run(_publish())
+
+
+@app.command("init")
+def init_project(
+    force: bool = Option(False, "--force", help="Overwrite existing configuration"),
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Specs directory"),
+):
+    """Initialize a new agentic-spec project with interactive setup.
+
+    Creates the project structure, configuration file, and base templates.
+    """
+    logger = logging.getLogger("agentic_spec")
+
+    try:
+        print("🚀 Welcome to agentic-spec!")
+        print("Let's set up your project...")
+        print()
+
+        # Create directories
+        templates_path = Path(templates_dir)
+        specs_path = Path(specs_dir)
+
+        print("📁 Creating directories...")
+        templates_path.mkdir(exist_ok=True)
+        specs_path.mkdir(exist_ok=True)
+        logs_path = Path("logs")
+        logs_path.mkdir(exist_ok=True)
+
+        print(f"  ✅ {templates_dir}/")
+        print(f"  ✅ {specs_dir}/")
+        print("  ✅ logs/")
+        print()
+
+        # Interactive configuration
+        print("⚙️  Let's configure your AI provider...")
+
+        # Ask for AI provider
+        provider_choice = typer.prompt(
+            "Choose AI provider",
+            type=typer.Choice(["openai"], case_sensitive=False),
+            default="openai",
+        )
+
+        # Ask for API key (optional)
+        api_key = typer.prompt(
+            "Enter your OpenAI API key (or press Enter to use OPENAI_API_KEY env var)",
+            default="",
+            hide_input=True,
+        )
+
+        # Ask for project name
+        project_name = typer.prompt("What's your project name?", default="my-project")
+
+        # Create configuration
+        config_data = {
+            "ai_settings": {
+                "default_provider": provider_choice,
+                "providers": {
+                    provider_choice: {
+                        "provider_type": provider_choice,
+                        "default_model": "gpt-4o-mini",
+                        "api_key": api_key if api_key else None,
+                        "timeout": 120.0,
+                    }
+                },
+            },
+            "directories": {
+                "templates_dir": templates_dir,
+                "specs_dir": specs_dir,
+                "config_dir": ".",
+            },
+            "prompt_settings": {
+                "model": "gpt-4o-mini",
+                "temperature": 0.1,
+                "enable_web_search": True,
+            },
+            "default_context": {
+                "user_role": "solo developer",
+                "target_audience": "solo developer",
+                "desired_tone": "practical",
+                "complexity_level": "intermediate",
+                "time_constraints": "production ready",
+            },
+        }
+
+        # Write configuration file
+        config_file = Path("agentic_spec_config.yaml")
+        if config_file.exists() and not force:
+            overwrite = typer.confirm(
+                f"Configuration file {config_file} already exists. Overwrite?"
+            )
+            if not overwrite:
+                print("❌ Setup cancelled.")
+                return
+
+        with config_file.open("w") as f:
+            yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+
+        print(f"  ✅ {config_file}")
+        print()
+
+        # Create base templates
+        print("📋 Creating base templates...")
+        try:
+            create_base_templates(templates_path, project_name)
+            print("  ✅ Base templates created")
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not create templates: {e}")
+
+        print()
+        print("🎉 Project initialized successfully!")
+        print()
+        print("Next steps:")
+        print("  1. Run 'agentic-spec generate \"your first specification\"'")
+        print("  2. Check the templates/ directory for customizable templates")
+        print("  3. Use 'agentic-spec review' to see your specifications")
+        print()
+
+        if not api_key:
+            print("💡 Remember to set your OPENAI_API_KEY environment variable:")
+            print("   export OPENAI_API_KEY=your-api-key-here")
+            print()
+
+    except Exception as e:
+        logger.exception("Error during project initialization")
+        print(f"❌ Initialization failed: {e}")
+        raise typer.Exit(1) from None
 
 
 @app.command("config")
