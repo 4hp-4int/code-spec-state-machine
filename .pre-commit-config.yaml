@@ -8,10 +8,10 @@ repos:
     # Ruff version
     rev: v0.8.0
     hooks:
-      # Run the linter (non-blocking, shows warnings)
+      # Run the linter with auto-fix
       - id: ruff
-        args: [--fix, --exit-zero]
-      # Run the formatter
+        args: [--fix]
+      # Run the formatter (auto-formats files)
       - id: ruff-format
 
   # Standard pre-commit hooks for general quality
@@ -41,3 +41,6 @@ default_stages: [pre-commit]
 
 # Fail fast - stop running hooks after first failure
 fail_fast: false
+
+# Configure hooks to auto-format files during staging
+# When ruff makes changes, the user can simply re-stage and commit
