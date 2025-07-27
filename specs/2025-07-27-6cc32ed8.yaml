@@ -1,0 +1,151 @@
+metadata:
+  id: 6cc32ed8
+  title: Unify prompt editing system with specification templates and improve naming
+    c...
+  inherits: []
+  created: '2025-07-27T07:00:57.989759'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids:
+  - b26432ae
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+    description: Core dependency for AI interactions
+  - name: pyyaml
+    version: 6.0.2
+    description: For handling YAML files
+  - name: networkx
+    version: '3.3'
+    description: For graph-based specification relationships
+  - name: matplotlib
+    version: 3.9.2
+    description: For visualization purposes
+  - name: jinja2
+    version: 3.1.0
+    description: For template rendering
+  - name: typer
+    version: 0.12.0
+    description: For building CLI applications
+  - name: pytest-cov
+    version: 6.2.1
+    description: For testing coverage
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - agentic_spec/core.py
+  - agentic_spec/prompt_engineering.py
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+  - templates/
+  - specs/
+  - tests/
+requirements:
+  functional:
+  - Unify prompt editing with specification templates to allow users to edit prompt
+    templates used in spec generation.
+  - Rename 'templates' directory to 'spec-templates' for YAML inheritance templates
+    and create 'prompt-templates' for editable text prompts.
+  - Update the init command to automatically create the foundation spec during project
+    setup.
+  - Enable parameterization of prompt templates (e.g., {{project_name}}, {{domain}})
+    for use in spec generation.
+  - Integrate the prompt editor with the main application so that editing prompt templates
+    directly affects spec generation.
+  non_functional:
+  - Maintain simplicity and intuitive user experience, allowing easy customization
+    of specification generation through prompt templates.
+  - Ensure compatibility with existing codebase structure and dependencies.
+  - Provide comprehensive error handling with informative messages.
+  - Implement unit tests for all new functionality.
+  constraints:
+  - Use Python 3.12+ for modern language features.
+  - Maintain CLI interface for automation and scripting.
+  - Store all data in human-readable YAML format.
+  - Avoid external databases to keep deployment simple.
+  - Maintain Windows compatibility (CRLF/LF handling).
+  - Keep lint error count minimal (currently <30 from original 134).
+  - Use non-blocking pre-commit hooks to show warnings without stopping commits.
+implementation:
+- task: Rename 'templates' directory and create 'prompt-templates' directory.
+  details: Rename the existing 'templates' directory to 'spec-templates' to clearly
+    indicate its purpose for YAML inheritance templates. Create a new 'prompt-templates'
+    directory to store editable text prompts used in specification generation.
+  files:
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+  - spec-templates/
+  - prompt-templates/
+  acceptance: The directory structure reflects the new naming conventions, and the
+    application correctly loads templates from the updated directories.
+  estimated_effort: low
+  step_id: 6cc32ed8:0
+  sub_spec_id: null
+- task: Update the init command to create the foundation spec during project setup.
+  details: Modify the 'init' command in 'cli.py' to automatically generate the foundation
+    specification file during project initialization. This involves creating a default
+    foundation spec in the 'specs/' directory.
+  files:
+  - agentic_spec/cli.py
+  - specs/foundation_spec.yaml
+  acceptance: Running the 'init' command results in the creation of a default foundation
+    specification file in the 'specs/' directory.
+  estimated_effort: medium
+  step_id: 6cc32ed8:1
+  sub_spec_id: null
+- task: Implement parameterization of prompt templates.
+  details: Utilize Jinja2 templating to allow prompt templates to include placeholders
+    (e.g., {{project_name}}, {{domain}}) that can be dynamically replaced with user-provided
+    values during specification generation.
+  files:
+  - agentic_spec/prompt_engineering.py
+  - prompt-templates/
+  acceptance: Prompt templates support dynamic placeholders, and specifications generated
+    from these templates correctly reflect the provided parameters.
+  estimated_effort: medium
+  step_id: 6cc32ed8:2
+  sub_spec_id: b26432ae
+- task: Integrate prompt editor with the main application.
+  details: Develop functionality within the main application to allow users to edit
+    prompt templates directly. Changes made to these templates should immediately
+    affect how specifications are generated, ensuring a seamless connection between
+    prompt editing and spec generation.
+  files:
+  - agentic_spec/prompt_engineering.py
+  - agentic_spec/cli.py
+  - prompt-templates/
+  acceptance: Editing a prompt template through the application results in corresponding
+    changes in the generated specifications without requiring manual intervention.
+  estimated_effort: high
+  step_id: 6cc32ed8:3
+  sub_spec_id: null
+- task: Implement unit tests for new functionalities.
+  details: Develop comprehensive unit tests to cover the new functionalities, including
+    directory renaming, foundation spec creation during initialization, prompt template
+    parameterization, and prompt editor integration.
+  files:
+  - tests/test_cli.py
+  - tests/test_prompt_engineering.py
+  acceptance: All new functionalities are covered by unit tests, and these tests pass
+    successfully, ensuring the reliability of the implemented features.
+  estimated_effort: medium
+  step_id: 6cc32ed8:4
+  sub_spec_id: null
+review_notes:
+- The specification does not detail how prompt template editing will be surfaced in
+  the CLI (e.g., will it open the user's default editor, or provide inline editing?),
+  which is a key implementation detail for seamless user experience.
+- "When renaming and moving directories, ensure all import paths and file references\
+  \ in the codebase are updated to prevent runtime errors\u2014especially for template\
+  \ loading logic."
+- Jinja2 template rendering should be sandboxed or validated to avoid code injection
+  risks, especially since templates are user-editable and may be executed with arbitrary
+  input.
+- For Windows compatibility, explicitly handle file path separators and newline normalization
+  when reading/writing YAML and template files to avoid subtle bugs.
+context_parameters: null
+feedback_history: []

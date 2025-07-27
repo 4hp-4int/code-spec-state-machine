@@ -14,7 +14,8 @@
       "Bash(agentic-spec:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(pytest:*)"
     ],
     "deny": []
   }

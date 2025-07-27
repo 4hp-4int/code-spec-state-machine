@@ -1,9 +1,10 @@
 metadata:
   id: 2a65633c
+  title: Specification 2a65633c
   inherits: []
   created: '2025-07-27T06:34:10.820476'
   version: '1.0'
-  status: draft
+  status: implemented
   parent_spec_id: null
   child_spec_ids:
   - 72ef1b41

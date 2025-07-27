@@ -1,5 +1,6 @@
 metadata:
   id: d0d26085
+  title: Specification d0d26085
   inherits:
   - base-coding-standards
   - agentic-spec-foundation

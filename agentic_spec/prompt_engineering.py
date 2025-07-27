@@ -1,20 +1,23 @@
 """Prompt engineering utilities for enhanced AI context awareness."""
 
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from .models import ContextParameters, FeedbackData
+from .prompt_template_loader import PromptTemplateLoader
 
 
 class PromptEngineer:
     """Manages AI prompt generation with context awareness and feedback integration."""
 
-    def __init__(self):
+    def __init__(self, prompt_templates_dir: Path | None = None):
         self.feedback_weights = {
             "accuracy_score": 0.4,
             "relevance_score": 0.4,
             "rating": 0.2,
         }
+        self.prompt_template_loader = PromptTemplateLoader(prompt_templates_dir)
 
     def build_context_aware_prompt(
         self,
@@ -72,8 +75,16 @@ class PromptEngineer:
         if not context_sections:
             return base_prompt
 
-        # Build enhanced prompt
-        return f"""CONTEXT PARAMETERS:
+        # Build enhanced prompt using template
+        try:
+            return self.prompt_template_loader.render_template(
+                "context-enhancement",
+                context_sections=context_sections,
+                base_prompt=base_prompt,
+            )
+        except (FileNotFoundError, ValueError):
+            # Fallback to embedded template if not found
+            return f"""CONTEXT PARAMETERS:
 {chr(10).join(f"- {section}" for section in context_sections)}
 
 TASK:

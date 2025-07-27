@@ -40,9 +40,24 @@ class WorkflowSettings(BaseModel):
 class DirectorySettings(BaseModel):
     """Configuration for directory paths."""
 
-    templates_dir: str = "templates"
+    spec_templates_dir: str = "spec-templates"
+    prompt_templates_dir: str = "prompt-templates"
     specs_dir: str = "specs"
     config_dir: str = "."
+
+    # Legacy support - deprecated
+    templates_dir: str | None = None
+
+    def get_spec_templates_dir(self) -> str:
+        """Get spec templates directory with legacy fallback."""
+        if self.templates_dir is not None:
+            # Legacy mode - use old templates_dir
+            return self.templates_dir
+        return self.spec_templates_dir
+
+    def get_prompt_templates_dir(self) -> str:
+        """Get prompt templates directory."""
+        return self.prompt_templates_dir
 
 
 class AIProviderConfig(BaseModel):

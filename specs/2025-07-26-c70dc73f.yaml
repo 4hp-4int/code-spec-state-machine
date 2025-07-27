@@ -1,5 +1,6 @@
 metadata:
   id: c70dc73f
+  title: Specification c70dc73f
   inherits:
   - agentic-spec-foundation
   - base-coding-standards

@@ -22,6 +22,7 @@ from .models import (
     SpecRequirement,
 )
 from .prompt_engineering import PromptEngineer
+from .prompt_template_loader import PromptTemplateLoader
 
 
 class SpecGenerator:
@@ -29,16 +30,23 @@ class SpecGenerator:
 
     def __init__(
         self,
-        templates_dir: Path,
+        spec_templates_dir: Path,
         specs_dir: Path,
         config: AgenticSpecConfig | None = None,
     ):
-        self.templates_dir = templates_dir
+        self.spec_templates_dir = spec_templates_dir
         self.specs_dir = specs_dir
-        self.templates_dir.mkdir(parents=True, exist_ok=True)
+        self.spec_templates_dir.mkdir(parents=True, exist_ok=True)
         self.specs_dir.mkdir(parents=True, exist_ok=True)
-        self.prompt_engineer = PromptEngineer()
         self.config = config or AgenticSpecConfig()
+
+        # Initialize prompt template loader
+        prompt_templates_dir = (
+            self.spec_templates_dir.parent
+            / self.config.directories.get_prompt_templates_dir()
+        )
+        self.prompt_template_loader = PromptTemplateLoader(prompt_templates_dir)
+        self.prompt_engineer = PromptEngineer(prompt_templates_dir)
 
         # Initialize AI provider
         self.ai_provider = self._initialize_ai_provider()
@@ -59,7 +67,7 @@ class SpecGenerator:
 
     def load_template(self, template_name: str) -> dict[str, Any]:
         """Load a base template by name with version validation."""
-        template_path = self.templates_dir / f"{template_name}.yaml"
+        template_path = self.spec_templates_dir / f"{template_name}.yaml"
         if template_path.exists():
             with template_path.open() as f:
                 template_data = yaml.safe_load(f)
@@ -218,7 +226,7 @@ class SpecGenerator:
             foundation_data = self._analyze_codebase_for_foundation()
 
             # Write updated foundation spec
-            foundation_path = self.templates_dir / "agentic-spec-foundation.yaml"
+            foundation_path = self.spec_templates_dir / "agentic-spec-foundation.yaml"
             with foundation_path.open("w", encoding="utf-8") as f:
                 yaml.dump(foundation_data, f, default_flow_style=False, sort_keys=False)
 
@@ -230,7 +238,7 @@ class SpecGenerator:
     def _analyze_codebase_for_foundation(self) -> dict[str, Any]:
         """Analyze current codebase to generate foundation spec data."""
         # Get project root (go up from agentic_spec directory)
-        project_root = self.templates_dir.parent
+        project_root = self.spec_templates_dir.parent
 
         # Analyze Python files
         python_files = list(project_root.rglob("*.py"))
@@ -513,7 +521,16 @@ CRITICAL CONTEXT REQUIREMENTS:
 
 You MUST thoroughly analyze and incorporate ALL provided context into your specification."""
 
-        system_prompt = f"""You are a programming specification generator. Create detailed, implementable specifications from high-level prompts.
+        # Load system prompt from template
+        try:
+            system_prompt = self.prompt_template_loader.render_template(
+                "specification-generation",
+                context_info=context_info,
+                project_name=project_name,
+            )
+        except (FileNotFoundError, ValueError):
+            # Fallback to embedded prompt if template not found
+            system_prompt = f"""You are a programming specification generator. Create detailed, implementable specifications from high-level prompts.
 
 CRITICAL INSTRUCTIONS:
 1. THOROUGHLY INSPECT AND ANALYZE all provided context (foundation, parent, inherited) below
@@ -657,7 +674,14 @@ Return ONLY valid JSON matching this structure:
         if not self.ai_provider or not self.ai_provider.is_available:
             return ["Manual review required - AI not available"]
 
-        system_prompt = """You are a pragmatic senior developer reviewing a specification for a solo developer.
+        # Load system prompt from template
+        try:
+            system_prompt = self.prompt_template_loader.render_template(
+                "specification-review"
+            )
+        except (FileNotFoundError, ValueError):
+            # Fallback to embedded prompt if template not found
+            system_prompt = """You are a pragmatic senior developer reviewing a specification for a solo developer.
 
 IMPORTANT: When reviewing, consider current best practices, library versions, and implementation patterns. If needed, use web search to verify that the proposed approach uses up-to-date libraries and follows current standards.
 
@@ -749,8 +773,20 @@ Return a simple JSON array of strings - no markdown formatting."""
             f"{parent_spec.metadata.id}:{step_id}:{datetime.now().isoformat()}".encode()
         ).hexdigest()[:8]
 
-        # Create detailed prompt for the sub-specification
-        sub_prompt = f"""
+        # Create detailed prompt for the sub-specification using template
+        try:
+            sub_prompt = self.prompt_template_loader.render_template(
+                "step-expansion",
+                parent_spec_id=parent_spec.metadata.id,
+                step_task=target_step.task,
+                step_details=target_step.details,
+                step_files=", ".join(target_step.files),
+                parent_project=parent_spec.context.project,
+                parent_domain=parent_spec.context.domain,
+            )
+        except (FileNotFoundError, ValueError):
+            # Fallback to embedded prompt if template not found
+            sub_prompt = f"""
         Expand this implementation step into a detailed sub-specification:
 
         Parent Spec: {parent_spec.metadata.id}

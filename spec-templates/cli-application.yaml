@@ -1,0 +1,19 @@
+version: "1.0.0"
+name: "cli-application"
+description: "Command-line interface development template with modern CLI frameworks"
+
+dependencies:
+- click
+- rich
+- typer
+domain: command-line interface
+files_involved:
+- cli.py
+- commands/
+- config.py
+- tests/
+patterns:
+  argument_parsing: click or argparse for complex CLIs
+  configuration: YAML or TOML configuration files
+  output_formatting: rich for enhanced terminal output
+  testing: pytest with click.testing.CliRunner

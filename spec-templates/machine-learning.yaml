@@ -1,0 +1,21 @@
+version: "1.0.0"
+name: "machine-learning"
+description: "Machine learning project template with scikit-learn and model lifecycle"
+
+dependencies:
+- scikit-learn
+- pandas
+- numpy
+- joblib
+domain: machine learning
+files_involved:
+- train.py
+- predict.py
+- models/
+- features/
+- evaluation/
+patterns:
+  evaluation: cross-validation and metrics tracking
+  feature_engineering: sklearn preprocessing pipelines
+  model_persistence: joblib for sklearn models
+  model_training: train/validation/test splits

@@ -9,8 +9,9 @@ import sys
 
 import typer
 from typer import Argument, Option
+import yaml
 
-from .config import get_config_manager, parse_cli_overrides
+from .config import AgenticSpecConfig, get_config_manager, parse_cli_overrides
 from .core import SpecGenerator
 from .exceptions import (
     AgenticSpecError,
@@ -23,6 +24,7 @@ from .exceptions import (
 )
 from .graph_visualization import get_spec_stats, print_spec_graph
 from .models import ContextParameters
+from .prompt_editor import PromptEditor
 from .template_loader import (
     TemplateLoader,
     list_templates,
@@ -30,6 +32,95 @@ from .template_loader import (
 )
 from .template_validator import TemplateValidator
 from .templates.base import create_base_templates
+
+
+def _create_basic_prompt_templates(prompt_templates_dir: Path, project_name: str):
+    """Create basic prompt templates for common use cases."""
+
+    # Basic specification generation prompt
+    basic_prompt = f"""You are generating a programming specification for the {project_name} project.
+
+Context:
+- Project: {{{{project_name}}}}
+- Domain: {{{{domain}}}}
+- User Role: {{{{user_role}}}}
+- Target Audience: {{{{target_audience}}}}
+
+Generate a comprehensive specification that includes:
+1. Clear functional and non-functional requirements
+2. Detailed implementation steps with effort estimates
+3. Files that will be modified or created
+4. Acceptance criteria for each task
+
+Focus on practical, actionable specifications that can guide implementation.
+
+Task: {{{{user_prompt}}}}"""
+
+    # Feature addition prompt
+    feature_prompt = f"""You are adding a new feature to the {project_name} project.
+
+Context:
+- Project: {{{{project_name}}}}
+- Existing codebase: {{{{existing_files}}}}
+- Architecture: {{{{architecture_notes}}}}
+
+For this feature addition:
+1. Consider integration with existing code
+2. Maintain current coding standards
+3. Include necessary tests
+4. Plan for documentation updates
+
+Focus on clean integration and maintaining code quality.
+
+Feature to add: {{{{user_prompt}}}}"""
+
+    # Bug fix prompt
+    bugfix_prompt = f"""You are creating a specification to fix a bug in the {project_name} project.
+
+Context:
+- Project: {{{{project_name}}}}
+- Bug description: {{{{user_prompt}}}}
+- Affected components: {{{{affected_files}}}}
+
+For this bug fix:
+1. Identify root cause and scope
+2. Plan minimal, targeted changes
+3. Include regression testing
+4. Consider edge cases
+
+Focus on precise fixes without introducing new issues.
+
+Bug to fix: {{{{user_prompt}}}}"""
+
+    # Refactoring prompt
+    refactor_prompt = f"""You are planning a refactoring task for the {project_name} project.
+
+Context:
+- Project: {{{{project_name}}}}
+- Code to refactor: {{{{target_code}}}}
+- Goal: {{{{user_prompt}}}}
+
+For this refactoring:
+1. Preserve existing functionality
+2. Improve code quality/maintainability
+3. Plan incremental changes
+4. Ensure comprehensive testing
+
+Focus on safe, incremental improvements.
+
+Refactoring goal: {{{{user_prompt}}}}"""
+
+    # Write the prompt templates
+    templates = {
+        "basic-specification.md": basic_prompt,
+        "feature-addition.md": feature_prompt,
+        "bug-fix.md": bugfix_prompt,
+        "refactoring.md": refactor_prompt,
+    }
+
+    for filename, content in templates.items():
+        template_path = prompt_templates_dir / filename
+        template_path.write_text(content.strip(), encoding="utf-8")
 
 
 def setup_logging(log_level: str = "INFO") -> logging.Logger:
@@ -146,7 +237,7 @@ app = typer.Typer(
 
 
 async def initialize_generator(
-    templates_dir: Path,
+    spec_templates_dir: Path,
     specs_dir: Path,
     config_file: Path | None = None,
     cli_overrides: list[str] | None = None,
@@ -174,20 +265,20 @@ async def initialize_generator(
 
     try:
         # Use config to set paths if not overridden by CLI
-        final_templates_dir = (
-            Path(templates_dir)
-            if templates_dir
-            else Path(config.directories.templates_dir)
+        final_spec_templates_dir = (
+            Path(spec_templates_dir)
+            if spec_templates_dir
+            else Path(config.directories.get_spec_templates_dir())
         )
         final_specs_dir = (
             Path(specs_dir) if specs_dir else Path(config.directories.specs_dir)
         )
 
         # Ensure directories exist
-        final_templates_dir.mkdir(parents=True, exist_ok=True)
+        final_spec_templates_dir.mkdir(parents=True, exist_ok=True)
         final_specs_dir.mkdir(parents=True, exist_ok=True)
 
-        generator = SpecGenerator(final_templates_dir, final_specs_dir, config)
+        generator = SpecGenerator(final_spec_templates_dir, final_specs_dir, config)
         logger.debug("SpecGenerator initialized successfully")
     except Exception as e:
         logger.exception("Error initializing SpecGenerator")
@@ -235,8 +326,11 @@ def generate_spec(
         "--dry-run",
         help="Preview what would be generated without saving to file",
     ),
-    templates_dir: str = Option(
-        "templates", "--templates-dir", help="Templates directory"
+    spec_templates_dir: str = Option(
+        "spec-templates",
+        "--spec-templates-dir",
+        "--templates-dir",
+        help="YAML spec templates directory",
     ),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
     config: str | None = Option(None, "--config", help="Path to configuration file"),
@@ -263,14 +357,17 @@ def generate_spec(
         set_options_list = set_options if set_options is not None else []
 
         # Convert string paths to Path objects
-        templates_dir_path = Path(templates_dir)
+        spec_templates_dir_path = Path(spec_templates_dir)
         specs_dir_path = Path(specs_dir)
         config_path = Path(config) if config else None
 
         try:
             try:
                 generator = await initialize_generator(
-                    templates_dir_path, specs_dir_path, config_path, set_options_list
+                    spec_templates_dir_path,
+                    specs_dir_path,
+                    config_path,
+                    set_options_list,
                 )
             except (ConfigurationError, FileSystemError) as e:
                 logger.exception("Failed to initialize")
@@ -655,8 +752,16 @@ def publish_spec(
 @app.command("init")
 def init_project(
     force: bool = Option(False, "--force", help="Overwrite existing configuration"),
-    templates_dir: str = Option(
-        "templates", "--templates-dir", help="Templates directory"
+    spec_templates_dir: str = Option(
+        "spec-templates",
+        "--spec-templates-dir",
+        "--templates-dir",
+        help="YAML spec templates directory",
+    ),
+    prompt_templates_dir: str = Option(
+        "prompt-templates",
+        "--prompt-templates-dir",
+        help="Text prompt templates directory",
     ),
     specs_dir: str = Option("specs", "--specs-dir", help="Specs directory"),
 ):
@@ -672,16 +777,19 @@ def init_project(
         print()
 
         # Create directories
-        templates_path = Path(templates_dir)
+        spec_templates_path = Path(spec_templates_dir)
+        prompt_templates_path = Path(prompt_templates_dir)
         specs_path = Path(specs_dir)
 
         print("📁 Creating directories...")
-        templates_path.mkdir(exist_ok=True)
+        spec_templates_path.mkdir(exist_ok=True)
+        prompt_templates_path.mkdir(exist_ok=True)
         specs_path.mkdir(exist_ok=True)
         logs_path = Path("logs")
         logs_path.mkdir(exist_ok=True)
 
-        print(f"  ✅ {templates_dir}/")
+        print(f"  ✅ {spec_templates_dir}/")
+        print(f"  ✅ {prompt_templates_dir}/")
         print(f"  ✅ {specs_dir}/")
         print("  ✅ logs/")
         print()
@@ -720,7 +828,8 @@ def init_project(
                 },
             },
             "directories": {
-                "templates_dir": templates_dir,
+                "spec_templates_dir": spec_templates_dir,
+                "prompt_templates_dir": prompt_templates_dir,
                 "specs_dir": specs_dir,
                 "config_dir": ".",
             },
@@ -754,21 +863,48 @@ def init_project(
         print(f"  ✅ {config_file}")
         print()
 
-        # Create base templates
-        print("📋 Creating base templates...")
+        # Create base spec templates
+        print("📋 Creating base spec templates...")
         try:
-            create_base_templates(templates_path, project_name)
-            print("  ✅ Base templates created")
+            create_base_templates(spec_templates_path, project_name)
+            print("  ✅ Base spec templates created")
         except Exception as e:
-            print(f"  ⚠️  Warning: Could not create templates: {e}")
+            print(f"  ⚠️  Warning: Could not create spec templates: {e}")
+
+        # Create foundation spec automatically
+        print("🏗️  Creating foundation specification...")
+        try:
+            # Initialize a temporary generator to create foundation spec
+            config_obj = AgenticSpecConfig(**config_data)
+            temp_generator = SpecGenerator(spec_templates_path, specs_path, config_obj)
+            success = temp_generator.sync_foundation_spec()
+            if success:
+                print("  ✅ Foundation spec created")
+            else:
+                print("  ⚠️  Warning: Could not create foundation spec")
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not create foundation spec: {e}")
+
+        # Create basic prompt templates
+        print("✏️  Creating basic prompt templates...")
+        try:
+            _create_basic_prompt_templates(prompt_templates_path, project_name)
+            print("  ✅ Prompt templates created")
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not create prompt templates: {e}")
 
         print()
         print("🎉 Project initialized successfully!")
         print()
         print("Next steps:")
         print("  1. Run 'agentic-spec generate \"your first specification\"'")
-        print("  2. Check the templates/ directory for customizable templates")
-        print("  3. Use 'agentic-spec review' to see your specifications")
+        print(
+            f"  2. Check the {spec_templates_dir}/ directory for YAML inheritance templates"
+        )
+        print(
+            f"  3. Edit prompt templates in {prompt_templates_dir}/ to customize generation"
+        )
+        print("  4. Use 'agentic-spec review' to see your specifications")
         print()
 
         if not api_key:
@@ -1145,6 +1281,84 @@ def render_spec(
             raise typer.Exit(1) from None
 
     asyncio.run(_render())
+
+
+@app.command("prompt")
+def prompt_command(
+    action: str = Argument(..., help="Prompt action: 'edit', 'list', or 'new'"),
+    name: str | None = Argument(None, help="Name of prompt to edit/create"),
+    config_dir: str = Option(".", "--config-dir", help="Configuration directory"),
+):
+    """Manage prompts using system editor.
+
+    Actions:
+    - edit <name>: Edit an existing prompt or create a new one
+    - list: Show all available prompts
+    - new <name>: Create a new prompt (alias for edit)
+    """
+    logger = logging.getLogger("agentic_spec")
+
+    try:
+        editor = PromptEditor(Path(config_dir))
+
+        if action == "edit" or action == "new":
+            if not name:
+                print("❌ Prompt name required for edit/new command")
+                print("💡 Usage: agentic-spec prompt edit <name>")
+                return
+
+            try:
+                print(f"📝 Opening prompt '{name}' in editor...")
+                updated_content = editor.edit_prompt(name)
+
+                if updated_content.strip():
+                    print(f"✅ Prompt '{name}' saved successfully")
+                    print(f"📄 Content length: {len(updated_content)} characters")
+                else:
+                    print(f"⚠️  Prompt '{name}' is empty")
+
+            except FileNotFoundError as e:
+                print(f"❌ Prompt file not found: {e}")
+                print("💡 A new prompt file will be created when you save")
+
+            except ConfigurationError as e:
+                print(f"❌ Editor error: {e.message}")
+                print(
+                    "💡 Make sure your $EDITOR is set or a default editor is available"
+                )
+
+        elif action == "list":
+            print("📋 Available prompts:")
+            prompts = editor.list_prompts()
+
+            if prompts:
+                for i, prompt_name in enumerate(prompts, 1):
+                    print(f"  {i}. {prompt_name}")
+                print(f"\n💡 Found {len(prompts)} prompt(s)")
+                print("💡 Use 'agentic-spec prompt edit <name>' to edit a prompt")
+            else:
+                print("❌ No prompts found")
+                print(
+                    "💡 Use 'agentic-spec prompt edit <name>' to create your first prompt"
+                )
+
+        else:
+            print("📋 Prompt Commands:")
+            print("  agentic-spec prompt edit <name>  - Edit or create a prompt")
+            print("  agentic-spec prompt list         - List all available prompts")
+            print(
+                "  agentic-spec prompt new <name>   - Create a new prompt (alias for edit)"
+            )
+            print()
+            print("💡 Prompts are saved in the prompts/ directory as .md files")
+            print(
+                "💡 Set your $EDITOR environment variable to use your preferred editor"
+            )
+
+    except Exception as e:
+        logger.exception("Error managing prompts")
+        print(f"❌ Failed to manage prompts: {e}")
+        raise typer.Exit(1) from None
 
 
 def main():
