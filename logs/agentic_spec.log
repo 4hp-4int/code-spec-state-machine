@@ -166,3 +166,212 @@ Traceback (most recent call last):
     self.specs_dir.mkdir(parents=True, exist_ok=True)
     ^^^^^^^^^^^^^^^^^^^^
 AttributeError: 'str' object has no attribute 'mkdir'
+2025-07-26 21:15:03,027 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:15:03,034 - agentic_spec - ERROR - Error initializing SpecGenerator
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 182, in initialize_generator
+    final_specs_dir.mkdir(parents=True, exist_ok=True)
+    ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'mkdir'
+2025-07-26 21:15:03,035 - agentic_spec - ERROR - Error publishing spec
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 182, in initialize_generator
+    final_specs_dir.mkdir(parents=True, exist_ok=True)
+    ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'mkdir'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 567, in _publish
+    generator = await initialize_generator(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 189, in initialize_generator
+    raise FileSystemError(msg, str(e)) from e
+agentic_spec.exceptions.FileSystemError: Failed to initialize application
+2025-07-26 21:15:21,374 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:15:21,721 - agentic_spec - ERROR - Error publishing spec
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 588, in _publish
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 111, in print_spec_graph
+    generator = SpecGenerator(Path("templates"), specs_dir)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 43, in __init__
+    self.specs_dir.mkdir(parents=True, exist_ok=True)
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'mkdir'
+2025-07-26 21:16:44,043 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:16:44,445 - agentic_spec - CRITICAL - Unexpected error: SpecMetadata.__init__() got an unexpected keyword argument 'title'
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 965, in main
+    app()
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 341, in __call__
+    raise e
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 324, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 757, in main
+    return _main(
+           ^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 195, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1830, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 699, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 462, in show_graph
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 114, in print_spec_graph
+    spec_graph = generator.get_spec_graph()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 717, in get_spec_graph
+    spec = self.load_spec(spec_file)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 563, in load_spec
+    metadata=SpecMetadata(**data["metadata"]),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: SpecMetadata.__init__() got an unexpected keyword argument 'title'
+2025-07-26 21:17:22,418 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:17:22,814 - agentic_spec - CRITICAL - Unexpected error: SpecMetadata.__init__() missing 4 required positional arguments: 'id', 'inherits', 'created', and 'version'
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 965, in main
+    app()
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 341, in __call__
+    raise e
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 324, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 757, in main
+    return _main(
+           ^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 195, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1830, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 699, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 462, in show_graph
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 114, in print_spec_graph
+    spec_graph = generator.get_spec_graph()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 721, in get_spec_graph
+    spec = self.load_spec(spec_file)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 567, in load_spec
+    metadata=SpecMetadata(**filtered_metadata),
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: SpecMetadata.__init__() missing 4 required positional arguments: 'id', 'inherits', 'created', and 'version'
+2025-07-26 21:17:40,329 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:17:40,737 - agentic_spec - CRITICAL - Unexpected error: SpecContext.__init__() got an unexpected keyword argument 'project_info'
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 965, in main
+    app()
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 341, in __call__
+    raise e
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 324, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 757, in main
+    return _main(
+           ^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 195, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1830, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 699, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 462, in show_graph
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 114, in print_spec_graph
+    spec_graph = generator.get_spec_graph()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 732, in get_spec_graph
+    spec = self.load_spec(spec_file)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 579, in load_spec
+    context=SpecContext(**data["context"]),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: SpecContext.__init__() got an unexpected keyword argument 'project_info'
+2025-07-26 21:18:00,971 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:18:01,371 - agentic_spec - CRITICAL - Unexpected error: agentic_spec.models.ImplementationStep() argument after ** must be a mapping, not str
+Traceback (most recent call last):
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 965, in main
+    app()
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 341, in __call__
+    raise e
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 324, in __call__
+    return get_command(self)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1442, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 757, in main
+    return _main(
+           ^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\core.py", line 195, in _main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1830, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 1226, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\click\core.py", line 794, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\.venv\Lib\site-packages\typer\main.py", line 699, in wrapper
+    return callback(**use_params)
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\cli.py", line 462, in show_graph
+    print_spec_graph(specs_dir)
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\graph_visualization.py", line 114, in print_spec_graph
+    spec_graph = generator.get_spec_graph()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 748, in get_spec_graph
+    spec = self.load_spec(spec_file)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Khalen\Code\agentic-spec\agentic_spec\core.py", line 598, in load_spec
+    ImplementationStep(**step) for step in data["implementation"]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: agentic_spec.models.ImplementationStep() argument after ** must be a mapping, not str
+2025-07-26 21:19:23,018 - agentic_spec - INFO - Starting agentic-spec CLI
+2025-07-26 21:20:13,871 - agentic_spec - INFO - Starting agentic-spec CLI

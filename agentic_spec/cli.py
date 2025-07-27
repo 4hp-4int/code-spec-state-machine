@@ -1,6 +1,7 @@
 """Command-line interface for agentic specification generator."""
 
 import asyncio
+import json
 import logging
 import logging.handlers
 from pathlib import Path
@@ -20,6 +21,7 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
+from .graph_visualization import get_spec_stats, print_spec_graph
 from .models import ContextParameters
 from .template_loader import (
     TemplateLoader,
@@ -172,8 +174,14 @@ async def initialize_generator(
 
     try:
         # Use config to set paths if not overridden by CLI
-        final_templates_dir = templates_dir or Path(config.directories.templates_dir)
-        final_specs_dir = specs_dir or Path(config.directories.specs_dir)
+        final_templates_dir = (
+            Path(templates_dir)
+            if templates_dir
+            else Path(config.directories.templates_dir)
+        )
+        final_specs_dir = (
+            Path(specs_dir) if specs_dir else Path(config.directories.specs_dir)
+        )
 
         # Ensure directories exist
         final_templates_dir.mkdir(parents=True, exist_ok=True)
@@ -271,9 +279,13 @@ def generate_spec(
             # Get prompt input
             final_prompt = get_prompt_input(prompt)
             if not final_prompt:
-                logger.warning("No prompt provided for generation")
-                msg = "No prompt provided"
-                raise ValidationError(msg)
+
+                def _raise_validation_error():
+                    logger.warning("No prompt provided for generation")
+                    msg = "No prompt provided"
+                    raise ValidationError(msg)
+
+                _raise_validation_error()
 
             logger.info(
                 "Starting specification generation for prompt: %s...",
@@ -380,7 +392,8 @@ def review_specs(
 ):
     """List available specifications for review.
 
-    Shows all generated specifications in the specs directory with their basic information.
+    Shows all generated specifications in the specs directory with their basic
+    information.
     """
     logger = logging.getLogger("agentic_spec")
 
@@ -454,8 +467,6 @@ def show_graph(
     Shows a visual representation of how specifications relate to each other
     and provides statistics about the specification tree.
     """
-    from .graph_visualization import get_spec_stats, print_spec_graph
-
     print_spec_graph(specs_dir)
 
     print("\n📈 Statistics:")
@@ -471,7 +482,8 @@ def show_graph(
 def expand_step(
     step_id: str = Argument(
         ...,
-        help="Step ID in format 'spec_id:step_index' to expand into a detailed sub-specification",
+        help="Step ID in format 'spec_id:step_index' to expand into a detailed "
+        "sub-specification",
     ),
     templates_dir: str = Option(
         "templates", "--templates-dir", help="Templates directory"
@@ -581,8 +593,6 @@ def publish_spec(
 
             # Show updated graph
             print("\n📊 Updated specification graph:")
-            from .graph_visualization import print_spec_graph
-
             print_spec_graph(specs_dir)
 
         except Exception:
@@ -626,8 +636,6 @@ def manage_config(
             print("📋 Current Configuration:")
             print("=" * 50)
             config_dict = config_data.model_dump()
-            import json
-
             print(json.dumps(config_dict, indent=2))
 
         elif action == "validate":
@@ -704,7 +712,9 @@ def manage_templates(
 
         else:
             print("📋 Template Commands:")
-            print("  agentic-spec template list           - List available templates")
+            print(
+                "  agentic-spec template list           - List available " "templates"
+            )
             print(
                 "  agentic-spec template info --template <name> - Show template information"
             )
@@ -812,12 +822,13 @@ def sync_foundation_spec(
                 # Show what was updated
                 try:
                     foundation = generator.load_template("agentic-spec-foundation")
-                    print(
-                        f"🕒 Last synced: {foundation.get('_last_synced', 'Unknown')}"
+                    last_synced = foundation.get("_last_synced", "Unknown")
+                    print(f"🕒 Last synced: {last_synced}")
+
+                    deps_count = len(
+                        foundation.get("context", {}).get("dependencies", [])
                     )
-                    print(
-                        f"📦 Dependencies tracked: {len(foundation.get('context', {}).get('dependencies', []))}"
-                    )
+                    print(f"📦 Dependencies tracked: {deps_count}")
                     print(
                         f"📋 Coding standards: {len(foundation.get('coding_standards', []))}"
                     )

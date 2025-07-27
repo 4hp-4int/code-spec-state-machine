@@ -105,10 +105,12 @@ def visualize_spec_graph(specs_dir: Path, output_file: str = "spec_graph.png"):
     plt.show()
 
 
-def print_spec_graph(specs_dir: Path):
+def print_spec_graph(specs_dir: Path | str):
     """Print a text-based representation of the specification graph."""
 
-    generator = SpecGenerator(Path("templates"), specs_dir)
+    # Convert to Path if string
+    specs_dir_path = Path(specs_dir) if isinstance(specs_dir, str) else specs_dir
+    generator = SpecGenerator(Path("templates"), specs_dir_path)
     spec_graph = generator.get_spec_graph()
 
     if not spec_graph:
@@ -167,10 +169,12 @@ def print_spec_graph(specs_dir: Path):
             print(f"  ❓ {spec_id[:8]} (parent: {spec_graph[spec_id]['parent'][:8]})")
 
 
-def get_spec_stats(specs_dir: Path) -> dict[str, Any]:
+def get_spec_stats(specs_dir: Path | str) -> dict[str, Any]:
     """Get statistics about the specification graph."""
 
-    generator = SpecGenerator(Path("templates"), specs_dir)
+    # Convert to Path if string
+    specs_dir_path = Path(specs_dir) if isinstance(specs_dir, str) else specs_dir
+    generator = SpecGenerator(Path("templates"), specs_dir_path)
     spec_graph = generator.get_spec_graph()
 
     total_specs = len(spec_graph)

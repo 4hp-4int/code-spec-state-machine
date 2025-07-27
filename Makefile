@@ -187,6 +187,7 @@ benchmark:
 # Specification workflow commands
 spec-commit:
 	@echo "Committing specifications and implementation..."
+	git add .
 	git add specs/ agentic_spec/ tests/ pyproject.toml Makefile CLAUDE.md .pre-commit-config.yaml
 	git commit -m "📋 Complete specification implementation and publish specs" \
 		-m "" \
