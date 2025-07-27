@@ -586,3 +586,4 @@ agentic_spec.exceptions.AIServiceError: Failed to generate specification using A
 2025-07-27 06:20:23,051 - agentic_spec - INFO - Starting agentic-spec CLI
 2025-07-27 06:20:23,055 - agentic_spec - INFO - Listing specifications in specs
 2025-07-27 06:20:23,056 - agentic_spec - INFO - Listed 20 specifications
+2025-07-27 06:20:38,241 - agentic_spec - INFO - Starting agentic-spec CLI
