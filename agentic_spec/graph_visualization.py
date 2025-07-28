@@ -83,14 +83,14 @@ def visualize_spec_graph(
 
     # Use hierarchical layout if possible
     try:
-        pos = nx.nx_agraph.graphviz_layout(G, prog="dot")
-    except:
+        pos = nx.nx_agraph.graphviz_layout(graph, prog="dot")
+    except Exception:
         # Fallback to spring layout
-        pos = nx.spring_layout(G, k=3, iterations=50, seed=42)
+        pos = nx.spring_layout(graph, k=3, iterations=50, seed=42)
 
     # Separate nodes by type
-    spec_nodes = [n for n, d in G.nodes(data=True) if d.get("node_type") == "spec"]
-    task_nodes = [n for n, d in G.nodes(data=True) if d.get("node_type") == "task"]
+    spec_nodes = [n for n, d in graph.nodes(data=True) if d.get("node_type") == "spec"]
+    task_nodes = [n for n, d in graph.nodes(data=True) if d.get("node_type") == "task"]
 
     # Color specs by status
     status_colors = {
@@ -101,13 +101,13 @@ def visualize_spec_graph(
     }
 
     spec_colors = [
-        status_colors.get(G.nodes[node].get("status", "draft"), "lightgray")
+        status_colors.get(graph.nodes[node].get("status", "draft"), "lightgray")
         for node in spec_nodes
     ]
 
     # Draw specification nodes
     nx.draw_networkx_nodes(
-        G,
+        graph,
         pos,
         nodelist=spec_nodes,
         node_color=spec_colors,
@@ -119,11 +119,11 @@ def visualize_spec_graph(
     # Draw task nodes if present
     if task_nodes:
         task_colors = [
-            "lightcoral" if G.nodes[n].get("has_subspec") else "lightyellow"
+            "lightcoral" if graph.nodes[n].get("has_subspec") else "lightyellow"
             for n in task_nodes
         ]
         nx.draw_networkx_nodes(
-            G,
+            graph,
             pos,
             nodelist=task_nodes,
             node_color=task_colors,
@@ -141,11 +141,13 @@ def visualize_spec_graph(
 
     for edge_type, style in edge_types.items():
         edges = [
-            (u, v) for u, v, d in G.edges(data=True) if d.get("edge_type") == edge_type
+            (u, v)
+            for u, v, d in graph.edges(data=True)
+            if d.get("edge_type") == edge_type
         ]
         if edges:
             nx.draw_networkx_edges(
-                G,
+                graph,
                 pos,
                 edgelist=edges,
                 edge_color=style["color"],
@@ -157,8 +159,8 @@ def visualize_spec_graph(
             )
 
     # Draw labels
-    labels = {node: data["label"] for node, data in G.nodes(data=True)}
-    nx.draw_networkx_labels(G, pos, labels, font_size=8, font_weight="bold")
+    labels = {node: data["label"] for node, data in graph.nodes(data=True)}
+    nx.draw_networkx_labels(graph, pos, labels, font_size=8, font_weight="bold")
 
     plt.title(
         "Specification and Task Relationship Graph", fontsize=16, fontweight="bold"
@@ -437,7 +439,7 @@ def detect_cycles(specs_dir: Path | str) -> list[list[str]]:
         return []
 
     # Build NetworkX graph
-    G = nx.DiGraph()
+    graph = nx.DiGraph()
 
     # Add all specs as nodes
     for spec_id in spec_graph:
@@ -457,7 +459,6 @@ def detect_cycles(specs_dir: Path | str) -> list[list[str]]:
 
     # Find cycles
     try:
-        cycles = list(nx.simple_cycles(G))
-        return cycles
-    except:
+        return list(nx.simple_cycles(graph))
+    except Exception:
         return []

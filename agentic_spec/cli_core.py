@@ -23,7 +23,12 @@ from .exceptions import (
     TemplateError,
     ValidationError,
 )
-from .graph_visualization import get_spec_stats, print_spec_graph
+from .graph_visualization import (
+    get_spec_stats,
+    print_spec_graph,
+    print_task_tree,
+    visualize_spec_graph,
+)
 from .models import (
     ContextParameters,
 )
@@ -688,21 +693,58 @@ def show_spec_detail(
 @core_app.command("graph")
 def show_graph(
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    show_tasks: bool = Option(
+        False, "--show-tasks", help="Show individual tasks within specs"
+    ),
+    output_image: str | None = Option(
+        None, "--output", "-o", help="Output image file (PNG/SVG)"
+    ),
 ):
     """Display specification dependency graph and statistics.
 
     Shows a visual representation of how specifications relate to each other
     and provides statistics about the specification tree.
     """
-    print_spec_graph(specs_dir)
+    # If output image requested, generate visualization
+    if output_image:
+        from pathlib import Path
 
-    print("\n📈 Statistics:")
-    stats = get_spec_stats(specs_dir)
-    print(f"  Total specs: {stats['total_specs']}")
-    print(f"  Root specs: {stats['root_specs']}")
-    print(f"  Leaf specs: {stats['leaf_specs']}")
-    print(f"  Max depth: {stats['max_depth']}")
-    print(f"  Status breakdown: {stats['status_counts']}")
+        visualize_spec_graph(Path(specs_dir), output_image, show_tasks=show_tasks)
+    else:
+        # Show ASCII graph
+        print_spec_graph(specs_dir, show_tasks=show_tasks)
+
+        print("\n📈 Statistics:")
+        stats = get_spec_stats(specs_dir)
+        print(f"  Total specs: {stats['total_specs']}")
+        print(f"  Root specs: {stats['root_specs']}")
+        print(f"  Leaf specs: {stats['leaf_specs']}")
+        print(f"  Max depth: {stats['max_depth']}")
+        print(f"  Status breakdown: {stats['status_counts']}")
+
+
+@core_app.command("task-tree")
+def show_task_tree(
+    spec_id: str = Argument(..., help="Specification ID to show task tree for"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    output_image: str | None = Option(
+        None, "--output", "-o", help="Output image file (PNG/SVG)"
+    ),
+):
+    """Display detailed task tree for a specification.
+
+    Shows all tasks and their sub-specifications in a hierarchical view.
+    Useful for understanding the complete implementation breakdown.
+    """
+    from pathlib import Path
+
+    if output_image:
+        # Generate image with tasks visible
+        visualize_spec_graph(Path(specs_dir), output_image, show_tasks=True)
+        print(f"📊 Task tree visualization saved to {output_image}")
+    else:
+        # Show ASCII task tree
+        print_task_tree(specs_dir, spec_id)
 
 
 @core_app.command("expand")
