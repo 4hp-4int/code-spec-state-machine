@@ -1,0 +1,105 @@
+metadata:
+  id: 4b606b7d
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T13:59:09.453348'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: '56759291'
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies: []
+  files_involved:
+  - webui/main.py
+requirements:
+  functional:
+  - Ensure all FastAPI route handlers provide templates with navigation, linking,
+    and metadata context.
+  - Refactor route handler logic for clarity and maintainability.
+  - Validate that all required context data is present in template rendering.
+  - Document the context structure provided to templates.
+  non_functional:
+  - Maintain code readability and logical separation of concerns.
+  - Ensure changes are covered by unit tests.
+  - Preserve existing FastAPI route functionality and error handling.
+  constraints:
+  - Only modify webui/main.py; do not introduce new dependencies.
+  - Follow established coding standards (async/await, type hints, error handling,
+    etc.).
+  - Do not break existing API or template contracts.
+implementation:
+- task: Audit current FastAPI route handlers for template context usage
+  details: Review all route handlers in webui/main.py to identify current context
+    data passed to templates. Document any inconsistencies or missing context for
+    navigation, linking, or metadata.
+  files:
+  - webui/main.py
+  acceptance: A written summary of current context usage and identified gaps is produced.
+  estimated_effort: low
+  step_id: 4b606b7d:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Define standard context structure for templates
+  details: Specify a consistent dictionary structure for navigation, linking, and
+    metadata context to be provided to all templates. Include keys and expected value
+    types.
+  files:
+  - webui/main.py
+  acceptance: A clearly defined context structure is documented in code comments and/or
+    docstrings.
+  estimated_effort: low
+  step_id: 4b606b7d:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Refactor route handlers to provide complete context to templates
+  details: Update each FastAPI route handler to assemble and pass the standardized
+    context structure to its template. Ensure all navigation, linking, and metadata
+    fields are populated as required.
+  files:
+  - webui/main.py
+  acceptance: All templates receive the complete, standardized context; manual inspection
+    confirms presence of all required fields.
+  estimated_effort: medium
+  step_id: 4b606b7d:2
+  sub_spec_id: null
+  decomposition_hint: composite:multiple route handlers and context assembly logic
+  progress: null
+  approvals: null
+- task: Add or update unit tests for route context delivery
+  details: Write or update tests to verify that each route handler provides the correct
+    context structure and values to templates.
+  files:
+  - webui/main.py
+  - tests/
+  acceptance: Tests pass and cover all routes for context correctness.
+  estimated_effort: medium
+  step_id: 4b606b7d:3
+  sub_spec_id: null
+  decomposition_hint: composite:multiple routes and context scenarios
+  progress: null
+  approvals: null
+- task: Document context structure and usage for maintainers
+  details: Add code comments and/or a docstring at the top of webui/main.py describing
+    the context structure and its intended use in templates.
+  files:
+  - webui/main.py
+  acceptance: Documentation is present, clear, and matches implementation.
+  estimated_effort: low
+  step_id: 4b606b7d:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes: null
+context_parameters: null
+feedback_history: []
+work_logs: null

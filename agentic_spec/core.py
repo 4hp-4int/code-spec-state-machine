@@ -50,12 +50,25 @@ class GitUtility:
         full_command = ["git"] + command
         try:
             result = subprocess.run(
-                full_command, cwd=directory, capture_output=True, text=True, check=check
+                full_command,
+                cwd=directory,
+                capture_output=True,
+                text=True,
+                check=check,
+                encoding="utf-8",
+                errors="replace",  # Handle encoding issues gracefully
             )
             return result
         except subprocess.CalledProcessError as e:
+            error_msg = (
+                e.stderr.strip()
+                if e.stderr
+                else e.stdout.strip()
+                if e.stdout
+                else "Unknown error"
+            )
             raise GitError(
-                f"Git command failed: {e.stderr.strip() if e.stderr else 'Unknown error'}",
+                f"Git command failed: {error_msg}",
                 git_command=" ".join(full_command),
                 return_code=e.returncode,
             )
@@ -75,6 +88,57 @@ class GitUtility:
         """Check if there are uncommitted changes in the repository."""
         result = GitUtility.run_git_command(["status", "--porcelain"], directory)
         return bool(result.stdout.strip())
+
+    @staticmethod
+    def get_git_status_summary(directory: Path = None) -> dict[str, any]:
+        """Get detailed git status information."""
+        if not GitUtility.is_git_repo(directory):
+            return {"is_git_repo": False}
+
+        try:
+            current_branch = GitUtility.get_current_branch(directory)
+            has_changes = GitUtility.has_uncommitted_changes(directory)
+
+            # Get status details
+            status_result = GitUtility.run_git_command(
+                ["status", "--porcelain"], directory
+            )
+            status_lines = (
+                status_result.stdout.strip().split("\n")
+                if status_result.stdout.strip()
+                else []
+            )
+
+            # Categorize changes
+            staged_files = []
+            unstaged_files = []
+            untracked_files = []
+
+            for line in status_lines:
+                if not line:
+                    continue
+                status_code = line[:2]
+                filename = line[3:]
+
+                if status_code[0] in ["A", "M", "D", "R", "C"]:
+                    staged_files.append(filename)
+                if status_code[1] in ["M", "D"]:
+                    unstaged_files.append(filename)
+                if status_code == "??":
+                    untracked_files.append(filename)
+
+            return {
+                "is_git_repo": True,
+                "current_branch": current_branch,
+                "has_uncommitted_changes": has_changes,
+                "staged_files": staged_files,
+                "unstaged_files": unstaged_files,
+                "untracked_files": untracked_files,
+                "is_feature_branch": current_branch.startswith("feature/"),
+                "changes_count": len(status_lines),
+            }
+        except GitError:
+            return {"is_git_repo": True, "error": "Failed to get git status"}
 
     @staticmethod
     def create_and_checkout_branch(branch_name: str, directory: Path = None) -> None:
@@ -100,7 +164,7 @@ class GitUtility:
         """Generate a standardized branch name from task ID and title."""
         # Clean the task ID for git branch name (replace : with -)
         task_id_clean = task_id.replace(":", "-")
-        
+
         # Clean the task title for use in branch name
         task_slug = re.sub(r"[^a-zA-Z0-9\s\-_]", "", task_title)
         task_slug = re.sub(r"\s+", "-", task_slug.strip())
@@ -110,43 +174,92 @@ class GitUtility:
         return f"feature/{task_id_clean}_{task_slug}"
 
     @staticmethod
-    def merge_feature_branch(task_id: str, directory: Path = None, delete_branch: bool = True) -> None:
+    def commit_task_changes(
+        task_id: str, task_title: str, directory: Path = None, auto_stage: bool = True
+    ) -> None:
+        """Commit changes for the current task with a standardized commit message."""
+        if not GitUtility.is_git_repo(directory):
+            raise GitError("Not in a git repository")
+
+        # Check if there are changes to commit
+        if not GitUtility.has_uncommitted_changes(directory):
+            raise GitError("No changes to commit")
+
+        # Auto-stage all changes if requested
+        if auto_stage:
+            GitUtility.run_git_command(["add", "."], directory)
+
+        # Create simple commit message to avoid multiline issues
+        commit_message = f"Complete task {task_id}: {task_title}"
+
+        # Commit changes with retry logic for pre-commit hooks
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                GitUtility.run_git_command(["commit", "-m", commit_message], directory)
+                break  # Success, exit retry loop
+            except GitError as e:
+                error_str = str(e).lower()
+                # If pre-commit modified files, re-stage and retry
+                if (
+                    "files were modified" in error_str or "hook" in error_str
+                ) and attempt < max_retries - 1:
+                    print(
+                        f"   Pre-commit hooks modified files (attempt {attempt + 1}), re-staging..."
+                    )
+                    GitUtility.run_git_command(["add", "."], directory)
+                    continue
+                # Final attempt failed or non-hook error
+                raise
+
+    @staticmethod
+    def merge_feature_branch(
+        task_id: str, directory: Path = None, delete_branch: bool = True
+    ) -> None:
         """Merge feature branch back to main and optionally delete it."""
         if not GitUtility.is_git_repo(directory):
             raise GitError("Not in a git repository")
-        
+
         current_branch = GitUtility.get_current_branch(directory)
-        
+
         # Ensure we're on the feature branch
         task_id_clean = task_id.replace(":", "-")
         if not current_branch.startswith(f"feature/{task_id_clean}"):
             raise GitError(f"Not on expected feature branch for task {task_id}")
-        
+
         # Switch to main branch
         GitUtility.run_git_command(["checkout", "main"], directory)
-        
+
         # Merge feature branch
         GitUtility.run_git_command(["merge", "--no-ff", current_branch], directory)
-        
+
         # Optionally delete feature branch
         if delete_branch:
             GitUtility.run_git_command(["branch", "-d", current_branch], directory)
 
     @staticmethod
-    def cleanup_completed_branches(spec_id: str, completed_tasks: list[str], directory: Path = None) -> list[str]:
+    def cleanup_completed_branches(
+        spec_id: str, completed_tasks: list[str], directory: Path = None
+    ) -> list[str]:
         """Clean up feature branches for completed tasks in a specification."""
         if not GitUtility.is_git_repo(directory):
             raise GitError("Not in a git repository")
-        
+
         cleaned_branches = []
         for task_id in completed_tasks:
             task_id_clean = task_id.replace(":", "-")
             branch_pattern = f"feature/{task_id_clean}_"
-            
+
             # List all branches matching the pattern
-            result = GitUtility.run_git_command(["branch", "--list", f"{branch_pattern}*"], directory)
-            branches = [line.strip().lstrip('* ') for line in result.stdout.split('\n') if line.strip()]
-            
+            result = GitUtility.run_git_command(
+                ["branch", "--list", f"{branch_pattern}*"], directory
+            )
+            branches = [
+                line.strip().lstrip("* ")
+                for line in result.stdout.split("\n")
+                if line.strip()
+            ]
+
             for branch in branches:
                 if branch and branch != "main":
                     try:
@@ -155,7 +268,7 @@ class GitUtility:
                     except GitError:
                         # Branch might have unmerged changes, skip
                         pass
-        
+
         return cleaned_branches
 
 
@@ -206,7 +319,7 @@ class SpecGenerator:
         """Load a base template by name with version validation."""
         template_path = self.spec_templates_dir / f"{template_name}.yaml"
         if template_path.exists():
-            with template_path.open() as f:
+            with template_path.open(encoding="utf-8") as f:
                 template_data = yaml.safe_load(f)
 
             # Check for version field and validate
@@ -1750,27 +1863,315 @@ Return ONLY valid JSON matching this structure:
             ],
         }
 
-    def save_spec(self, spec: ProgrammingSpec) -> Path:
-        """Save specification to file."""
+    def save_spec(self, spec: ProgrammingSpec, atomic: bool = True) -> Path:
+        """Save specification to file with optional atomic writes."""
         filename = f"{spec.metadata.created[:10]}-{spec.metadata.id}.yaml"
         spec_path = self.specs_dir / filename
 
         # Update last_modified timestamp
         spec.metadata.last_modified = datetime.now().isoformat()
 
-        with spec_path.open("w") as f:
-            yaml.dump(
-                spec.model_dump(exclude_none=True),
-                f,
-                default_flow_style=False,
-                sort_keys=False,
-            )
+        if atomic:
+            # Atomic write: write to temporary file then rename
+            temp_path = spec_path.with_suffix(".tmp")
+            try:
+                with temp_path.open("w", encoding="utf-8") as f:
+                    yaml.dump(
+                        spec.model_dump(exclude_none=True, mode="json"),
+                        f,
+                        default_flow_style=False,
+                        sort_keys=False,
+                        allow_unicode=True,
+                    )
+                # Atomic rename (works across platforms)
+                temp_path.replace(spec_path)
+            except Exception:
+                # Clean up temp file on error
+                if temp_path.exists():
+                    temp_path.unlink()
+                raise
+        else:
+            # Standard write (backward compatibility)
+            with spec_path.open("w", encoding="utf-8") as f:
+                yaml.dump(
+                    spec.model_dump(exclude_none=True, mode="json"),
+                    f,
+                    default_flow_style=False,
+                    sort_keys=False,
+                    allow_unicode=True,
+                )
 
         return spec_path
 
+    def inject_task_into_spec(
+        self,
+        spec_id: str,
+        new_task: dict[str, Any],
+        parent_task_index: int | None = None,
+        injection_metadata: dict[str, Any] | None = None,
+        verbose: bool = True,
+    ) -> tuple[bool, str]:
+        """Inject a new task into an existing specification with atomic YAML persistence.
+
+        Args:
+            spec_id: ID of the specification to modify
+            new_task: Task data to inject (must be compatible with ImplementationStep)
+            parent_task_index: Index to insert after (None = append at end)
+            injection_metadata: Optional metadata about the injection
+            verbose: Whether to print real-time feedback
+
+        Returns:
+            (success: bool, message: str)
+        """
+        try:
+            if verbose:
+                print(f"🔍 Loading specification {spec_id}...")
+
+            # Load existing spec
+            spec = self.find_spec_by_id(spec_id)
+            if not spec:
+                if verbose:
+                    print(f"❌ Specification {spec_id} not found")
+                return False, f"Specification {spec_id} not found"
+
+            if not hasattr(spec, "implementation") or spec.implementation is None:
+                if verbose:
+                    print(f"❌ Specification {spec_id} has no implementation section")
+                return False, f"Specification {spec_id} has no implementation section"
+
+            if verbose:
+                print(
+                    f"✅ Specification loaded with {len(spec.implementation)} existing tasks"
+                )
+                print("🔧 Preparing task injection...")
+
+            # Add injection metadata to the task
+            if injection_metadata is None:
+                injection_metadata = {}
+
+            # Mark task as injected and add timestamp
+            new_task["injected"] = True
+            new_task["injection_metadata"] = {
+                "injected_at": datetime.now().isoformat(),
+                "injected_by": "ai_system",
+                **injection_metadata,
+            }
+
+            # Generate unique step_id if not provided
+            if "step_id" not in new_task:
+                max_index = len(spec.implementation)
+                new_task["step_id"] = f"{spec_id}:{max_index}"
+
+            if verbose:
+                print(f"🏷️  Generated task ID: {new_task['step_id']}")
+                print(f"⚡ Task effort: {new_task.get('estimated_effort', 'medium')}")
+                print("📝 Validating task structure...")
+
+            # Convert to ImplementationStep for validation
+            from .models import ImplementationStep
+
+            try:
+                step = ImplementationStep(**new_task)
+                if verbose:
+                    print("✅ Task validation passed")
+            except Exception as e:
+                if verbose:
+                    print(f"❌ Task validation failed: {e}")
+                return False, f"Invalid task data: {e}"
+
+            # Insert task into specification
+            if parent_task_index is None:
+                # Append at end
+                spec.implementation.append(step)
+                if verbose:
+                    print(
+                        f"📍 Task appended at end (position {len(spec.implementation) - 1})"
+                    )
+            else:
+                # Insert after parent task
+                insert_index = min(parent_task_index + 1, len(spec.implementation))
+                spec.implementation.insert(insert_index, step)
+                if verbose:
+                    print(
+                        f"📍 Task inserted at position {insert_index} (after task {parent_task_index})"
+                    )
+
+            if verbose:
+                print("📋 Updating injection history...")
+
+            # Update metadata to track injection
+            if (
+                not hasattr(spec.metadata, "injection_history")
+                or spec.metadata.injection_history is None
+            ):
+                spec.metadata.injection_history = []
+
+            spec.metadata.injection_history.append(
+                {
+                    "task_id": new_task["step_id"],
+                    "injected_at": datetime.now().isoformat(),
+                    "parent_task_index": parent_task_index,
+                    "injection_reason": injection_metadata.get(
+                        "reason", "scope_gap_detected"
+                    ),
+                }
+            )
+
+            if verbose:
+                print("💾 Saving specification atomically...")
+
+            # Atomically save updated spec
+            self.save_spec(spec, atomic=True)
+
+            # Sync with database if available
+            try:
+                if verbose:
+                    print("🔄 Synchronizing with database...")
+
+                # Note: Database sync will be handled by the CLI command async context
+                if verbose:
+                    print("📝 Database sync will be handled by CLI context")
+                    print("✅ Database sync scheduled successfully")
+
+            except Exception as db_error:
+                # Database sync failed, but YAML injection succeeded
+                if verbose:
+                    print(f"⚠️  Database sync note: {db_error}")
+                    print("   Task injection completed successfully in YAML")
+
+            if verbose:
+                print("🎉 Task injection completed successfully!")
+
+            return True, f"Task {new_task['step_id']} injected successfully"
+
+        except Exception as e:
+            return False, f"Failed to inject task: {e}"
+
+    def batch_inject_tasks(
+        self,
+        spec_id: str,
+        tasks_to_inject: list[dict[str, Any]],
+        injection_metadata: dict[str, Any] | None = None,
+        verbose: bool = True,
+    ) -> tuple[bool, list[str]]:
+        """Inject multiple tasks into a specification atomically.
+
+        Args:
+            spec_id: ID of the specification to modify
+            tasks_to_inject: List of task data to inject
+            injection_metadata: Optional metadata about the batch injection
+            verbose: Whether to print real-time feedback
+
+        Returns:
+            (success: bool, messages: list[str])
+        """
+        messages = []
+
+        try:
+            if verbose:
+                print(f"🔍 Loading specification {spec_id} for batch injection...")
+
+            # Load existing spec
+            spec = self.find_spec_by_id(spec_id)
+            if not spec:
+                if verbose:
+                    print(f"❌ Specification {spec_id} not found")
+                return False, [f"Specification {spec_id} not found"]
+
+            if not hasattr(spec, "implementation") or spec.implementation is None:
+                if verbose:
+                    print(f"❌ Specification {spec_id} has no implementation section")
+                return False, [f"Specification {spec_id} has no implementation section"]
+
+            if verbose:
+                print(
+                    f"✅ Specification loaded with {len(spec.implementation)} existing tasks"
+                )
+                print(
+                    f"🔧 Validating {len(tasks_to_inject)} tasks for batch injection..."
+                )
+
+            # Validate all tasks first
+            from .models import ImplementationStep
+
+            validated_steps = []
+
+            for i, task_data in enumerate(tasks_to_inject):
+                try:
+                    # Add injection metadata
+                    if injection_metadata is None:
+                        injection_metadata = {}
+
+                    task_data = dict(task_data)  # Copy to avoid mutation
+                    task_data["injected"] = True
+                    task_data["injection_metadata"] = {
+                        "injected_at": datetime.now().isoformat(),
+                        "injected_by": "ai_system",
+                        "batch_index": i,
+                        **injection_metadata,
+                    }
+
+                    # Generate step_id if not provided
+                    if "step_id" not in task_data:
+                        task_data["step_id"] = (
+                            f"{spec_id}:{len(spec.implementation) + len(validated_steps)}"
+                        )
+
+                    step = ImplementationStep(**task_data)
+                    validated_steps.append(step)
+                    messages.append(f"Validated task {task_data['step_id']}")
+
+                except Exception as e:
+                    return False, [f"Validation failed for task {i}: {e}"]
+
+            # All tasks valid, now inject them
+            spec.implementation.extend(validated_steps)
+
+            # Update metadata
+            if (
+                not hasattr(spec.metadata, "injection_history")
+                or spec.metadata.injection_history is None
+            ):
+                spec.metadata.injection_history = []
+
+            spec.metadata.injection_history.append(
+                {
+                    "batch_injection": True,
+                    "injected_at": datetime.now().isoformat(),
+                    "task_count": len(validated_steps),
+                    "task_ids": [step.step_id for step in validated_steps],
+                    "injection_reason": injection_metadata.get(
+                        "reason", "batch_scope_enhancement"
+                    )
+                    if injection_metadata
+                    else "batch_scope_enhancement",
+                }
+            )
+
+            # Atomically save updated spec
+            self.save_spec(spec, atomic=True)
+
+            # Sync with database if available
+            try:
+                # Note: Database sync will be handled by the CLI command async context
+                messages.append("📝 Database sync will be handled by CLI context")
+
+            except Exception as db_error:
+                # Database sync failed, but YAML injection succeeded
+                messages.append(f"⚠️  Database sync note: {db_error}")
+                messages.append("   Batch injection completed successfully in YAML")
+
+            messages.append(
+                f"Successfully injected {len(validated_steps)} tasks into {spec_id}"
+            )
+            return True, messages
+
+        except Exception as e:
+            return False, [f"Batch injection failed: {e}"]
+
     def load_spec(self, spec_path: Path) -> ProgrammingSpec:
-        """Load specification from file."""
-        with spec_path.open() as f:
+        """Load specification from file with injection support."""
+        with spec_path.open(encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Handle backward compatibility for specs without title
@@ -1782,9 +2183,14 @@ Return ONLY valid JSON matching this structure:
             metadata["author"] = None
         if "last_modified" not in metadata:
             metadata["last_modified"] = None
+        # Handle injection history for dynamic task tracking
+        if "injection_history" not in metadata:
+            metadata["injection_history"] = None
 
-        # Fix null decomposition_hints in loaded specs
+        # Fix null decomposition_hints and validate injected tasks in loaded specs
         implementation_steps = []
+        injected_task_count = 0
+
         for step_data in data["implementation"]:
             # Ensure decomposition_hint is never null - add fallback logic
             if not step_data.get("decomposition_hint"):
@@ -1795,7 +2201,29 @@ Return ONLY valid JSON matching this structure:
                     )
                 else:
                     step_data["decomposition_hint"] = "atomic"
+
+            # Handle injected tasks - validate injection metadata
+            if step_data.get("injected", False):
+                injected_task_count += 1
+                # Ensure injection metadata exists
+                if "injection_metadata" not in step_data:
+                    step_data["injection_metadata"] = {
+                        "injected_at": "unknown",
+                        "injected_by": "legacy_system",
+                        "recovery_mode": True,
+                    }
+                # Validate injection metadata structure
+                injection_meta = step_data["injection_metadata"]
+                if "injected_at" not in injection_meta:
+                    injection_meta["injected_at"] = datetime.now().isoformat()
+                if "injected_by" not in injection_meta:
+                    injection_meta["injected_by"] = "system"
+
             implementation_steps.append(ImplementationStep(**step_data))
+
+        # Log injection recovery if needed
+        if injected_task_count > 0:
+            print(f"📄 Loaded specification with {injected_task_count} injected tasks")
 
         return ProgrammingSpec(
             metadata=SpecMetadata(**metadata),

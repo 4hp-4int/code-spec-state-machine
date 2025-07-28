@@ -1,0 +1,176 @@
+metadata:
+  id: '56759291'
+  title: 'Enhance existing FastAPI web UI: improve layout and styling, add navigation
+    l...'
+  inherits: []
+  created: '2025-07-27T13:51:28.721976'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids:
+  - 04577c28
+  - 594f947f
+  - 69ac57e7
+  - 4b606b7d
+  - 39a4ee8f
+  - 4a9aef57
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: fastapi
+    description: Web framework for serving the UI (assumed present for 'existing FastAPI
+      web UI')
+  - name: jinja2
+    description: Template engine for HTML rendering (already present)
+  files_involved:
+  - webui/main.py
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  - webui/static/styles.css
+requirements:
+  functional:
+  - Improve overall layout and visual styling of the FastAPI web UI using CSS (no
+    JS frameworks).
+  - Add a persistent navigation bar with links to Home, Specs, Tasks, and About.
+  - Ensure all tables listing specs or tasks have clickable rows or cells that hyperlink
+    to their respective detail pages.
+  - Display contextual metadata (e.g., spec/task status, last updated, parent-child
+    relationships) on relevant pages.
+  - Polish user experience for clarity and ease of navigation, maintaining accessibility.
+  non_functional:
+  - Do not introduce any JavaScript frameworks; use only vanilla JS if absolutely
+    necessary.
+  - Maintain compatibility with modern browsers and ensure responsive design.
+  - Keep all UI code and assets organized under the webui/ directory.
+  - Ensure all changes are covered by unit or integration tests where feasible.
+  - Maintain clear separation of concerns between backend logic and UI presentation.
+  constraints:
+  - Do not add new dependencies outside of those already present in the codebase.
+  - All styling must be handled via CSS (preferably a single styles.css file).
+  - All navigation and linking must be server-rendered (no client-side routing).
+  - Follow existing coding standards and file organization patterns.
+  - Ensure all new or modified files pass linting and pre-commit hooks.
+implementation:
+- task: Refactor base Jinja2 template to include a persistent navigation bar and improved
+    layout structure.
+  details: Update base.html to add a top navigation bar with links to Home, Specs,
+    Tasks, and About. Refactor layout to use semantic HTML5 elements and ensure consistent
+    header/footer across all pages.
+  files:
+  - webui/templates/base.html
+  acceptance: Navigation bar is visible on all pages; layout is visually consistent;
+    links route correctly.
+  estimated_effort: medium
+  step_id: '56759291:0'
+  sub_spec_id: 04577c28
+  decomposition_hint: 'composite: Can be split into nav bar implementation and layout
+    refactor.'
+  progress: null
+  approvals: null
+- task: Enhance CSS styling for improved visual appeal and responsive design.
+  details: Create or update styles.css to provide a modern, clean look. Ensure tables,
+    navigation, and metadata sections are styled for readability and accessibility.
+    Implement responsive design for mobile and desktop.
+  files:
+  - webui/static/styles.css
+  acceptance: UI is visually appealing, readable, and adapts to different screen sizes.
+  estimated_effort: medium
+  step_id: '56759291:1'
+  sub_spec_id: 594f947f
+  decomposition_hint: 'composite: Can be split into base styling, table styling, and
+    responsive adjustments.'
+  progress: null
+  approvals: null
+- task: Update spec and task list templates to hyperlink table rows/cells to detail
+    pages.
+  details: Modify index.html and any list views to ensure each spec/task row or cell
+    is a clickable link to its detail page. Use semantic HTML for accessibility.
+  files:
+  - webui/templates/index.html
+  acceptance: All listed specs/tasks are clickable and route to correct detail pages.
+  estimated_effort: low
+  step_id: '56759291:2'
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Display contextual metadata on spec and task detail pages.
+  details: Update spec_detail.html and task_detail.html to show metadata such as status,
+    last updated, parent/child relationships, and any relevant tags. Use visually
+    distinct sections for metadata.
+  files:
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  acceptance: Relevant metadata is clearly displayed on each detail page.
+  estimated_effort: low
+  step_id: '56759291:3'
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Polish user experience for clarity and accessibility.
+  details: Review all UI pages for clarity, logical navigation, and accessibility
+    (e.g., ARIA labels, keyboard navigation). Make minor adjustments to improve user
+    flow and reduce friction.
+  files:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  - webui/static/styles.css
+  acceptance: UI is easy to navigate, accessible, and provides a polished experience.
+  estimated_effort: medium
+  step_id: '56759291:4'
+  sub_spec_id: 39a4ee8f
+  decomposition_hint: 'composite: Can be split into accessibility review and UX polish.'
+  progress: null
+  approvals: null
+- task: Update FastAPI route handlers to provide necessary context and metadata to
+    templates.
+  details: Modify main.py to ensure all templates receive the data needed for navigation,
+    linking, and metadata display. Refactor as needed for clarity and maintainability.
+  files:
+  - webui/main.py
+  acceptance: All templates render with correct context and metadata; no missing data
+    errors.
+  estimated_effort: medium
+  step_id: '56759291:5'
+  sub_spec_id: 4b606b7d
+  decomposition_hint: 'composite: Can be split into context enrichment and handler
+    refactor.'
+  progress: null
+  approvals: null
+- task: Write or update tests to cover new UI functionality and context delivery.
+  details: Add or update unit/integration tests to verify navigation links, metadata
+    display, and correct routing. Use FastAPI's TestClient and template rendering
+    checks.
+  files:
+  - tests/
+  acceptance: All new/modified UI features are covered by passing tests.
+  estimated_effort: medium
+  step_id: '56759291:6'
+  sub_spec_id: 4a9aef57
+  decomposition_hint: 'composite: Can be split into navigation tests, metadata tests,
+    and context tests.'
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec assumes all necessary context (e.g., navigation
+  links, metadata) is available in main.py route handlers, but does not specify the
+  data model or how parent/child relationships and tags are structured. Clarify expected
+  data structures and ensure all required fields are passed to templates.'
+- "Technical Gotchas: Making entire table rows clickable with semantic HTML can be\
+  \ tricky for accessibility\u2014prefer <a> tags inside <td> elements and use ARIA\
+  \ attributes as needed. Test keyboard navigation and screen reader behavior."
+- 'Integration Points: Refactoring base.html for a persistent nav bar may require
+  updating all templates that extend it to avoid layout breakage. Review all template
+  inheritance and block usage to ensure consistency.'
+- 'Current Best Practices: FastAPI and Jinja2 are current and well-supported. For
+  CSS, consider using CSS custom properties for theming and ensure styles.css is loaded
+  with cache-busting in production. Avoid inline styles or scattered CSS.'
+context_parameters: null
+feedback_history: []
+work_logs: null

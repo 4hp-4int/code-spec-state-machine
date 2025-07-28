@@ -1,0 +1,234 @@
+# Database Migration Plan for Agentic-Spec
+# Generated: 2025-07-27
+# Purpose: Detailed plan for migrating YAML specifications to database
+
+migration_overview:
+  purpose: "Migrate 39 existing YAML specification files to database-backed storage"
+  scope: "All .yaml files in specs/ directory (excluding invalid files)"
+  approach: "Incremental migration with validation and rollback support"
+  target_models: ["SpecificationDB", "TaskDB", "ApprovalDB", "WorkLogDB"]
+
+validation_results:
+  total_files: 40
+  valid_files: 39
+  invalid_files: 1
+  invalid_file_details:
+    - file: "specs/yaml-to-db-mapping.yaml"
+      error: "mapping values are not allowed here"
+      action: "Skip - this is a documentation file, not a specification"
+
+field_analysis_summary:
+  required_fields:
+    - metadata (100% presence)
+    - context (100% presence)
+    - requirements (100% presence)
+    - implementation (100% presence)
+    - review_notes (100% presence)
+    - feedback_history (100% presence)
+
+  optional_fields:
+    - context_parameters (26% presence)
+    - work_logs (3% presence - 1 file)
+    - progress tracking (3% presence - 1 file)
+    - approvals (3% presence - 1 file)
+
+type_conversion_strategy:
+  datetime_fields:
+    source: "ISO string format (metadata.created)"
+    target: "Python datetime object"
+    conversion: "datetime.fromisoformat()"
+    fallback: "Use file modification time if parsing fails"
+
+  enum_fields:
+    status_conversion:
+      source: "String values (draft, implemented, etc.)"
+      target: "SpecStatus enum"
+      mapping:
+        draft: "SpecStatus.DRAFT"
+        reviewed: "SpecStatus.REVIEWED"
+        approved: "SpecStatus.APPROVED"
+        implemented: "SpecStatus.IMPLEMENTED"
+        archived: "SpecStatus.ARCHIVED"
+      fallback: "Default to DRAFT for unknown values"
+
+    task_status_conversion:
+      source: "String values in progress.status"
+      target: "TaskStatus enum"
+      mapping:
+        pending: "TaskStatus.PENDING"
+        in_progress: "TaskStatus.IN_PROGRESS"
+        completed: "TaskStatus.COMPLETED"
+        blocked: "TaskStatus.BLOCKED"
+        approved: "TaskStatus.APPROVED"
+        rejected: "TaskStatus.REJECTED"
+      fallback: "Default to PENDING for unknown values"
+
+data_integrity_checks:
+  pre_migration_validation:
+    - Verify all YAML files parse correctly
+    - Check for duplicate specification IDs
+    - Validate parent-child relationships are consistent
+    - Ensure all step_ids are unique within specifications
+    - Verify all referenced sub_spec_ids exist
+
+  post_migration_validation:
+    - Count total records match expected (39 specs)
+    - Verify all specifications have correct metadata
+    - Check all tasks are properly linked to specifications
+    - Validate all relationships are intact
+    - Confirm no data loss in JSON serialized fields
+
+migration_phases:
+  phase_1_metadata:
+    description: "Migrate specification metadata"
+    tables: ["SpecificationDB"]
+    data_mapping:
+      - yaml_path: "metadata"
+        db_table: "SpecificationDB"
+        transformations:
+          - field: "created"
+            type: "datetime_conversion"
+          - field: "status"
+            type: "enum_conversion"
+          - field: "updated"
+            type: "set_current_timestamp"
+    validation: "Verify 39 SpecificationDB records created"
+
+  phase_2_context_requirements:
+    description: "Migrate context and requirements as JSON"
+    tables: ["SpecificationDB.context", "SpecificationDB.requirements"]
+    data_mapping:
+      - yaml_path: "context"
+        db_field: "SpecificationDB.context"
+        transformation: "json_serialization"
+      - yaml_path: "requirements"
+        db_field: "SpecificationDB.requirements"
+        transformation: "json_serialization"
+    validation: "Verify JSON fields contain complete data"
+
+  phase_3_tasks:
+    description: "Migrate implementation steps to TaskDB"
+    tables: ["TaskDB"]
+    data_mapping:
+      - yaml_path: "implementation[]"
+        db_table: "TaskDB"
+        transformations:
+          - field: "spec_id"
+            type: "foreign_key_reference"
+          - field: "step_index"
+            type: "array_index"
+          - field: "id"
+            type: "use_step_id_or_generate"
+    estimated_records: "~117 TaskDB records (3 tasks/spec average)"
+    validation: "Verify all tasks linked to correct specifications"
+
+  phase_4_progress_approvals:
+    description: "Migrate task progress and approvals"
+    tables: ["TaskDB.progress_fields", "ApprovalDB"]
+    data_mapping:
+      - yaml_path: "implementation[].progress"
+        db_fields: "TaskDB status/timing fields"
+        transformation: "extract_progress_fields"
+      - yaml_path: "implementation[].approvals[]"
+        db_table: "ApprovalDB"
+        transformation: "create_approval_records"
+    estimated_records: "~1 approval record (only 1 file has approvals)"
+    validation: "Verify progress data preserved, approvals linked"
+
+  phase_5_work_logs:
+    description: "Migrate work logs"
+    tables: ["WorkLogDB"]
+    data_mapping:
+      - yaml_path: "work_logs[]"
+        db_table: "WorkLogDB"
+        transformations:
+          - field: "timestamp"
+            type: "datetime_conversion"
+          - field: "spec_id"
+            type: "foreign_key_reference"
+    estimated_records: "~3 WorkLogDB records (only 1 file has logs)"
+    validation: "Verify work logs properly linked"
+
+error_handling_strategy:
+  file_level_errors:
+    invalid_yaml: "Skip file, log error, continue with next"
+    missing_required_fields: "Skip file, log error, continue with next"
+    parsing_errors: "Skip file, log error, continue with next"
+
+  field_level_errors:
+    invalid_datetime: "Use file modification time, log warning"
+    unknown_enum_value: "Use default value, log warning"
+    malformed_json: "Use empty dict/list, log warning"
+    missing_foreign_key: "Create placeholder, log warning"
+
+  relationship_errors:
+    invalid_parent_spec_id: "Set to null, log warning"
+    invalid_sub_spec_id: "Set to null, log warning"
+    orphaned_approvals: "Skip approval, log warning"
+
+rollback_strategy:
+  transaction_scope: "Each specification file as separate transaction"
+  rollback_triggers:
+    - Foreign key constraint violations
+    - Unique constraint violations
+    - Critical data integrity failures
+
+  rollback_actions:
+    - Delete all records created for current specification
+    - Log rollback reason and file details
+    - Continue with next file
+    - Generate rollback report at end
+
+performance_optimization:
+  batch_processing:
+    - Process files in groups of 10
+    - Commit transactions in batches
+    - Use prepared statements for inserts
+
+  indexing_strategy:
+    - Create indexes after migration completion
+    - Primary indexes: spec_id, task_id, timestamps
+    - Secondary indexes: status fields, parent relationships
+
+  memory_management:
+    - Stream YAML parsing for large files
+    - Clear processed data from memory
+    - Monitor memory usage during migration
+
+testing_strategy:
+  unit_tests:
+    - Test YAML parsing with various file formats
+    - Test data type conversions
+    - Test error handling for malformed data
+    - Test rollback mechanism
+
+  integration_tests:
+    - Test complete migration of sample files
+    - Test migration with intentionally corrupted data
+    - Test incremental migration (re-running on subset)
+    - Test performance with large number of files
+
+success_criteria:
+  quantitative_metrics:
+    - 39 SpecificationDB records created
+    - ~117 TaskDB records created
+    - All foreign key relationships valid
+    - Zero data loss in migration
+    - Migration completes in under 60 seconds
+
+  qualitative_metrics:
+    - All valid YAML files successfully migrated
+    - Error handling gracefully handles invalid files
+    - Migration is idempotent (can re-run safely)
+    - Complete audit trail of migration process
+    - Clear documentation for troubleshooting
+
+implementation_order:
+  step_1: "Implement YAML parsing and validation"
+  step_2: "Create database schema migration utilities"
+  step_3: "Implement data transformation logic"
+  step_4: "Add error handling and rollback mechanisms"
+  step_5: "Create migration progress tracking"
+  step_6: "Add comprehensive testing"
+  step_7: "Create CLI commands for migration"
+  step_8: "Add migration reporting and validation"

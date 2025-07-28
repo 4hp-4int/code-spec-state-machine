@@ -94,6 +94,9 @@ class SpecMetadata(BaseModel):
     last_modified: str | None = Field(
         None, description="ISO timestamp when last modified"
     )
+    injection_history: list[dict[str, Any]] | None = Field(
+        None, description="History of dynamic task injections"
+    )
 
 
 class SpecContext(BaseModel):
@@ -198,6 +201,14 @@ class ImplementationStep(BaseModel):
     decomposition_hint: str | None = Field(
         None,
         description="Hint about decomposition: 'atomic' for indivisible or 'composite:reason'",
+    )
+
+    # Dynamic task injection fields
+    injected: bool = Field(
+        False, description="Whether this task was dynamically injected by AI"
+    )
+    injection_metadata: dict[str, Any] | None = Field(
+        None, description="Metadata about when and why this task was injected"
     )
 
     # Database tracking fields

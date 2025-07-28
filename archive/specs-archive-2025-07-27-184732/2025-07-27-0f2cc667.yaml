@@ -1,0 +1,129 @@
+metadata:
+  id: 0f2cc667
+  title: Specification 0f2cc667
+  inherits: []
+  created: '2025-07-27T06:01:26.046314'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pytest-cov
+    version: 6.2.1
+    description: Test coverage reporting
+  - name: pytest
+    version: 7.x
+    description: Testing framework (implied by pytest-cov)
+  - name: pyyaml
+    version: 6.0.2
+    description: YAML parsing for test fixtures and config
+  - name: openai
+    version: 1.97.1
+    description: Mocked for AI calls in tests
+  files_involved:
+  - tests/test_core.py
+  - tests/test_cli.py
+  - tests/test_template_loader.py
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  - agentic_spec/template_loader.py
+requirements:
+  functional:
+  - Ensure all core system functionality is covered by unit and integration tests.
+  - Run all tests without any caching or persistent state between test runs.
+  - Mock all AI API calls (e.g., openai) to avoid network dependency and ensure deterministic
+    results.
+  - Validate that file-based operations (YAML read/write) do not leave residual files
+    or state after tests.
+  - Test CLI commands using Typer's testing utilities to simulate user input/output.
+  - Ensure tests are compatible with both Windows (CRLF) and Unix (LF) line endings.
+  non_functional:
+  - Tests must be idempotent and produce the same results on repeated runs.
+  - 'Tests should execute quickly (target: < 2 minutes for full suite).'
+  - Test output should be human-readable and integrate with pytest-cov for coverage
+    reporting.
+  - Tests must not require any external services or databases.
+  constraints:
+  - Do not introduce any test-level or system-level caching mechanisms.
+  - Do not use pytest-cache or similar plugins.
+  - Do not persist any test data outside the tests/ directory.
+  - Follow existing codebase structure for test file placement.
+  - Use only dependencies already present in the codebase unless strictly necessary.
+  - Maintain full compatibility with Python 3.12+.
+  - Ensure all new or modified code passes linting and pre-commit hooks.
+implementation:
+- task: Audit and update all tests to ensure no caching or persistent state is used.
+  details: Review all test files in the tests/ directory. Remove or refactor any use
+    of pytest cache, temporary files not cleaned up, or global state. Ensure all fixtures
+    use function or class scope unless session scope is strictly necessary (and does
+    not introduce caching).
+  files:
+  - tests/test_core.py
+  - tests/test_cli.py
+  - tests/test_template_loader.py
+  acceptance: All tests pass repeatedly with identical results. No .pytest_cache or
+    residual files are created. No test relies on previous test state.
+  estimated_effort: medium
+  step_id: 0f2cc667:0
+  sub_spec_id: null
+- task: Mock AI API calls and file operations for deterministic, stateless testing.
+  details: Use unittest.mock or pytest-mock to patch openai API calls and any file
+    I/O that could persist state. Provide sample responses for AI calls. Ensure all
+    file writes are to temporary files that are deleted after the test.
+  files:
+  - tests/test_core.py
+  - tests/test_cli.py
+  - tests/test_template_loader.py
+  acceptance: Tests do not make real network calls or leave files behind. All AI responses
+    are mocked and predictable.
+  estimated_effort: medium
+  step_id: 0f2cc667:1
+  sub_spec_id: null
+- task: Add or update CLI tests to ensure no CLI state is cached between runs.
+  details: Use Typer's CliRunner for CLI tests. Ensure each CLI invocation is independent
+    and does not rely on previous invocations. Clean up any files created during CLI
+    tests.
+  files:
+  - tests/test_cli.py
+  acceptance: CLI tests can be run in any order and produce the same results. No files
+    or state persist between runs.
+  estimated_effort: low
+  step_id: 0f2cc667:2
+  sub_spec_id: null
+- task: Ensure cross-platform line ending compatibility in tests.
+  details: Add or update tests to verify correct handling of CRLF and LF line endings
+    in file operations. Use pathlib.Path for all file paths. Validate that generated
+    files match expected line endings based on .gitattributes.
+  files:
+  - tests/test_core.py
+  - tests/test_template_loader.py
+  acceptance: Tests pass on both Windows and Unix environments. No line ending issues
+    are reported.
+  estimated_effort: low
+  step_id: 0f2cc667:3
+  sub_spec_id: null
+- task: Document test system constraints and best practices in CONTRIBUTING.md.
+  details: Add a section to CONTRIBUTING.md explaining the no-caching policy, how
+    to mock AI and file operations, and how to ensure stateless tests.
+  files:
+  - CONTRIBUTING.md
+  acceptance: Documentation is clear, concise, and referenced by future contributors.
+  estimated_effort: low
+  step_id: 0f2cc667:4
+  sub_spec_id: null
+review_notes:
+- "Check for any use of pytest's cache or temporary files that aren't cleaned up\u2014\
+  pytest's tmp_path fixture is preferred for temp files, and all files must be deleted\
+  \ after test execution."
+- Ensure all openai API calls in tests are patched using unittest.mock or pytest-mock,
+  and provide static, predictable responses to guarantee deterministic test outcomes.
+- "For CLI tests, use Typer's CliRunner exclusively, and verify that each test is\
+  \ fully isolated\u2014no files or state should persist between runs; use tmp_path\
+  \ for any file operations."
+- Explicitly test file operations with both CRLF and LF line endings using pathlib.Path,
+  and confirm that no platform-specific assumptions are made in file handling logic.
+context_parameters: null
+feedback_history: []

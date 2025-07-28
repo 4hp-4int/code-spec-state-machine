@@ -1,0 +1,79 @@
+metadata:
+  id: 839fb38e
+  title: Another test to verify database auto-save fix
+  inherits: []
+  created: '2025-07-27T12:40:53.451009'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - tests/test_core.py
+requirements:
+  functional:
+  - Verify that the database auto-save functionality works as intended after the recent
+    fix.
+  - Ensure that data is automatically saved to the YAML file when expected operations
+    are performed.
+  - Test should simulate a realistic workflow that triggers auto-save.
+  non_functional:
+  - Test must be isolated and not affect existing data files.
+  - Test should provide clear error messages if auto-save fails.
+  - Test must be compatible with the current async test suite and mocking patterns.
+  constraints:
+  - Do not introduce new dependencies.
+  - Follow existing file organization and naming conventions.
+  - Maintain lint compliance and adhere to pre-commit hooks.
+  - Use Python 3.12+ features and type hints.
+  - Store all test data in temporary files or use mocking to avoid persistent changes.
+implementation:
+- task: Add a unit test to verify database auto-save fix
+  details: Implement a new test in tests/test_core.py that exercises the auto-save
+    logic in agentic_spec/core.py. The test should simulate a typical operation that
+    triggers auto-save (e.g., updating or adding a specification), then verify that
+    the expected YAML file is updated accordingly. Use temporary files or mocking
+    to avoid modifying real data. Ensure the test is async if the auto-save logic
+    is async, and use pytest's async support and mocking utilities as needed.
+  files:
+  - tests/test_core.py
+  acceptance: Test reliably fails if auto-save is broken and passes if auto-save works.
+    No persistent files are left after test run. Test is lint- and style-compliant.
+  estimated_effort: low
+  step_id: 839fb38e:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- Clarify whether the auto-save logic in agentic_spec/core.py is synchronous or asynchronous;
+  this impacts whether to use pytest-asyncio and async mocks in the test.
+- Ensure the test uses Python's tempfile or pytest's tmp_path fixture to create temporary
+  YAML files, preventing any accidental writes to real data.
+- If the auto-save logic interacts with file I/O directly, consider using unittest.mock
+  to patch open or the file-writing method, so the test can assert file content without
+  leaving artifacts.
+- Check that the test covers both the trigger (e.g., update/add operation) and the
+  verification (YAML file content), and that it cleans up any temporary files or mocks
+  after execution.
+context_parameters: null
+feedback_history: []
+work_logs: null

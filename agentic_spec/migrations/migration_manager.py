@@ -57,13 +57,13 @@ class MigrationManager:
     def get_migration_history(self) -> dict[str, Any]:
         """Load migration history from file."""
         if self.history_file.exists():
-            with open(self.history_file) as f:
+            with open(self.history_file, encoding="utf-8") as f:
                 return json.load(f)
         return {"applied_migrations": [], "schema_version": "1.0"}
 
     def save_migration_history(self, history: dict[str, Any]) -> None:
         """Save migration history to file."""
-        with open(self.history_file, "w") as f:
+        with open(self.history_file, "w", encoding="utf-8") as f:
             json.dump(history, f, indent=2, default=str)
 
     def apply_migrations(self, spec_data: dict[str, Any]) -> dict[str, Any]:
@@ -105,14 +105,14 @@ class MigrationManager:
 
     def migrate_yaml_file(self, yaml_path: Path) -> None:
         """Migrate a YAML specification file."""
-        with open(yaml_path) as f:
+        with open(yaml_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         # Apply migrations
         migrated_data = self.apply_migrations(data)
 
         # Save migrated data
-        with open(yaml_path, "w") as f:
+        with open(yaml_path, "w", encoding="utf-8") as f:
             yaml.dump(migrated_data, f, default_flow_style=False, sort_keys=False)
 
     def create_migration_template(self, name: str) -> Path:
@@ -157,7 +157,7 @@ migration = Migration(
 )
 '''
 
-        with open(filepath, "w") as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(template)
 
         return filepath

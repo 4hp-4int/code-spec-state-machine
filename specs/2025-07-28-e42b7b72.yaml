@@ -9,7 +9,34 @@ metadata:
   child_spec_ids:
   - 0a5fd786
   author: Khalen
-  last_modified: '2025-07-28T16:49:41.505556'
+  last_modified: '2025-07-28T17:51:07.529449'
+  injection_history:
+  - task_id: e42b7b72:6
+    injected_at: '2025-07-28T17:23:25.945015'
+    parent_task_index: 0
+    injection_reason: scope_gap_detected
+  - batch_injection: true
+    injected_at: '2025-07-28T17:23:26.287846'
+    task_count: 2
+    task_ids:
+    - e42b7b72:7
+    - e42b7b72:8
+    injection_reason: performance_enhancement
+  - task_id: e42b7b72:9
+    injected_at: '2025-07-28T17:48:56.783688'
+    parent_task_index: null
+    injection_reason: test_coverage_gap
+  - task_id: e42b7b72:10
+    injected_at: '2025-07-28T17:50:53.482774'
+    parent_task_index: null
+    injection_reason: test_completeness
+  - batch_injection: true
+    injected_at: '2025-07-28T17:51:07.529449'
+    task_count: 2
+    task_ids:
+    - e42b7b72:11
+    - e42b7b72:12
+    injection_reason: documentation_enhancement
 context:
   project: agentic-spec
   domain: Python CLI tool for AI-powered specification generation
@@ -85,6 +112,24 @@ implementation:
   estimated_effort: medium
   step_id: e42b7b72:0
   decomposition_hint: atomic
+  injected: false
+- task: Add comprehensive logging for git operations
+  details: Implement structured logging for all git utility operations to aid in debugging
+    and monitoring. Include success/failure states, operation timing, and error details.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/logging_config.py
+  acceptance: All git operations are logged with appropriate detail levels
+  estimated_effort: low
+  step_id: e42b7b72:6
+  decomposition_hint: atomic
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:23:25.945015'
+    injected_by: ai_system
+    reason: scope_gap_detected
+    trigger: git_operation_debugging_needed
+    source: ai_analysis
 - task: Enable real-time dynamic task injection during workflow execution.
   details: Modify the workflow execution engine to allow the AI to inject new tasks
     when scope gaps are detected. Dynamically update the in-memory workflow graph
@@ -102,6 +147,7 @@ implementation:
   step_id: e42b7b72:1
   sub_spec_id: 0a5fd786
   decomposition_hint: 'composite: high-effort task requiring breakdown'
+  injected: false
 - task: Maintain real-time workflow graph updates reflecting current development state.
   details: Extend the graph_visualization module to support real-time updates as tasks
     are added, completed, or injected. Ensure the graph accurately reflects the current
@@ -116,6 +162,7 @@ implementation:
   estimated_effort: medium
   step_id: e42b7b72:2
   decomposition_hint: atomic
+  injected: false
 - task: Comprehensive error handling and user feedback for git and workflow operations.
   details: Implement robust error handling for all git operations (e.g., branch creation,
     checkout, merge conflicts) and workflow updates. Provide clear, actionable CLI
@@ -130,6 +177,7 @@ implementation:
   estimated_effort: medium
   step_id: e42b7b72:3
   decomposition_hint: atomic
+  injected: false
 - task: 'Testing: Unit and integration tests for git-aware workflow and dynamic task
     injection.'
   details: Develop unit tests for git branch management, task injection logic, and
@@ -144,6 +192,7 @@ implementation:
   estimated_effort: medium
   step_id: e42b7b72:4
   decomposition_hint: atomic
+  injected: false
 - task: 'Documentation: Update CLI help, user docs, and inline comments for new features.'
   details: Update CLI help output to describe git-aware workflow and dynamic task
     injection. Add user documentation (README or docs/) explaining new workflows,
@@ -157,6 +206,101 @@ implementation:
   estimated_effort: low
   step_id: e42b7b72:5
   decomposition_hint: atomic
+  injected: false
+- task: Add git operation performance metrics
+  details: Implement timing and performance metrics for git operations to identify
+    bottlenecks
+  files:
+  - agentic_spec/core.py
+  acceptance: Git operations report timing metrics
+  estimated_effort: low
+  step_id: e42b7b72:7
+  decomposition_hint: atomic
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:23:26.287846'
+    injected_by: ai_system
+    batch_index: 0
+    reason: performance_enhancement
+    trigger: operational_requirements_analysis
+    source: system_optimization
+- task: Add git repository health checks
+  details: Implement health checks for git repository state and integrity
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/health_checks.py
+  acceptance: Repository health can be validated before operations
+  estimated_effort: medium
+  step_id: e42b7b72:8
+  decomposition_hint: atomic
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:23:26.287846'
+    injected_by: ai_system
+    batch_index: 1
+    reason: performance_enhancement
+    trigger: operational_requirements_analysis
+    source: system_optimization
+- task: Add unit test coverage for git operations
+  details: Implement comprehensive unit tests for the GitUtility class
+  files:
+  - tests/test_git_utility.py
+  acceptance: All git operations have unit test coverage
+  estimated_effort: medium
+  step_id: e42b7b72:9
+  decomposition_hint: atomic
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:48:56.783688'
+    injected_by: ai_system
+    reason: test_coverage_gap
+    trigger: manual_cli_injection
+    source: user_command
+- task: Add integration tests for end-to-end workflow
+  details: Create comprehensive integration tests for the complete workflow
+  files:
+  - tests/test_integration_workflow.py
+  acceptance: End-to-end workflow is thoroughly tested
+  estimated_effort: high
+  step_id: e42b7b72:10
+  decomposition_hint: 'composite: manually injected task'
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:50:53.482774'
+    injected_by: ai_system
+    reason: test_completeness
+    trigger: manual_cli_injection
+    source: user_command
+- task: Add comprehensive error handling
+  details: Implement robust error handling with informative messages
+  files:
+  - error_handler.py
+  acceptance: All errors are handled gracefully
+  estimated_effort: medium
+  step_id: e42b7b72:11
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:51:07.529449'
+    injected_by: ai_system
+    batch_index: 0
+    reason: documentation_enhancement
+    trigger: batch_cli_injection
+    source: user_command
+- task: Add performance monitoring
+  details: Implement metrics collection and monitoring
+  files:
+  - monitoring.py
+  acceptance: Performance metrics are collected and logged
+  estimated_effort: low
+  step_id: e42b7b72:12
+  injected: true
+  injection_metadata:
+    injected_at: '2025-07-28T17:51:07.529449'
+    injected_by: ai_system
+    batch_index: 1
+    reason: documentation_enhancement
+    trigger: batch_cli_injection
+    source: user_command
 review_notes:
 - 'Missing Implementation Details: The spec does not specify how git operations will
   be abstracted (e.g., direct subprocess calls vs. a helper module), nor how atomicity
@@ -165,9 +309,9 @@ review_notes:
 - 'Technical Gotchas: Handling git on Windows vs. Unix can introduce subtle bugs (e.g.,
   path handling, shell quoting, git executable location). Explicitly test subprocess
   calls for cross-platform compatibility and document any OS-specific logic.'
-- "Integration Points: Real-time graph and YAML updates must be tightly coupled\u2014\
-  ensure that task injection updates both in-memory and persisted state atomically,\
-  \ or risk workflow desync. Consider a single update function that handles both."
+- 'Integration Points: Real-time graph and YAML updates must be tightly coupledâ€”ensure
+  that task injection updates both in-memory and persisted state atomically, or risk
+  workflow desync. Consider a single update function that handles both.'
 - 'Current Best Practices: All dependencies are current as of mid-2024, but ensure
   that CLI feedback is both human- and machine-readable (e.g., use Typer''s rich output
   and structured exit codes) to maintain scriptability and automation-friendliness.'

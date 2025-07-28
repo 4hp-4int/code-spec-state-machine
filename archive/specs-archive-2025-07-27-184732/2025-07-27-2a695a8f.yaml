@@ -1,0 +1,148 @@
+metadata:
+  id: 2a695a8f
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T10:50:32.099090'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 3a16acfa
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation and task tracking
+  dependencies:
+  - name: pydantic
+    version: null
+    description: For data validation and serialization
+  - name: dataclasses
+    version: null
+    description: For lightweight data structures
+  files_involved:
+  - agentic_spec/models.py
+  - agentic_spec/db.py
+  - agentic_spec/migrations/
+requirements:
+  functional:
+  - Define data models for specifications, tasks, approvals, and work logs using Pydantic
+    and dataclasses.
+  - Ensure all relevant metadata from YAML specifications is preserved in the models.
+  - Support extensibility for future fields (e.g., approval levels, timestamps, notes).
+  - Provide migration scaffolding for evolving schema.
+  - Enable serialization/deserialization to/from YAML-compatible structures.
+  non_functional:
+  - Models must be easy to extend and maintain.
+  - Schema changes should be trackable and reversible.
+  - All models must include comprehensive type hints and docstrings.
+  - Maintain compatibility with file-based storage (no external DB).
+  constraints:
+  - Use only Python 3.12+ features.
+  - Do not introduce external database dependencies.
+  - Follow existing codebase structure and coding standards.
+  - Preserve all YAML metadata in model fields.
+  - Ensure Windows compatibility for all file operations.
+implementation:
+- task: Analyze YAML specification structure and metadata requirements
+  details: Review existing YAML specification files and templates to enumerate all
+    metadata fields that must be represented in the data models. Document required
+    and optional fields for specifications, tasks, approvals, and work logs.
+  files:
+  - templates/
+  - specs/
+  acceptance: Comprehensive list of all metadata fields and their types is documented;
+    edge cases and optional fields are identified.
+  estimated_effort: low
+  step_id: 2a695a8f:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Design Pydantic and dataclass models for specifications, tasks, approvals,
+    and work logs
+  details: Define Python models in agentic_spec/models.py using Pydantic and dataclasses.
+    Ensure all fields from the metadata analysis are represented. Include extensibility
+    hooks (e.g., extra fields, future-proof enums). Add type hints and docstrings
+    for all models.
+  files:
+  - agentic_spec/models.py
+  acceptance: Models are defined with all required fields, type hints, and docstrings;
+    extensibility is demonstrated via at least one optional/extra field.
+  estimated_effort: medium
+  step_id: 2a695a8f:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple related models and extensibility
+    patterns'
+  progress: null
+  approvals: null
+- task: Implement serialization and deserialization logic for YAML compatibility
+  details: Add methods to models or utility functions to serialize/deserialize between
+    Python objects and YAML-compatible dicts. Ensure round-trip fidelity for all metadata
+    fields, including nested and optional fields.
+  files:
+  - agentic_spec/models.py
+  acceptance: All models can be serialized to and from YAML-compatible dicts with
+    no data loss; unit tests cover round-trip scenarios.
+  estimated_effort: medium
+  step_id: 2a695a8f:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Scaffold migration system for schema evolution
+  details: Create initial migration scripts or documentation in agentic_spec/migrations/
+    to track changes to data models over time. Provide a template for future migrations
+    and instructions for applying/reverting changes.
+  files:
+  - agentic_spec/migrations/
+  acceptance: Migration scaffolding exists with at least one example migration and
+    clear instructions; supports tracking and rollback.
+  estimated_effort: low
+  step_id: 2a695a8f:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Integrate models with file-based storage logic
+  details: Update or create functions in agentic_spec/db.py to read/write model instances
+    to YAML files, ensuring all metadata is preserved and extensibility is supported.
+    Handle errors gracefully and maintain Windows compatibility.
+  files:
+  - agentic_spec/db.py
+  acceptance: Models can be persisted and loaded from YAML files with all fields intact;
+    error handling and Windows compatibility are verified.
+  estimated_effort: medium
+  step_id: 2a695a8f:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: involves both read and write logic, plus error handling'
+  progress: null
+  approvals: null
+- task: Write unit tests for all models and serialization logic
+  details: Add tests to verify model validation, serialization/deserialization, and
+    file I/O. Cover edge cases such as missing optional fields, extra metadata, and
+    schema changes.
+  files:
+  - tests/
+  acceptance: Tests cover all models and serialization paths; edge cases and error
+    conditions are included; tests pass in CI.
+  estimated_effort: medium
+  step_id: 2a695a8f:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple models and scenarios'
+  progress: null
+  approvals: null
+review_notes:
+- Ensure that Pydantic v2.11 or later is used to maintain compatibility with Python
+  3.12 and to leverage new features like support for PEP 695 and PEP 696. ([pydantic.dev](https://pydantic.dev/articles/pydantic-v2-11-release?utm_source=openai))
+- Implement robust error handling in file operations within `agentic_spec/db.py` to
+  ensure compatibility across different operating systems, particularly Windows.
+- Develop a clear and simple migration system in `agentic_spec/migrations/` to track
+  schema changes over time, providing templates and instructions for applying and
+  reverting migrations.
+- Include comprehensive unit tests covering model validation, serialization/deserialization,
+  and file I/O, addressing edge cases such as missing optional fields and extra metadata
+  to ensure reliability.
+context_parameters: null
+feedback_history: []
+work_logs: null

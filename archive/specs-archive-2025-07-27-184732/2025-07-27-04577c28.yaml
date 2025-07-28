@@ -1,0 +1,120 @@
+metadata:
+  id: 04577c28
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T13:53:01.938806'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: '56759291'
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies: []
+  files_involved:
+  - webui/templates/base.html
+requirements:
+  functional:
+  - Add a persistent top navigation bar to base.html with links to Home, Specs, Tasks,
+    and About.
+  - Refactor base.html to use semantic HTML5 elements for layout structure.
+  - Ensure consistent header and footer sections across all pages inheriting from
+    base.html.
+  - Maintain compatibility with existing template inheritance and content blocks.
+  non_functional:
+  - Ensure the navigation bar and layout are visually consistent across major browsers.
+  - Maintain human-readable, maintainable HTML structure.
+  - Do not introduce external CSS/JS dependencies beyond what is already present.
+  constraints:
+  - Only modify webui/templates/base.html.
+  - Do not break existing template inheritance or block structure.
+  - Use semantic HTML5 elements (e.g., <header>, <nav>, <main>, <footer>).
+  - Ensure all navigation links use Jinja2 url_for or equivalent template syntax.
+implementation:
+- task: Analyze current base.html structure and identify existing layout and block
+    usage.
+  details: Review the current base.html template to document its block structure,
+    layout elements, and any existing navigation or header/footer sections. Identify
+    areas that require refactoring for semantic HTML5 compliance and persistent navigation.
+  files:
+  - webui/templates/base.html
+  acceptance: A summary of current base.html structure and block usage is documented;
+    areas for refactor are clearly identified.
+  estimated_effort: low
+  step_id: 04577c28:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement persistent top navigation bar with required links.
+  details: Add a <nav> element at the top of base.html containing links to Home, Specs,
+    Tasks, and About. Use Jinja2 template syntax for URL generation. Ensure navigation
+    bar is styled consistently with existing design (reuse classes/styles if present).
+  files:
+  - webui/templates/base.html
+  acceptance: Navigation bar appears at the top of all pages inheriting from base.html,
+    with correct links and consistent styling.
+  estimated_effort: medium
+  step_id: 04577c28:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Refactor layout to use semantic HTML5 elements.
+  details: Update base.html to use <header> for the navigation bar, <main> for page
+    content, and <footer> for the footer section. Ensure all content blocks are placed
+    within appropriate semantic elements. Preserve existing block names and inheritance
+    structure.
+  files:
+  - webui/templates/base.html
+  acceptance: base.html uses semantic HTML5 elements for layout; all content blocks
+    are preserved and correctly placed.
+  estimated_effort: medium
+  step_id: 04577c28:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Ensure consistent header and footer across all pages.
+  details: Standardize the header (including navigation) and footer sections in base.html
+    so that all child templates inherit a consistent look and structure. Move any
+    duplicated header/footer code from child templates into base.html if necessary.
+  files:
+  - webui/templates/base.html
+  acceptance: All pages inheriting from base.html display a consistent header and
+    footer; no duplicated layout code remains in child templates.
+  estimated_effort: medium
+  step_id: 04577c28:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Test and verify layout and navigation bar across all major browsers.
+  details: Manually verify that the navigation bar and layout render correctly in
+    Chrome, Firefox, and Edge. Check that all navigation links work and that the layout
+    is visually consistent.
+  files:
+  - webui/templates/base.html
+  acceptance: Navigation bar and layout are visually consistent and functional in
+    all tested browsers; all links work as expected.
+  estimated_effort: low
+  step_id: 04577c28:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- Check for any inline or duplicated navigation/header/footer code in child templates
+  that needs to be moved to base.html; missing this will cause inconsistent layouts.
+- Verify that all navigation links use Jinja2's url_for syntax; hardcoded URLs are
+  a common mistake and break maintainability.
+- Ensure that existing block names and inheritance structure are preserved exactly;
+  renaming or moving blocks can silently break child templates.
+- Do not introduce new CSS or JS dependencies; reuse existing classes/styles to maintain
+  visual consistency and avoid scope creep.
+context_parameters: null
+feedback_history: []
+work_logs: null

@@ -1,0 +1,149 @@
+metadata:
+  id: 1cbfdd28
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T10:51:30.332017'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 3a16acfa
+  child_spec_ids:
+  - 4c3c2233
+  - 5fe71618
+  - a00e8d61
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation and task tracking
+  dependencies:
+  - name: pydantic
+    description: For data validation and modeling
+  - name: pyyaml
+    description: For YAML-based storage
+  - name: typer
+    description: For CLI interface
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/db.py
+requirements:
+  functional:
+  - Track task status (e.g., pending, in_progress, completed, approved, rejected)
+  - Record timestamps for task creation, status changes, completion, and approval
+  - Store completion notes and approval metadata (approver, timestamp, comments)
+  - 'Enforce strict mode: block progression to next task until current task is approved'
+  - Support override mechanism to bypass strict mode with explicit logging
+  - Enable multiple approval levels (e.g., reviewer, lead) with metadata tracking
+  non_functional:
+  - Ensure all tracking data is persisted in human-readable YAML format
+  - Provide comprehensive error handling and informative messages for workflow violations
+  - Maintain compatibility with solo developer workflows and minimal setup
+  - Support Windows and cross-platform file handling
+  constraints:
+  - Do not introduce external databases; use file-based storage only
+  - Follow existing codebase structure and coding standards
+  - Use Pydantic models for all new data structures
+  - Implement unit tests for all new functionality
+  - Maintain lint compliance with ruff and pre-commit hooks
+implementation:
+- task: Define task progress and approval models
+  details: Create or extend Pydantic models to represent task status, timestamps,
+    completion notes, and approval metadata. Include support for multiple approval
+    levels and override tracking.
+  files:
+  - agentic_spec/models.py
+  acceptance: Models support all required fields and validation; unit tests cover
+    all model behaviors and edge cases.
+  estimated_effort: medium
+  step_id: 1cbfdd28:0
+  sub_spec_id: 4c3c2233
+  decomposition_hint: 'composite: May be split into base task model, approval model,
+    and override tracking model.'
+  progress: null
+  approvals: null
+- task: Implement file-based persistence for task tracking
+  details: Extend or create functions to read/write task progress and approval data
+    in YAML format. Ensure atomic updates and cross-platform compatibility.
+  files:
+  - agentic_spec/db.py
+  acceptance: All task tracking data is reliably persisted and loaded from YAML files;
+    error handling for file I/O is robust; unit tests verify persistence and recovery.
+  estimated_effort: medium
+  step_id: 1cbfdd28:1
+  sub_spec_id: 5fe71618
+  decomposition_hint: 'composite: Can be split into save, load, and update operations.'
+  progress: null
+  approvals: null
+- task: Integrate progress tracking and approval workflow logic
+  details: 'Implement core logic to update task status, record timestamps, handle
+    completion notes, and manage approval metadata. Enforce strict mode: prevent progression
+    to next task until approval is granted. Implement override mechanism with explicit
+    logging.'
+  files:
+  - agentic_spec/core.py
+  acceptance: Workflow enforces strict mode correctly; override is logged and auditable;
+    all status transitions are validated; unit tests cover normal and edge cases.
+  estimated_effort: high
+  step_id: 1cbfdd28:2
+  sub_spec_id: a00e8d61
+  decomposition_hint: 'composite: Can be split into status update logic, strict mode
+    enforcement, and override handling.'
+  progress: null
+  approvals: null
+- task: Support multiple approval levels in workflow
+  details: Extend approval logic to require and track multiple approval levels (e.g.,
+    reviewer, lead). Ensure metadata for each approval is stored and validated.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: Multiple approval levels are enforced and tracked; metadata is complete
+    and validated; unit tests cover multi-level approval scenarios.
+  estimated_effort: medium
+  step_id: 1cbfdd28:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: CLI integration for task progress and approval actions
+  details: Add or extend CLI commands to update task status, add completion notes,
+    approve/reject tasks, and perform overrides. Provide clear error messages and
+    feedback.
+  files:
+  - agentic_spec/core.py
+  acceptance: CLI exposes all required actions; error messages are informative; manual
+    tests confirm end-to-end workflow.
+  estimated_effort: medium
+  step_id: 1cbfdd28:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into CLI command additions and user
+    feedback handling.'
+  progress: null
+  approvals: null
+- task: Unit tests for progress tracking and approval workflow
+  details: Write comprehensive unit tests for all new models, persistence logic, workflow
+    enforcement, and CLI actions. Cover normal, edge, and error cases.
+  files:
+  - tests/test_models.py
+  - tests/test_db.py
+  - tests/test_core.py
+  acceptance: All new functionality is covered by passing unit tests; edge cases and
+    error handling are verified.
+  estimated_effort: medium
+  step_id: 1cbfdd28:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split by component (models, db, core, CLI).'
+  progress: null
+  approvals: null
+review_notes:
+- Pydantic v2 introduced breaking changes; confirm you are using v2 syntax (e.g.,
+  'model_validate', 'model_dump') and not v1 patterns.
+- "Atomic YAML file updates are non-trivial\u2014use a temp file and atomic rename\
+  \ to avoid data loss or corruption, especially on Windows."
+- Multi-level approval logic can get complex; clearly separate approval state per
+  level in your models to avoid ambiguous status or metadata.
+- Typer CLI error handling should use Typer's exception system for user-friendly messages;
+  avoid bare print statements for errors.
+context_parameters: null
+feedback_history: []
+work_logs: null

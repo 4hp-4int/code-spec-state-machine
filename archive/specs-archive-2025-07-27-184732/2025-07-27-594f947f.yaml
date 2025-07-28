@@ -1,0 +1,123 @@
+metadata:
+  id: 594f947f
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T13:54:36.911213'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: '56759291'
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies: []
+  files_involved:
+  - webui/static/styles.css
+requirements:
+  functional:
+  - Apply modern, clean visual styling to all UI elements including tables, navigation,
+    and metadata sections.
+  - Ensure all styled elements are readable and accessible, following best practices
+    for color contrast and font sizing.
+  - Implement responsive design to provide optimal viewing and interaction experience
+    across mobile and desktop devices.
+  non_functional:
+  - Maintain accessibility standards (WCAG 2.1 AA) for color contrast and font sizes.
+  - Ensure CSS changes do not negatively impact page load performance.
+  - Support maintainability by using clear class naming and comments where appropriate.
+  constraints:
+  - All styling must be contained within webui/static/styles.css.
+  - Do not introduce CSS frameworks or external dependencies.
+  - Ensure compatibility with modern browsers (Chrome, Firefox, Edge, Safari).
+implementation:
+- task: Audit and document current styles in styles.css
+  details: Review the existing styles.css file to identify current styling patterns,
+    redundancies, and areas lacking modern or responsive design. Document findings
+    and highlight sections needing improvement.
+  files:
+  - webui/static/styles.css
+  acceptance: A brief written summary of current styles, with annotated sections in
+    styles.css indicating areas for update.
+  estimated_effort: low
+  step_id: 594f947f:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Redesign table, navigation, and metadata section styles for modern, clean
+    appearance
+  details: Update CSS rules for tables, navigation bars, and metadata sections to
+    use modern design patterns (e.g., spacing, borders, hover effects, font choices).
+    Ensure visual hierarchy and clarity.
+  files:
+  - webui/static/styles.css
+  acceptance: Tables, navigation, and metadata sections display with a visually modern,
+    clean look in desktop browsers; visual regression screenshots provided.
+  estimated_effort: medium
+  step_id: 594f947f:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple UI components'
+  progress: null
+  approvals: null
+- task: Implement responsive design for mobile and desktop
+  details: Add media queries and flexible layout rules to ensure all UI elements adapt
+    gracefully to different screen sizes. Prioritize usability on both mobile and
+    desktop.
+  files:
+  - webui/static/styles.css
+  acceptance: UI remains fully usable and visually appealing on both mobile and desktop
+    screen sizes, verified via browser dev tools.
+  estimated_effort: medium
+  step_id: 594f947f:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: involves multiple breakpoints and layout adjustments'
+  progress: null
+  approvals: null
+- task: Enhance accessibility and readability
+  details: Adjust color schemes, font sizes, and spacing to meet WCAG 2.1 AA standards.
+    Add focus states and ensure sufficient contrast for all interactive elements.
+  files:
+  - webui/static/styles.css
+  acceptance: All styled elements pass automated accessibility checks for color contrast
+    and font size; keyboard navigation is visually clear.
+  estimated_effort: low
+  step_id: 594f947f:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Document CSS changes and usage guidelines
+  details: Add comments to styles.css explaining key class purposes and responsive
+    breakpoints. Provide a short markdown summary of styling conventions and responsive
+    design approach.
+  files:
+  - webui/static/styles.css
+  - webui/static/STYLEGUIDE.md
+  acceptance: styles.css contains clear comments; STYLEGUIDE.md summarizes conventions
+    and responsive strategy.
+  estimated_effort: low
+  step_id: 594f947f:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not specify which CSS selectors or
+  class names are currently used for tables, navigation, and metadata, nor does it
+  provide example HTML structure. This may slow down the audit and redesign steps.'
+- 'Technical Gotchas: Without introducing a CSS framework, achieving a modern, responsive,
+  and accessible design will require careful manual implementation of flexbox/grid,
+  media queries, and focus states. Be prepared for more verbose CSS and edge-case
+  browser quirks.'
+- 'Integration Points: Since all styles must remain in a single CSS file, ensure that
+  new rules do not unintentionally override or conflict with existing styles for unrelated
+  components. Use BEM or similarly scoped class naming to avoid collisions.'
+- 'Quick Wins: Use CSS custom properties (variables) for colors, spacing, and font
+  sizes to simplify future updates and maintain consistency, as this is supported
+  in all target browsers.'
+context_parameters: null
+feedback_history: []
+work_logs: null

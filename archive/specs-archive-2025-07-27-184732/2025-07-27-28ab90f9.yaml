@@ -1,0 +1,178 @@
+metadata:
+  id: 28ab90f9
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T11:24:01.303256'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 3d9915ba
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: typer
+    version: 0.12.0
+    description: CLI framework
+  - name: openai
+    version: 1.97.1
+    description: AI integration
+  - name: pyyaml
+    version: 6.0.2
+    description: YAML parsing
+  - name: networkx
+    version: '3.3'
+    description: Graph relationships
+  - name: matplotlib
+    version: 3.9.2
+    description: Visualization
+  - name: jinja2
+    version: 3.1.0
+    description: Templating
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - tests/test_cli.py
+requirements:
+  functional:
+  - Provide CLI command to trigger bulk migration of specifications.
+  - Provide CLI command to trigger incremental migration of specifications.
+  - Provide CLI command to display migration status.
+  - Provide CLI command to generate and display reports on migrated data.
+  - Ensure all CLI commands are implemented as async functions.
+  - Output informative messages and logs for all CLI operations.
+  non_functional:
+  - Maintain comprehensive error handling with clear, actionable messages.
+  - Ensure CLI commands are responsive and do not block the main thread.
+  - Support solo developer workflows with minimal configuration.
+  - Maintain compatibility with Windows (CRLF/LF handling).
+  constraints:
+  - Do not introduce new dependencies outside the current set.
+  - Follow established codebase structure and coding standards.
+  - Use typer for CLI command definitions.
+  - Implement unit tests for all new CLI commands.
+  - Use pathlib.Path for all file operations.
+  - Store all migration and report data in human-readable YAML format.
+  - Do not use external databases.
+implementation:
+- task: Define async CLI command for bulk migration
+  details: Implement a typer CLI command that triggers a bulk migration of all specifications.
+    The command should call an async migration function in core.py, handle exceptions
+    gracefully, and output progress and completion messages.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: Running the CLI with the bulk migration command initiates migration,
+    displays progress, and completes with a summary message. Errors are handled and
+    reported clearly.
+  estimated_effort: medium
+  step_id: 28ab90f9:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Define async CLI command for incremental migration
+  details: Add a typer CLI command to trigger incremental migration (e.g., only new
+    or changed specifications). The command should invoke an async function in core.py,
+    provide feedback on what is migrated, and handle errors.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: CLI incremental migration command migrates only new/changed specs, outputs
+    informative status, and handles errors gracefully.
+  estimated_effort: medium
+  step_id: 28ab90f9:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement async CLI command to show migration status
+  details: Create a typer CLI command that displays the current status of migrations
+    (e.g., pending, in-progress, completed). Fetch status from core.py and present
+    it in a user-friendly format.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: CLI status command shows accurate, up-to-date migration status with
+    clear formatting.
+  estimated_effort: low
+  step_id: 28ab90f9:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement async CLI command to generate migration reports
+  details: Add a typer CLI command to generate and display reports on migrated data
+    (e.g., counts, errors, summaries). The report should be generated via core.py
+    and output in YAML or table format.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: CLI report command outputs a readable summary of migration results,
+    including counts and any errors, in YAML or table format.
+  estimated_effort: medium
+  step_id: 28ab90f9:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add informative output and logging to all migration/reporting CLI commands
+  details: Ensure all CLI commands provide clear, actionable feedback to the user,
+    including progress, completion, and error messages. Use consistent formatting
+    and logging practices.
+  files:
+  - agentic_spec/cli.py
+  acceptance: All CLI commands output progress, completion, and error messages in
+    a consistent, user-friendly manner.
+  estimated_effort: low
+  step_id: 28ab90f9:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement comprehensive error handling for migration/reporting commands
+  details: Add robust error handling to all migration and reporting CLI commands.
+    Ensure exceptions are caught, logged, and reported with actionable messages.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: All CLI commands handle errors gracefully, providing clear messages
+    and not crashing the CLI.
+  estimated_effort: low
+  step_id: 28ab90f9:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Write unit tests for all migration and reporting CLI commands
+  details: Create unit tests covering normal operation, error cases, and edge cases
+    for each CLI command. Use async test patterns and mocking as needed.
+  files:
+  - tests/test_cli.py
+  acceptance: Tests cover all CLI commands, including success and failure scenarios,
+    and pass with the current test suite.
+  estimated_effort: medium
+  step_id: 28ab90f9:6
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple commands and scenarios'
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not clarify how migration state is
+  tracked (e.g., which specs are new/changed, or migration status persistence). Define
+  a YAML-based state file or in-memory structure in core.py to avoid ambiguity.'
+- 'Technical Gotchas: Typer does not natively support async commands before v0.12.0,
+  but your version is current. Ensure you use Typer''s async command support correctly,
+  and test CLI responsiveness, especially on Windows.'
+- 'Integration Points: If migration/report data is stored in YAML, ensure all file
+  I/O uses pathlib.Path and handles CRLF/LF differences explicitly for Windows compatibility.
+  Validate YAML output formatting for both human and machine readability.'
+- 'Quick Wins: For progress and status reporting, consider using simple print statements
+  or Typer''s echo for consistency, rather than introducing complex logging frameworks.
+  This keeps the CLI lightweight and easy to maintain.'
+context_parameters: null
+feedback_history: []
+work_logs: null

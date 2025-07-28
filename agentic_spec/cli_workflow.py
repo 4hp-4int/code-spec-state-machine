@@ -191,7 +191,9 @@ def complete_task(
     notes: str | None = Option(None, "--notes", help="Completion notes"),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
     merge_branch: bool = Option(
-        False, "--merge/--no-merge", help="Merge feature branch back to main after completion"
+        False,
+        "--merge/--no-merge",
+        help="Merge feature branch back to main after completion",
     ),
     delete_branch: bool = Option(
         True, "--delete-branch/--keep-branch", help="Delete feature branch after merge"
@@ -283,16 +285,45 @@ def complete_task(
                     hours = duration.total_seconds() / 3600
                     print(f"⌛ Duration: {hours:.1f} hours")
 
+                # Git commit management - commit changes for the completed task
+                try:
+                    if GitUtility.is_git_repo():
+                        current_branch = GitUtility.get_current_branch()
+                        if (
+                            current_branch.startswith("feature/")
+                            and GitUtility.has_uncommitted_changes()
+                        ):
+                            print("📝 Committing task changes...")
+                            GitUtility.commit_task_changes(step_id, target_task.task)
+                            print(
+                                f"✅ Changes committed on feature branch '{current_branch}'"
+                            )
+                        elif current_branch.startswith("feature/"):
+                            print(
+                                f"ℹ️  No changes to commit on feature branch '{current_branch}'"
+                            )
+                except GitError as git_err:
+                    print(f"⚠️  Git commit failed: {git_err.message}")
+                    print("   Task completion succeeded, but commit failed")
+                    if hasattr(git_err, "details") and git_err.details:
+                        print(f"   Details: {git_err.details}")
+
                 # Git merge management - attempt to merge feature branch
                 if merge_branch:
                     try:
                         if GitUtility.is_git_repo():
                             current_branch = GitUtility.get_current_branch()
                             if current_branch.startswith("feature/"):
-                                GitUtility.merge_feature_branch(step_id, delete_branch=delete_branch)
-                                print(f"🔀 Merged feature branch '{current_branch}' to main")
+                                GitUtility.merge_feature_branch(
+                                    step_id, delete_branch=delete_branch
+                                )
+                                print(
+                                    f"🔀 Merged feature branch '{current_branch}' to main"
+                                )
                                 if delete_branch:
-                                    print(f"🗑️  Deleted feature branch '{current_branch}'")
+                                    print(
+                                        f"🗑️  Deleted feature branch '{current_branch}'"
+                                    )
                                 else:
                                     print(f"🌿 Kept feature branch '{current_branch}'")
                             else:
@@ -307,7 +338,9 @@ def complete_task(
                 elif GitUtility.is_git_repo():
                     current_branch = GitUtility.get_current_branch()
                     if current_branch.startswith("feature/"):
-                        print(f"💡 Tip: Use --merge to automatically merge feature branch '{current_branch}' to main")
+                        print(
+                            f"💡 Tip: Use --merge to automatically merge feature branch '{current_branch}' to main"
+                        )
 
         except typer.BadParameter:
             raise
@@ -1206,3 +1239,316 @@ def check_foundation_status(
             raise SpecificationError(msg, str(e)) from e
 
     asyncio.run(_check())
+
+
+@workflow_app.command("inject-task")
+def inject_task_command(
+    spec_id: str = Argument(..., help="Specification ID to inject task into"),
+    task_description: str = Argument(..., help="Description of the task to inject"),
+    details: str = Option("", "--details", help="Detailed description of the task"),
+    files: str = Option("", "--files", help="Comma-separated list of files affected"),
+    acceptance: str = Option("", "--acceptance", help="Acceptance criteria"),
+    effort: str = Option(
+        "medium", "--effort", help="Estimated effort (low/medium/high)"
+    ),
+    parent_index: int | None = Option(
+        None, "--after", help="Insert after this task index"
+    ),
+    reason: str = Option("manual_injection", "--reason", help="Reason for injection"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Inject a new task into an existing specification with real-time feedback."""
+
+    async def inject_task_async():
+        try:
+            # Initialize generator
+            generator = await initialize_generator(Path("templates"), Path(specs_dir))
+
+            # Build task data
+            task_data = {
+                "task": task_description,
+                "details": details or f"Implement {task_description}",
+                "files": files.split(",") if files else [],
+                "acceptance": acceptance
+                or f"Task '{task_description}' is implemented correctly",
+                "estimated_effort": effort,
+                "decomposition_hint": "composite: manually injected task"
+                if effort == "high"
+                else "atomic",
+            }
+
+            injection_metadata = {
+                "reason": reason,
+                "trigger": "manual_cli_injection",
+                "source": "user_command",
+            }
+
+            print(f"🔄 Injecting task into specification {spec_id}...")
+            print(f"📋 Task: {task_description}")
+            print(f"⚡ Effort: {effort}")
+
+            if parent_index is not None:
+                print(f"📍 Position: After task {parent_index}")
+            else:
+                print("📍 Position: End of specification")
+
+            # Perform injection
+            success, message = generator.inject_task_into_spec(
+                spec_id=spec_id,
+                new_task=task_data,
+                parent_task_index=parent_index,
+                injection_metadata=injection_metadata,
+            )
+
+            if success:
+                print(f"✅ {message}")
+                print("🔄 Specification updated successfully")
+
+                # Sync with database
+                try:
+                    print("🔄 Synchronizing with database...")
+                    # Load the updated spec
+                    updated_spec = generator.find_spec_by_id(spec_id)
+                    if updated_spec:
+                        # Use the AsyncSpecManager from the backend
+                        db_path = Path(specs_dir) / "specifications.db"
+                        backend = SQLiteBackend(str(db_path))
+                        async with AsyncSpecManager(backend) as manager:
+                            await manager.save_spec_to_db(updated_spec)
+                        print("✅ Database synchronized successfully")
+                    else:
+                        print("⚠️  Could not reload specification for database sync")
+                except Exception as db_err:
+                    print(f"⚠️  Database sync failed: {db_err}")
+                    print("   Task injection completed successfully in YAML")
+
+                # Show updated workflow status
+                print("\n📊 Task injection completed successfully!")
+                print(
+                    f"   Run 'agentic-spec workflow-status {spec_id}' to view updated status"
+                )
+
+            else:
+                print(f"❌ {message}")
+                raise typer.Exit(1)
+
+        except Exception as e:
+            print(f"❌ Error injecting task: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(inject_task_async())
+
+
+@workflow_app.command("batch-inject")
+def batch_inject_tasks_command(
+    spec_id: str = Argument(..., help="Specification ID to inject tasks into"),
+    task_file: str = Option(
+        None, "--file", help="YAML file containing tasks to inject"
+    ),
+    reason: str = Option(
+        "batch_injection", "--reason", help="Reason for batch injection"
+    ),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Inject multiple tasks from a file with real-time feedback."""
+
+    import yaml
+
+    async def batch_inject_async():
+        try:
+            # Initialize generator
+            generator = await initialize_generator(Path("templates"), Path(specs_dir))
+
+            # Load tasks from file or create sample
+            if task_file:
+                if not Path(task_file).exists():
+                    print(f"❌ Task file {task_file} not found")
+                    raise typer.Exit(1)
+
+                with open(task_file, encoding="utf-8") as f:
+                    tasks_data = yaml.safe_load(f)
+
+                if not isinstance(tasks_data, dict) or "tasks" not in tasks_data:
+                    print("❌ Task file must contain a 'tasks' key with list of tasks")
+                    raise typer.Exit(1)
+
+                tasks_to_inject = tasks_data["tasks"]
+            else:
+                # Interactive mode - create sample tasks
+                print(
+                    "📝 No task file provided. Creating sample tasks for demonstration..."
+                )
+                tasks_to_inject = [
+                    {
+                        "task": "Add comprehensive error handling",
+                        "details": "Implement robust error handling with informative messages",
+                        "files": ["error_handler.py"],
+                        "acceptance": "All errors are handled gracefully",
+                        "estimated_effort": "medium",
+                    },
+                    {
+                        "task": "Add performance monitoring",
+                        "details": "Implement metrics collection and monitoring",
+                        "files": ["monitoring.py"],
+                        "acceptance": "Performance metrics are collected and logged",
+                        "estimated_effort": "low",
+                    },
+                ]
+
+            injection_metadata = {
+                "reason": reason,
+                "trigger": "batch_cli_injection",
+                "source": "user_command",
+            }
+
+            print(
+                f"🔄 Batch injecting {len(tasks_to_inject)} tasks into specification {spec_id}..."
+            )
+
+            # Show preview
+            print("\n📋 Tasks to inject:")
+            for i, task in enumerate(tasks_to_inject, 1):
+                print(f"   {i}. {task.get('task', 'Unnamed task')}")
+                print(f"      Effort: {task.get('estimated_effort', 'medium')}")
+                print(f"      Files: {', '.join(task.get('files', []))}")
+
+            print("\n🚀 Starting batch injection...")
+
+            # Perform batch injection
+            success, messages = generator.batch_inject_tasks(
+                spec_id=spec_id,
+                tasks_to_inject=tasks_to_inject,
+                injection_metadata=injection_metadata,
+            )
+
+            print("\n📢 Injection Results:")
+            for message in messages:
+                if message.startswith("✅") or message.startswith("⚠️"):
+                    print(f"   {message}")
+                else:
+                    print(f"   ℹ️  {message}")
+
+            if success:
+                print("\n✅ Batch injection completed successfully!")
+
+                # Sync with database
+                try:
+                    print("🔄 Synchronizing with database...")
+                    # Load the updated spec
+                    updated_spec = generator.find_spec_by_id(spec_id)
+                    if updated_spec:
+                        # Use the AsyncSpecManager from the backend
+                        db_path = Path(specs_dir) / "specifications.db"
+                        backend = SQLiteBackend(str(db_path))
+                        async with AsyncSpecManager(backend) as manager:
+                            await manager.save_spec_to_db(updated_spec)
+                        print("✅ Database synchronized successfully")
+                    else:
+                        print("⚠️  Could not reload specification for database sync")
+                except Exception as db_err:
+                    print(f"⚠️  Database sync failed: {db_err}")
+                    print("   Batch injection completed successfully in YAML")
+
+                # Show updated workflow status
+                print("📊 All tasks injected successfully!")
+                print(
+                    f"   Run 'agentic-spec workflow-status {spec_id}' to view updated status"
+                )
+
+            else:
+                print("\n❌ Batch injection failed")
+                raise typer.Exit(1)
+
+        except Exception as e:
+            print(f"❌ Error in batch injection: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(batch_inject_async())
+
+
+@workflow_app.command("injection-status")
+def injection_status_command(
+    spec_id: str = Argument(..., help="Specification ID to check injection status"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+):
+    """Show detailed injection status and history for a specification."""
+
+    async def injection_status_async():
+        try:
+            # Initialize generator
+            generator = await initialize_generator(Path("templates"), Path(specs_dir))
+
+            # Load specification
+            spec = generator.find_spec_by_id(spec_id)
+            if not spec:
+                print(f"❌ Specification {spec_id} not found")
+                raise typer.Exit(1)
+
+            print(f"🔍 Injection Status for Specification: {spec_id}")
+            print(f"   Title: {getattr(spec.metadata, 'title', 'Untitled')}")
+            print(f"   Created: {spec.metadata.created}")
+
+            # Count injected tasks
+            injected_tasks = []
+            regular_tasks = []
+
+            if hasattr(spec, "implementation") and spec.implementation:
+                for i, step in enumerate(spec.implementation):
+                    if getattr(step, "injected", False):
+                        injected_tasks.append((i, step))
+                    else:
+                        regular_tasks.append((i, step))
+
+            print("\n📊 Task Summary:")
+            print(
+                f"   Total tasks: {len(spec.implementation) if hasattr(spec, 'implementation') else 0}"
+            )
+            print(f"   Regular tasks: {len(regular_tasks)}")
+            print(f"   Injected tasks: {len(injected_tasks)}")
+
+            if injected_tasks:
+                print("\n💉 Injected Tasks:")
+                for index, step in injected_tasks:
+                    print(f"   [{index}] {step.task}")
+                    if hasattr(step, "injection_metadata") and step.injection_metadata:
+                        meta = step.injection_metadata
+                        injected_at = meta.get("injected_at", "Unknown")
+                        injected_by = meta.get("injected_by", "Unknown")
+                        reason = meta.get("reason", "Unknown")
+                        print(f"       ⏰ Injected: {injected_at}")
+                        print(f"       👤 By: {injected_by}")
+                        print(f"       🎯 Reason: {reason}")
+
+            # Show injection history
+            if (
+                hasattr(spec.metadata, "injection_history")
+                and spec.metadata.injection_history
+            ):
+                print("\n📜 Injection History:")
+                for i, event in enumerate(spec.metadata.injection_history, 1):
+                    print(f"   {i}. {event.get('injected_at', 'Unknown time')}")
+                    if event.get("batch_injection"):
+                        print(
+                            f"      🔄 Batch injection: {event.get('task_count', 0)} tasks"
+                        )
+                        print(
+                            f"      📋 Task IDs: {', '.join(event.get('task_ids', []))}"
+                        )
+                    else:
+                        print(
+                            f"      📌 Single task: {event.get('task_id', 'Unknown')}"
+                        )
+                        print(
+                            f"      📍 After task: {event.get('parent_task_index', 'End')}"
+                        )
+                    print(
+                        f"      🎯 Reason: {event.get('injection_reason', 'Unknown')}"
+                    )
+            else:
+                print("\n📜 No injection history found")
+
+        except Exception as e:
+            print(f"❌ Error checking injection status: {e}")
+            raise typer.Exit(1)
+
+    asyncio.run(injection_status_async())
