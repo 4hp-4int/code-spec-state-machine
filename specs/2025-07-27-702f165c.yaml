@@ -1,0 +1,148 @@
+metadata:
+  id: 702f165c
+  title: Make sync-foundation command configurable for arbitrary projects through
+    YAML...
+  inherits: []
+  created: '2025-07-27T20:52:30.104336'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pyyaml
+    version: 6.0.2
+    description: YAML parsing and serialization
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/exceptions.py
+  - tests/test_sync_foundation_config.py
+  - templates/
+  - specs/
+requirements:
+  functional:
+  - Allow the sync-foundation command to accept and auto-discover a YAML configuration
+    file that defines project-specific rules.
+  - Enable customization of file categorization (e.g., source, test, config, template)
+    via YAML.
+  - Support user-defined dependency detection patterns (e.g., regex for requirements.txt,
+    pyproject.toml, etc.) in the YAML config.
+  - Permit extension of project analysis logic through YAML-driven rules (e.g., custom
+    file groupings, ignore patterns).
+  - Fallback to default behavior if no project-specific YAML config is found.
+  - Expose CLI options to specify or override the config file path.
+  non_functional:
+  - Maintain backward compatibility with existing sync-foundation workflows.
+  - Provide clear error messages for invalid or missing configuration.
+  - Ensure configuration-driven logic is testable and documented.
+  - Support Windows and Unix line endings in config files.
+  - Minimize performance overhead from config-driven logic.
+  constraints:
+  - Do not introduce new dependencies unless strictly necessary; leverage pyyaml for
+    YAML parsing.
+  - All configuration must be human-readable and stored in YAML format.
+  - No external databases or services for configuration storage.
+  - Maintain code quality and lint compliance per existing standards.
+  - All new logic must be covered by unit tests.
+implementation:
+- task: Define YAML schema for sync-foundation configuration
+  details: Design a schema supporting file categorization rules, dependency detection
+    patterns (regex/globs), and analysis extensions. Document schema with examples.
+  files:
+  - agentic_spec/config.py
+  - templates/sync_foundation_config.example.yaml
+  acceptance: Schema is documented, validated, and example config is provided.
+  estimated_effort: medium
+  step_id: 702f165c:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement auto-discovery and CLI override for config file
+  details: Update sync-foundation logic to search for a config file in project root
+    (e.g., sync_foundation.yaml or .sync_foundation.yaml). Allow CLI flag to specify
+    config path. Fallback to defaults if not found.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: Config file is auto-discovered or can be specified via CLI; fallback
+    works as before.
+  estimated_effort: medium
+  step_id: 702f165c:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Integrate config-driven file categorization and dependency detection
+  details: Refactor sync-foundation to use config rules for file grouping and dependency
+    extraction. Ensure logic is modular and testable.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: File categorization and dependency detection adapt to config; unit tests
+    cover custom and default cases.
+  estimated_effort: high
+  step_id: 702f165c:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: high-effort task requiring breakdown'
+  progress: null
+  approvals: null
+- task: Add comprehensive error handling and validation for config
+  details: Implement validation for config structure and values. Raise informative
+    errors for invalid/missing config. Document error cases.
+  files:
+  - agentic_spec/exceptions.py
+  - agentic_spec/config.py
+  acceptance: Invalid configs produce clear errors; all error paths are tested.
+  estimated_effort: medium
+  step_id: 702f165c:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update documentation and provide migration guide
+  details: Document new configuration options, auto-discovery, and override behavior.
+    Add migration notes for existing users.
+  files:
+  - README.md
+  - templates/sync_foundation_config.example.yaml
+  acceptance: Docs clearly explain config-driven workflow and backward compatibility.
+  estimated_effort: low
+  step_id: 702f165c:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement and expand unit tests for config-driven sync-foundation
+  details: Add tests for config parsing, auto-discovery, CLI override, file categorization,
+    dependency detection, and error handling.
+  files:
+  - tests/test_sync_foundation_config.py
+  acceptance: All new logic is covered by tests; tests pass on Windows and Unix.
+  estimated_effort: medium
+  step_id: 702f165c:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- Explicitly define and document the expected YAML schema structure (including required
+  and optional fields, types, and allowed patterns) in agentic_spec/config.py to avoid
+  ambiguity during parsing and validation.
+- "When implementing auto-discovery and CLI override, ensure that config file search\
+  \ order and precedence are deterministic and clearly documented\u2014watch for edge\
+  \ cases like multiple config files or ambiguous paths."
+- For dependency detection patterns, clarify whether regex or glob syntax is supported
+  per field, and validate patterns at load time to catch errors early; consider using
+  Python's built-in re and glob modules for matching.
+- Modularize config-driven logic in agentic_spec/core.py so that default and custom
+  behaviors are easily testable and extensible; avoid tightly coupling config parsing
+  with business logic to simplify future enhancements.
+context_parameters: null
+feedback_history: []
+work_logs: null

@@ -29,11 +29,19 @@ Project = **{{project_name}}**
   ]
 }
 
+**CRITICAL**: The `decomposition_hint` field is MANDATORY and must NEVER be null.
+- Use "atomic" for simple, focused tasks that cannot be meaningfully subdivided
+- Use "composite:reason" for complex tasks explaining WHY they need decomposition (e.g., "composite: spans multiple subsystems", "composite: requires coordination between UI and database layers")
+
 ==== COMPOSABLE DESIGN PRINCIPLES ====
-• **Task Granularity Strategy**:
-  - High-level tasks (4-8 hours) should be marked as `composite` with clear decomposition rationale
-  - Mid-level tasks (1-3 hours) may be `composite` if they span multiple concerns
-  - Low-level tasks (<1 hour) should typically be `atomic`
+• **Task Granularity Strategy** (MUST classify every task):
+  - High-level tasks (4-8 hours) → `composite:reason` (e.g., "composite: involves both schema design and implementation")
+  - Mid-level tasks (1-3 hours) → `composite:reason` if spanning multiple files/concerns, otherwise `atomic`
+  - Low-level tasks (<1 hour) → `atomic`
+• **Decomposition Examples**:
+  - "Refactor authentication system" → `composite: spans multiple components (auth, middleware, database)`
+  - "Add config validation" → `atomic` (single focused task)
+  - "Integrate external API with database" → `composite: requires coordination between API client and data layer`
 • **Decomposition Readiness**: Composite tasks must have clear "seams" where they can be split
 • **Composition Integrity**: Child tasks must completely satisfy parent acceptance criteria
 • **Dependencies** – prefer existing; justify any new ≥2 sentences.
@@ -42,3 +50,9 @@ Project = **{{project_name}}**
 • **Non‑functional reqs** – performance, security, ops must be explicit.
 
 >>> NOW begin the 3‑phase loop and return ONLY the JSON object on WRITE.
+
+FINAL VERIFICATION CHECKLIST:
+✓ Every task has a non-null decomposition_hint ("atomic" or "composite:reason")
+✓ High-effort tasks are marked "composite" with clear reasoning
+✓ All JSON fields are properly filled
+✓ No null values in required fields

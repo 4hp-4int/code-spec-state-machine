@@ -1,0 +1,100 @@
+metadata:
+  id: c5665002
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T22:12:55.725028'
+  version: '1.0'
+  status: draft
+  parent_spec_id: fce26578
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies: []
+  files_involved:
+  - agentic_spec/cli.py
+requirements:
+  functional:
+  - Identify and list all CLI commands currently implemented in agentic_spec/cli.py.
+  - 'Categorize each command into logical groupings: core (spec generation, validation),
+    workflow (spec-complete, sync-foundation), template (template management), and
+    database (commands interacting with persistent storage).'
+  - Document the mapping of each command to its respective category.
+  - Propose a module structure for reorganizing commands based on these categories.
+  non_functional:
+  - Ensure the categorization is comprehensive and unambiguous.
+  - Maintain clear documentation for future maintainability.
+  constraints:
+  - Do not modify any command implementations at this stage.
+  - Do not introduce new command categories beyond those specified unless an existing
+    command does not fit any provided category.
+  - All analysis and documentation must be based strictly on the current state of
+    agentic_spec/cli.py.
+implementation:
+- task: Extract and list all CLI commands from agentic_spec/cli.py.
+  details: Review the source code in agentic_spec/cli.py and enumerate every CLI command,
+    capturing their names and brief descriptions.
+  files:
+  - agentic_spec/cli.py
+  acceptance: A complete list of all CLI commands present in cli.py, each with its
+    name and a one-line description.
+  estimated_effort: low
+  step_id: c5665002:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Categorize each CLI command into core, workflow, template, or database groups.
+  details: For each command identified, assign it to one of the specified categories
+    based on its primary function. If a command does not fit any category, flag it
+    for review.
+  files:
+  - agentic_spec/cli.py
+  acceptance: Each command is assigned to a category, with a rationale for any commands
+    that do not fit the provided categories.
+  estimated_effort: low
+  step_id: c5665002:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Document the mapping of commands to categories and propose a new module structure.
+  details: Create a mapping table or list showing each command and its assigned category.
+    Based on this mapping, outline a proposed module structure (e.g., core.py, workflow.py,
+    template.py, database.py) for future code organization.
+  files:
+  - agentic_spec/cli.py
+  acceptance: A clear document or table mapping commands to categories, plus a proposed
+    file/module structure for reorganizing the CLI commands.
+  estimated_effort: low
+  step_id: c5665002:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec assumes all CLI commands are easily identifiable
+  and self-describing in cli.py, but does not specify how to handle nested or dynamically
+  registered commands (e.g., via decorators or plugin patterns). Clarify how to extract
+  commands if they are not statically defined.'
+- 'Technical Gotchas: If using a CLI framework like Click or Typer, commands may be
+  grouped or registered in non-obvious ways. Be prepared to parse decorators or command
+  groups, not just function names.'
+- 'Integration Points: The proposed module structure (core.py, workflow.py, etc.)
+  may conflict with existing imports or shared utilities in cli.py. Plan for refactoring
+  imports and shared logic when reorganizing.'
+- 'Current Best Practices: Ensure the CLI framework in use (e.g., Click, Typer, argparse)
+  is up-to-date and well-maintained. If not, consider upgrading before further modularization.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

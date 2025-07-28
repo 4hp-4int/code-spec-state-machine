@@ -1,0 +1,163 @@
+metadata:
+  id: 371807f3
+  title: Make sync-foundation command configurable for arbitrary projects through
+    YAML...
+  inherits: []
+  created: '2025-07-27T20:57:05.545512'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pyyaml
+    version: 6.0.2
+    description: YAML parsing and serialization
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/exceptions.py
+  - tests/test_sync_foundation_configurable.py
+  - templates/project_discovery_config.example.yaml
+requirements:
+  functional:
+  - Enable sync-foundation command to accept and auto-discover a YAML configuration
+    file for project-specific analysis.
+  - Allow developers to define custom file categorization rules in the YAML config
+    (e.g., mapping file globs to categories).
+  - Support user-defined dependency detection patterns (e.g., regex or path-based
+    rules) in the config.
+  - Permit extension of project analysis logic via config-driven parameters (e.g.,
+    custom directories, ignored files, special markers).
+  - Fallback to default behavior if no config is present, ensuring backward compatibility.
+  - Expose CLI option to specify a config file path explicitly, overriding auto-discovery.
+  non_functional:
+  - Maintain human-readable YAML for all configuration.
+  - Ensure robust error handling for malformed or missing config files, with clear
+    messages.
+  - Preserve Windows compatibility (CRLF/LF handling).
+  - Document configuration schema and provide an example YAML file.
+  - Maintain performance for large projects (no significant latency increase).
+  constraints:
+  - Do not introduce new dependencies unless strictly necessary; prefer pyyaml for
+    YAML parsing.
+  - Retain all existing sync-foundation functionality if config is absent.
+  - Follow established coding standards (dataclasses, Pydantic, async/await, pathlib.Path,
+    type hints, error handling).
+  - Comprehensive unit tests for config-driven paths and error cases.
+  - No external databases; file-based config only.
+implementation:
+- task: Design YAML configuration schema for project discovery and analysis.
+  details: Define a schema supporting file categorization rules (glob patterns to
+    categories), dependency detection patterns (regex or path-based), and analysis
+    parameters (e.g., ignored files, custom directories). Use Pydantic for schema
+    validation.
+  files:
+  - agentic_spec/models.py
+  - templates/project_discovery_config.example.yaml
+  acceptance: Schema supports all required fields; example config validates; documentation
+    covers all options.
+  estimated_effort: medium
+  step_id: 371807f3:0
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+- task: Implement auto-discovery and CLI override for config file in sync-foundation
+    command.
+  details: Modify CLI and core logic to search for a config file (e.g., project_discovery.yaml)
+    in the project root. Add CLI option --discovery-config to specify a path. If not
+    found, use defaults.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - agentic_spec/config.py
+  acceptance: CLI accepts --discovery-config; auto-discovers config if present; falls
+    back gracefully.
+  estimated_effort: medium
+  step_id: 371807f3:1
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+- task: Integrate config-driven rules into project analysis and sync-foundation logic.
+  details: Refactor analysis logic to use config-driven rules for file categorization
+    and dependency detection. Ensure all paths are covered by unit tests. Maintain
+    async/await and pathlib.Path usage.
+  files:
+  - agentic_spec/core.py
+  acceptance: Config-driven analysis produces expected results; legacy behavior unchanged
+    if config absent.
+  estimated_effort: high
+  step_id: 371807f3:2
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+- task: Implement robust error handling and informative messages for config loading
+    and validation.
+  details: Catch and report YAML parsing errors, schema validation issues, and missing
+    config files with clear, actionable messages. Use custom exceptions as needed.
+  files:
+  - agentic_spec/exceptions.py
+  - agentic_spec/config.py
+  acceptance: All error cases produce clear, actionable messages; no unhandled exceptions.
+  estimated_effort: low
+  step_id: 371807f3:3
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+- task: Write comprehensive unit tests for config-driven sync-foundation paths.
+  details: Test config discovery, CLI override, schema validation, error handling,
+    and integration with analysis logic. Cover edge cases and legacy fallback.
+  files:
+  - tests/test_sync_foundation_configurable.py
+  acceptance: "\u226590% coverage for new logic; all tests pass."
+  estimated_effort: medium
+  step_id: 371807f3:4
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+- task: Document configuration schema, usage, and migration path.
+  details: Update user-facing documentation and inline comments. Provide a sample
+    YAML config and migration notes for existing users.
+  files:
+  - templates/project_discovery_config.example.yaml
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: Documentation is clear, complete, and includes examples.
+  estimated_effort: low
+  step_id: 371807f3:5
+  sub_spec_id: null
+  decomposition_hint: null
+  progress: null
+  approvals: null
+review_notes:
+- "Pydantic is a solid choice for schema validation, but ensure you use Pydantic v2.x\
+  \ syntax and features, as v1.x is deprecated and has breaking changes\u2014double-check\
+  \ your codebase and update imports/usage accordingly."
+- When integrating config-driven logic, be explicit about how legacy (no-config) and
+  config-driven paths are separated in core.py to avoid subtle regressions; consider
+  a clear interface or strategy pattern to switch between modes.
+- "YAML parsing with PyYAML is fine, but be aware that PyYAML's default loader is\
+  \ not safe for untrusted input\u2014use yaml.safe_load and validate all config data\
+  \ with Pydantic before use."
+- For file globbing and regex in config, document and test edge cases (e.g., recursive
+  globs, platform path separators, regex quirks) to avoid silent misclassification,
+  especially on Windows.
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

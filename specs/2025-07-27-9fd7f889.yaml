@@ -1,0 +1,172 @@
+metadata:
+  id: 9fd7f889
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T22:14:04.627107'
+  version: '1.0'
+  status: draft
+  parent_spec_id: fce26578
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: typer
+    version: '>=0.12.0'
+    category: cli
+  files_involved:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+requirements:
+  functional:
+  - Each CLI module file must define a Typer app or command group for its respective
+    command set.
+  - All CLI modules must use Python type hints throughout.
+  - Async/await must be used for any operations that interact with async APIs or the
+    database.
+  - Each CLI module must follow established patterns from the existing codebase.
+  - CLI modules must be importable and composable into the main CLI entrypoint.
+  non_functional:
+  - Code must be clear, maintainable, and follow project coding standards.
+  - Comprehensive error handling with informative messages must be implemented.
+  - Each CLI module must be covered by unit tests.
+  constraints:
+  - Do not introduce new dependencies beyond those already present in the codebase.
+  - File organization must mirror the current architecture.
+  - All code must be compatible with Python 3.12+.
+  - Use Typer for CLI command definitions.
+implementation:
+- task: Scaffold CLI module files for each command group
+  details: 'Create empty or minimally structured files: agentic_spec/cli_core.py,
+    agentic_spec/cli_workflow.py, agentic_spec/cli_template.py, and agentic_spec/cli_db.py.
+    Add module docstrings and import Typer.'
+  files:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: All four files exist with correct names, module docstrings, and Typer
+    imported.
+  estimated_effort: low
+  step_id: 9fd7f889:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Define Typer app or command group in each CLI module
+  details: In each CLI module, define a Typer app or command group variable (e.g.,
+    app = Typer() or workflow_app = Typer()). Ensure each is ready to register commands
+    and can be imported by the main CLI.
+  files:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: Each file contains a Typer app or command group variable with correct
+    naming and type hints.
+  estimated_effort: low
+  step_id: 9fd7f889:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement command registration patterns and type hints
+  details: For each CLI module, implement at least one example command using established
+    patterns from the existing CLI. Use Python type hints for all function signatures.
+    If async operations are relevant (e.g., db access), use async def and await.
+  files:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: Each CLI module contains at least one example command with correct type
+    hints and async/await usage where appropriate.
+  estimated_effort: medium
+  step_id: 9fd7f889:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: spans both CLI structure and async/await integration'
+  progress: null
+  approvals: null
+- task: Integrate CLI modules with main CLI entrypoint
+  details: Update the main CLI (likely agentic_spec/cli.py) to import and register
+    the new command groups/apps from each CLI module, ensuring modular composition
+    and no import cycles.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: Main CLI entrypoint composes all new CLI modules, and commands are accessible
+    via the CLI.
+  estimated_effort: medium
+  step_id: 9fd7f889:3
+  sub_spec_id: null
+  decomposition_hint: 'composite: requires coordination between new modules and main
+    CLI'
+  progress: null
+  approvals: null
+- task: Implement error handling and informative messages in CLI modules
+  details: Add comprehensive error handling to each CLI module's commands, following
+    project standards. Ensure all error messages are informative and user-friendly.
+  files:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: All CLI modules handle errors gracefully and provide clear, actionable
+    messages.
+  estimated_effort: medium
+  step_id: 9fd7f889:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: spans all CLI modules and requires consistent error
+    handling patterns'
+  progress: null
+  approvals: null
+- task: Write unit tests for each CLI module
+  details: Create or update test files to cover at least the example commands in each
+    CLI module, including both normal and error cases. Use pytest and typer's testing
+    utilities.
+  files:
+  - tests/test_cli_core.py
+  - tests/test_cli_workflow.py
+  - tests/test_cli_template.py
+  - tests/test_cli_db.py
+  acceptance: Unit tests exist for each CLI module and pass for both success and error
+    scenarios.
+  estimated_effort: medium
+  step_id: 9fd7f889:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple modules and both normal/error paths'
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not clarify how async/await should
+  be handled in Typer commands, especially regarding event loop management in CLI
+  context. Solo dev should ensure async commands are properly run (e.g., using asyncio.run)
+  and tested for CLI compatibility.'
+- 'Technical Gotchas: Import cycles are a risk when composing multiple Typer apps/groups
+  into the main CLI. Explicitly structure imports to avoid circular dependencies,
+  and test CLI startup early.'
+- 'Integration Points: The spec assumes existing CLI patterns but does not specify
+  if there is a shared context or dependency injection mechanism for things like DB
+  connections. If such context is needed, define a clear pattern for passing shared
+  resources between modules.'
+- 'Current Best Practices: Typer >=0.12.0 is current and well-maintained, but confirm
+  that all CLI modules use Typer''s recommended command registration and error handling
+  patterns (e.g., typer.Exit, typer.BadParameter) for consistency and maintainability.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

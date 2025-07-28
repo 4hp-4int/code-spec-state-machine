@@ -1,0 +1,455 @@
+# Example sync-foundation configuration file
+# This file configures how agentic-spec analyzes your project for foundation template generation
+#
+# Usage:
+#   1. Copy this file to your project root as 'sync_foundation_config.yaml'
+#   2. Customize the patterns below for your project structure
+#   3. Run: agentic-spec sync-foundation
+#   4. Validate: agentic-spec config validate
+#
+# Auto-discovery filenames (in order of preference):
+#   - sync_foundation_config.yaml
+#   - sync-foundation-config.yaml
+#   - project_discovery.yaml
+#   - project-discovery.yaml
+#   - .sync-foundation.yaml
+
+# =============================================================================
+# FILE CATEGORIZATION PATTERNS
+# =============================================================================
+# Customize these patterns based on your project structure
+# Each pattern can be a filename, directory name, or glob pattern
+file_categorization:
+  # Path-based patterns (checked first)
+  cli_patterns:
+    - "cli"
+    - "command"
+    - "main"
+    - "scripts"
+
+  web_ui_patterns:
+    - "web_ui"
+    - "webui"
+    - "frontend"
+    - "static"
+    - "templates"
+
+  api_patterns:
+    - "api"
+    - "routes"
+    - "endpoints"
+    - "handlers"
+
+  database_patterns:
+    - "db"
+    - "database"
+    - "models"
+    - "schema"
+    - "async_db"
+
+  migration_patterns:
+    - "migration"
+    - "migrate"
+    - "migrations"
+
+  test_patterns:
+    - "test_"
+    - "_test"
+    - "tests/"
+    - "conftest"
+    - "spec/"
+
+  config_patterns:
+    - "pyproject.toml"
+    - "*.toml"
+    - "*.yaml"
+    - "*.yml"
+    - "*.json"
+    - "config"
+
+  documentation_patterns:
+    - "README"
+    - "CHANGELOG"
+    - "docs/"
+    - "*.md"
+    - "*.rst"
+    - "*.txt"
+
+  build_patterns:
+    - "Makefile"
+    - "Dockerfile"
+    - "*.dockerfile"
+    - "docker-compose*"
+    - ".github/"
+    - "scripts/build"
+
+  # Content-based indicators (checked if file content is analyzed)
+  cli_content_indicators:
+    - "typer"
+    - "click"
+    - "argparse"
+    - "@app.command"
+    - "if __name__ == \"__main__\""
+
+  web_ui_content_indicators:
+    - "fastapi"
+    - "flask"
+    - "django"
+    - "starlette"
+    - "@app.route"
+    - "HTMLResponse"
+    - "render_template"
+
+  api_content_indicators:
+    - "@app.get"
+    - "@app.post"
+    - "APIRouter"
+    - "FastAPI"
+    - "Blueprint"
+
+  database_content_indicators:
+    - "sqlite"
+    - "aiosqlite"
+    - "sqlalchemy"
+    - "CREATE TABLE"
+    - "async def"
+    - "connection.execute"
+
+  migration_content_indicators:
+    - "migration"
+    - "migrate"
+    - "schema"
+    - "ALTER TABLE"
+    - "upgrade"
+    - "downgrade"
+
+  test_content_indicators:
+    - "pytest"
+    - "unittest"
+    - "def test_"
+    - "class Test"
+    - "@pytest"
+
+# Dependency detection configuration
+dependency_detection:
+  # Files to scan for dependencies (plain text requirements files only)
+  # Note: pyproject.toml and setup.py are handled by dedicated parsers
+  requirements_files:
+    - "requirements.txt"
+    - "requirements/*.txt"
+    - "requirements-*.txt"
+    - "Pipfile"
+
+  config_files:
+    - "pyproject.toml"
+    - "setup.py"
+    - "setup.cfg"
+
+  # Package categorization - customize for your domain
+  web_frameworks:
+    - "fastapi"
+    - "uvicorn"
+    - "starlette"
+    - "flask"
+    - "django"
+    - "tornado"
+    - "aiohttp"
+
+  database_libs:
+    - "aiosqlite"
+    - "sqlite3"
+    - "sqlalchemy"
+    - "psycopg2"
+    - "pymongo"
+    - "redis"
+    - "asyncpg"
+
+  template_engines:
+    - "jinja2"
+    - "mako"
+    - "chameleon"
+    - "mustache"
+
+  testing_frameworks:
+    - "pytest"
+    - "pytest-cov"
+    - "pytest-asyncio"
+    - "unittest"
+    - "nose2"
+    - "hypothesis"
+
+  ai_libraries:
+    - "openai"
+    - "anthropic"
+    - "transformers"
+    - "torch"
+    - "tensorflow"
+    - "langchain"
+
+  config_parsers:
+    - "pyyaml"
+    - "toml"
+    - "tomllib"
+    - "configparser"
+    - "python-dotenv"
+
+  cli_frameworks:
+    - "typer"
+    - "click"
+    - "argparse"
+    - "fire"
+
+  visualization_libs:
+    - "networkx"
+    - "matplotlib"
+    - "plotly"
+    - "seaborn"
+    - "bokeh"
+
+  # Standard library modules to exclude from third-party detection
+  stdlib_modules:
+    - "os"
+    - "sys"
+    - "re"
+    - "json"
+    - "urllib"
+    - "http"
+    - "pathlib"
+    - "typing"
+    - "asyncio"
+    - "logging"
+    - "datetime"
+    - "collections"
+    - "itertools"
+    - "functools"
+    - "inspect"
+    - "importlib"
+    - "unittest"
+    - "sqlite3"
+    - "csv"
+    - "xml"
+    - "email"
+    - "html"
+    - "math"
+    - "random"
+    - "string"
+    - "threading"
+    - "multiprocessing"
+    - "subprocess"
+    - "shutil"
+    - "tempfile"
+    - "glob"
+    - "fnmatch"
+    - "warnings"
+    - "traceback"
+    - "io"
+    - "contextlib"
+    - "copy"
+    - "pickle"
+    - "struct"
+    - "zlib"
+    - "hashlib"
+    - "hmac"
+    - "secrets"
+    - "base64"
+    - "binascii"
+    - "uuid"
+    - "time"
+    - "calendar"
+    - "argparse"
+    - "configparser"
+    - "tomllib"
+
+# Project analysis behavior
+project_analysis:
+  # Directories/patterns to skip during analysis
+  skip_patterns:
+    - ".venv\\"
+    - ".venv/"
+    - "venv\\"
+    - "venv/"
+    - "build\\"
+    - "build/"
+    - "dist\\"
+    - "dist/"
+    - "__pycache__\\"
+    - "__pycache__/"
+    - ".git\\"
+    - ".git/"
+    - ".pytest_cache\\"
+    - ".pytest_cache/"
+    - ".mypy_cache\\"
+    - ".mypy_cache/"
+    - "node_modules\\"
+    - "node_modules/"
+    - ".coverage"
+    - "*.egg-info/"
+
+  # Content analysis settings
+  content_analysis_enabled: true
+  content_analysis_max_size: 2000  # bytes to read for content analysis
+
+  # Domain inference templates (use {language} and {domain} placeholders)
+  domain_patterns:
+    full_stack: "Full-stack {language} application with CLI, web UI, and database components"
+    web_cli: "{language} CLI tool with web UI for {domain}"
+    database_cli: "{language} CLI tool with database backend for {domain}"
+    simple_cli: "{language} CLI tool for {domain}"
+
+  # Default project characteristics (customize for your project)
+  default_language: "Python"
+  default_domain: "software development automation"
+
+# Foundation template generation settings
+foundation_template_name: "project-foundation"  # Name for generated foundation template
+generate_statistics: true                        # Include file count statistics
+include_transitive_dependencies: true            # Detect transitive dependencies
+max_transitive_dependencies: 10                  # Limit transitive deps to prevent bloat
+
+# Performance settings
+enable_caching: true         # Cache analysis results
+cache_duration_hours: 24     # How long to cache results
+
+# =============================================================================
+# PROJECT-SPECIFIC CONFIGURATION EXAMPLES
+# =============================================================================
+# Uncomment and customize one of these sections for your project type
+
+# -----------------------------------------------------------------------------
+# WEB APPLICATION (Django/Flask/FastAPI)
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   web_ui_patterns:
+#     - "templates/"
+#     - "static/"
+#     - "views/"
+#     - "frontend/"
+#   api_patterns:
+#     - "api/"
+#     - "views/"
+#     - "serializers/"
+#     - "resources/"
+#   database_patterns:
+#     - "models/"
+#     - "migrations/"
+#     - "db/"
+# dependency_detection:
+#   web_frameworks:
+#     - "django"
+#     - "flask"
+#     - "fastapi"
+#     - "starlette"
+
+# -----------------------------------------------------------------------------
+# MICROSERVICES ARCHITECTURE
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   api_patterns:
+#     - "services/"
+#     - "*-service/"
+#     - "handlers/"
+#     - "controllers/"
+#   database_patterns:
+#     - "repositories/"
+#     - "entities/"
+#     - "dao/"
+# project_analysis:
+#   domain_patterns:
+#     microservices: "Microservices architecture with {language} services for {domain}"
+
+# -----------------------------------------------------------------------------
+# DATA SCIENCE / MACHINE LEARNING
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   analysis_patterns:
+#     - "notebooks/"
+#     - "analysis/"
+#     - "experiments/"
+#   model_patterns:
+#     - "models/"
+#     - "training/"
+#     - "inference/"
+#   data_patterns:
+#     - "data/"
+#     - "datasets/"
+#     - "preprocessing/"
+# dependency_detection:
+#   ai_libraries:
+#     - "scikit-learn"
+#     - "pandas"
+#     - "numpy"
+#     - "jupyter"
+
+# -----------------------------------------------------------------------------
+# CLI TOOL PROJECT
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   cli_patterns:
+#     - "cli/"
+#     - "commands/"
+#     - "main.py"
+#     - "app.py"
+# dependency_detection:
+#   cli_frameworks:
+#     - "click"
+#     - "typer"
+#     - "argparse"
+
+# -----------------------------------------------------------------------------
+# GAME DEVELOPMENT
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   game_patterns:
+#     - "src/game/"
+#     - "assets/"
+#     - "scenes/"
+#     - "entities/"
+#   graphics_patterns:
+#     - "sprites/"
+#     - "textures/"
+#     - "shaders/"
+# dependency_detection:
+#   game_frameworks:
+#     - "pygame"
+#     - "panda3d"
+#     - "arcade"
+
+# -----------------------------------------------------------------------------
+# MOBILE APP (React Native/Flutter)
+# -----------------------------------------------------------------------------
+# file_categorization:
+#   mobile_patterns:
+#     - "src/screens/"
+#     - "src/components/"
+#     - "src/navigation/"
+#   platform_patterns:
+#     - "android/"
+#     - "ios/"
+# project_analysis:
+#   default_language: "JavaScript"
+#   default_domain: "mobile application development"
+
+# =============================================================================
+# ADVANCED CUSTOMIZATION TIPS
+# =============================================================================
+#
+# 1. Pattern Matching:
+#    - Use exact matches: "config.py"
+#    - Use directory patterns: "src/"
+#    - Use glob patterns: "*.test.js"
+#    - Use subdirectory patterns: "tests/"
+#
+# 2. Validation:
+#    - Run: agentic-spec config validate
+#    - Check for pattern conflicts and overlaps
+#    - Verify skip patterns aren't too broad
+#
+# 3. Testing Your Config:
+#    - Use: agentic-spec sync-foundation --discovery-config this-file.yaml
+#    - Check dependency counts and file categorization
+#    - Iterate until analysis matches your project
+#
+# 4. Performance Optimization:
+#    - Add specific skip patterns for large directories
+#    - Adjust content_analysis_max_size for large files
+#    - Enable caching for repeated analysis

@@ -1,0 +1,158 @@
+metadata:
+  id: fce26578
+  title: Refactor Typer CLI commands into logical modules to improve maintainability
+    a...
+  inherits:
+  - base-coding-standards
+  created: '2025-07-27T22:11:25.176309'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids:
+  - c5665002
+  - 9fd7f889
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: typer
+    version: 0.12.0
+    description: 'Core dependency: CLI framework'
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  - tests/
+requirements:
+  functional:
+  - 'Refactor existing Typer CLI commands into logical modules: core, workflow, template,
+    and database commands.'
+  - Maintain backward compatibility so that all existing CLI commands and options
+    remain available under the main CLI entrypoint.
+  - Update all imports and internal references to reflect the new modular structure.
+  - Ensure CLI help output and documentation accurately reflect the new command grouping.
+  - Add or update unit tests to cover the refactored CLI command structure.
+  non_functional:
+  - Improve maintainability and readability of CLI code by reducing complexity in
+    cli.py.
+  - Ensure all changes are lint-compliant and pass pre-commit hooks.
+  - Update inline comments and user-facing documentation to describe the new CLI structure.
+  constraints:
+  - Do not introduce new dependencies beyond those already present.
+  - Retain Python 3.12+ compatibility.
+  - Maintain file-based, human-readable YAML storage.
+  - Ensure Windows compatibility (CRLF/LF handling).
+  - 'Follow established coding standards: async/await where appropriate, type hints,
+    error handling, and dataclasses/Pydantic for data structures.'
+implementation:
+- task: Analyze and categorize all existing CLI commands in cli.py.
+  details: 'Review cli.py and identify logical groupings for commands: core (spec
+    generation, validation), workflow (spec-complete, sync-foundation), template (template
+    management), and database (if any commands interact with persistent storage, even
+    if file-based). Document the mapping of commands to new modules.'
+  files:
+  - agentic_spec/cli.py
+  acceptance: A documented mapping of all CLI commands to their new logical modules
+    is produced and reviewed.
+  estimated_effort: low
+  step_id: fce26578:0
+  sub_spec_id: c5665002
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Create new CLI module files for each command group.
+  details: Create agentic_spec/cli_core.py, agentic_spec/cli_workflow.py, agentic_spec/cli_template.py,
+    and agentic_spec/cli_db.py. Each file should define a Typer app or command group
+    for its respective commands, following established patterns and using type hints
+    and async/await where appropriate.
+  files:
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: Each new CLI module contains the relevant commands, with lint-compliant
+    code and proper error handling.
+  estimated_effort: medium
+  step_id: fce26578:1
+  sub_spec_id: 9fd7f889
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Refactor cli.py to serve as the main CLI entrypoint and aggregate sub-apps.
+  details: Update cli.py to import command groups from the new modules and register
+    them with the main Typer app. Ensure all commands are accessible as before, preserving
+    CLI interface and help output.
+  files:
+  - agentic_spec/cli.py
+  acceptance: The main CLI entrypoint works as before, with all commands available
+    and grouped logically in help output.
+  estimated_effort: medium
+  step_id: fce26578:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update imports and internal references throughout the codebase.
+  details: Update any code that imports CLI commands or utilities from cli.py to use
+    the new module structure. Ensure no broken imports or circular dependencies.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: All imports are correct, and the CLI runs without import errors.
+  estimated_effort: low
+  step_id: fce26578:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update and expand unit tests for CLI commands.
+  details: Refactor existing CLI tests to target the new module structure. Add tests
+    for command group registration and backward compatibility. Use pytest and Typer's
+    testing utilities.
+  files:
+  - tests/
+  acceptance: All CLI commands are covered by tests, and the test suite passes.
+  estimated_effort: medium
+  step_id: fce26578:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update documentation and inline comments.
+  details: Revise README, CLI usage docs, and inline comments to reflect the new modular
+    CLI structure. Ensure help output examples are up to date.
+  files:
+  - README.md
+  - agentic_spec/cli.py
+  - agentic_spec/cli_core.py
+  - agentic_spec/cli_workflow.py
+  - agentic_spec/cli_template.py
+  - agentic_spec/cli_db.py
+  acceptance: Documentation accurately describes the new CLI structure and usage.
+  estimated_effort: low
+  step_id: fce26578:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not clarify how shared utilities
+  (e.g., config loading, error formatting) will be accessed across modules. Define
+  a clear pattern for shared logic to avoid duplication or import cycles.'
+- 'Technical Gotchas: Typer command groups must be registered in the correct order
+  to preserve CLI help output and avoid command shadowing. Test the CLI help output
+  after refactoring to ensure grouping is as intended.'
+- 'Integration Points: If any commands are dynamically registered or rely on runtime
+  imports, ensure the new static module structure does not break this. Review for
+  any dynamic command registration patterns in the existing code.'
+- 'Current Best Practices: Typer 0.12.0 is current as of mid-2024, but confirm that
+  async command support is stable in this version. If not, avoid async/await in CLI
+  entrypoints or document workarounds.'
+context_parameters: null
+feedback_history: []
+work_logs: null

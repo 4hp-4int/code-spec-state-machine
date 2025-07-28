@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 import yaml
 
 
@@ -85,6 +85,314 @@ class AISettings(BaseModel):
     )
 
 
+class FileCategorization(BaseModel):
+    """Configuration for file categorization rules."""
+
+    cli_patterns: list[str] = Field(default_factory=lambda: ["cli", "command", "main"])
+    web_ui_patterns: list[str] = Field(
+        default_factory=lambda: ["web_ui", "webui", "fastapi", "templates"]
+    )
+    api_patterns: list[str] = Field(
+        default_factory=lambda: ["api", "routes", "endpoints"]
+    )
+    database_patterns: list[str] = Field(
+        default_factory=lambda: ["db", "database", "sqlite", "async_db"]
+    )
+    migration_patterns: list[str] = Field(
+        default_factory=lambda: ["migration", "migrate"]
+    )
+    test_patterns: list[str] = Field(
+        default_factory=lambda: ["test_", "_test", "tests/", "conftest"]
+    )
+    config_patterns: list[str] = Field(
+        default_factory=lambda: ["pyproject.toml", "*.toml", "*.yaml", "*.yml"]
+    )
+    documentation_patterns: list[str] = Field(
+        default_factory=lambda: ["README", "CHANGELOG", "docs/", "*.md", "*.rst"]
+    )
+    build_patterns: list[str] = Field(
+        default_factory=lambda: ["Makefile", "Dockerfile", "*.dockerfile"]
+    )
+
+    # Content-based indicators
+    cli_content_indicators: list[str] = Field(
+        default_factory=lambda: ["typer", "click", "argparse", "@app.command"]
+    )
+    web_ui_content_indicators: list[str] = Field(
+        default_factory=lambda: ["fastapi", "starlette", "@app.route", "HTMLResponse"]
+    )
+    api_content_indicators: list[str] = Field(
+        default_factory=lambda: ["@app.", "APIRouter", "FastAPI"]
+    )
+    database_content_indicators: list[str] = Field(
+        default_factory=lambda: ["sqlite", "aiosqlite", "CREATE TABLE", "async def"]
+    )
+    migration_content_indicators: list[str] = Field(
+        default_factory=lambda: ["migration", "migrate", "schema"]
+    )
+    test_content_indicators: list[str] = Field(
+        default_factory=lambda: ["pytest", "def test_", "class Test"]
+    )
+
+
+class DependencyDetection(BaseModel):
+    """Configuration for dependency detection patterns."""
+
+    requirements_files: list[str] = Field(
+        default_factory=lambda: [
+            "requirements.txt",
+            "requirements/*.txt",
+            "requirements-*.txt",
+        ]
+    )
+    config_files: list[str] = Field(
+        default_factory=lambda: ["pyproject.toml", "setup.py", "setup.cfg"]
+    )
+
+    # Package categorization rules
+    web_frameworks: list[str] = Field(
+        default_factory=lambda: ["fastapi", "uvicorn", "starlette", "flask", "django"]
+    )
+    database_libs: list[str] = Field(
+        default_factory=lambda: [
+            "aiosqlite",
+            "sqlite3",
+            "sqlalchemy",
+            "psycopg2",
+            "pymongo",
+        ]
+    )
+    template_engines: list[str] = Field(
+        default_factory=lambda: ["jinja2", "mako", "chameleon"]
+    )
+    testing_frameworks: list[str] = Field(
+        default_factory=lambda: ["pytest", "pytest-cov", "pytest-asyncio", "unittest"]
+    )
+    ai_libraries: list[str] = Field(
+        default_factory=lambda: ["openai", "anthropic", "transformers", "torch"]
+    )
+    config_parsers: list[str] = Field(
+        default_factory=lambda: ["pyyaml", "toml", "tomllib", "configparser"]
+    )
+    cli_frameworks: list[str] = Field(
+        default_factory=lambda: ["typer", "click", "argparse"]
+    )
+    visualization_libs: list[str] = Field(
+        default_factory=lambda: ["networkx", "matplotlib", "plotly", "seaborn"]
+    )
+
+    # Standard library modules to exclude from third-party detection
+    stdlib_modules: list[str] = Field(
+        default_factory=lambda: [
+            "os",
+            "sys",
+            "re",
+            "json",
+            "urllib",
+            "http",
+            "pathlib",
+            "typing",
+            "asyncio",
+            "logging",
+            "datetime",
+            "collections",
+            "itertools",
+            "functools",
+            "inspect",
+            "importlib",
+            "unittest",
+            "sqlite3",
+            "csv",
+            "xml",
+            "email",
+            "html",
+            "math",
+            "random",
+            "string",
+            "threading",
+            "multiprocessing",
+            "subprocess",
+            "shutil",
+            "tempfile",
+            "glob",
+            "fnmatch",
+            "warnings",
+            "traceback",
+            "io",
+            "contextlib",
+            "copy",
+            "pickle",
+            "struct",
+            "zlib",
+            "hashlib",
+            "hmac",
+            "secrets",
+            "base64",
+            "binascii",
+            "uuid",
+            "time",
+            "calendar",
+            "argparse",
+            "configparser",
+            "tomllib",
+        ]
+    )
+
+
+class ProjectAnalysis(BaseModel):
+    """Configuration for project analysis behavior."""
+
+    # Skip patterns (support both Windows and Unix paths)
+    skip_patterns: list[str] = Field(
+        default_factory=lambda: [
+            ".venv\\",
+            ".venv/",
+            "venv\\",
+            "venv/",
+            "build\\",
+            "build/",
+            "dist\\",
+            "dist/",
+            "__pycache__\\",
+            "__pycache__/",
+            ".git\\",
+            ".git/",
+            ".pytest_cache\\",
+            ".pytest_cache/",
+            ".mypy_cache\\",
+            ".mypy_cache/",
+            "node_modules\\",
+            "node_modules/",
+        ]
+    )
+
+    # Content analysis settings
+    content_analysis_enabled: bool = True
+    content_analysis_max_size: int = 2000  # bytes
+
+    # Domain inference rules
+    domain_patterns: dict[str, str] = Field(
+        default_factory=lambda: {
+            "full_stack": "Full-stack {language} application with CLI, web UI, and database components",
+            "web_cli": "{language} CLI tool with web UI for {domain}",
+            "database_cli": "{language} CLI tool with database backend for {domain}",
+            "simple_cli": "{language} CLI tool for {domain}",
+        }
+    )
+
+    # Default project characteristics
+    default_language: str = "Python"
+    default_domain: str = "AI-powered specification generation"
+
+
+class SyncFoundationConfig(BaseModel):
+    """Configuration for sync-foundation command behavior."""
+
+    file_categorization: FileCategorization = Field(default_factory=FileCategorization)
+    dependency_detection: DependencyDetection = Field(
+        default_factory=DependencyDetection
+    )
+    project_analysis: ProjectAnalysis = Field(default_factory=ProjectAnalysis)
+
+    # Foundation template settings
+    foundation_template_name: str = Field(
+        default="project-foundation", min_length=1, max_length=100
+    )
+    generate_statistics: bool = True
+    include_transitive_dependencies: bool = True
+    max_transitive_dependencies: int = Field(default=10, ge=0, le=100)
+
+    # Performance settings
+    enable_caching: bool = True
+    cache_duration_hours: int = Field(default=24, ge=0, le=168)  # Max 1 week
+
+    @field_validator("foundation_template_name")
+    @classmethod
+    def validate_template_name(cls, v: str) -> str:
+        """Validate foundation template name."""
+        if not v.strip():
+            raise ValueError("Foundation template name cannot be empty or whitespace")
+
+        # Check for invalid characters
+        invalid_chars = {"/", "\\", ":", "*", "?", '"', "<", ">", "|"}
+        if any(char in v for char in invalid_chars):
+            raise ValueError(
+                f"Foundation template name contains invalid characters: {invalid_chars}"
+            )
+
+        return v.strip()
+
+    def validate_patterns(self) -> list[str]:
+        """Validate all pattern configurations and return list of warnings."""
+        warnings = []
+
+        # Validate file categorization patterns
+        categorization = self.file_categorization
+        all_patterns = (
+            categorization.cli_patterns
+            + categorization.web_ui_patterns
+            + categorization.api_patterns
+            + categorization.database_patterns
+            + categorization.migration_patterns
+            + categorization.test_patterns
+            + categorization.config_patterns
+            + categorization.documentation_patterns
+            + categorization.build_patterns
+        )
+
+        # Check for empty patterns
+        if not all_patterns:
+            warnings.append("No file categorization patterns defined")
+
+        # Check for duplicate patterns across categories
+        pattern_counts = {}
+        for pattern in all_patterns:
+            pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+
+        duplicates = [p for p, count in pattern_counts.items() if count > 1]
+        if duplicates:
+            warnings.append(f"Duplicate patterns found across categories: {duplicates}")
+
+        # Validate dependency detection
+        if not self.dependency_detection.requirements_files:
+            warnings.append("No requirements file patterns defined")
+
+        # Check for overlap between requirements files and config files
+        req_files = set(self.dependency_detection.requirements_files)
+        config_files = set(self.dependency_detection.config_files)
+        overlap = req_files & config_files
+        if overlap:
+            warnings.append(
+                f"Files listed in both requirements_files and config_files: {overlap}"
+            )
+
+        return warnings
+
+    def validate_skip_patterns(self) -> list[str]:
+        """Validate skip patterns and return warnings for potential issues."""
+        warnings = []
+        skip_patterns = self.project_analysis.skip_patterns
+
+        # Check for overly broad patterns
+        broad_patterns = ["*", "**", ".*", "*.*"]
+        for pattern in skip_patterns:
+            if pattern in broad_patterns:
+                warnings.append(
+                    f"Very broad skip pattern detected: '{pattern}' - may exclude too many files"
+                )
+
+        # Check for essential directories being skipped
+        essential_dirs = ["src", "lib", "app", "core"]
+        for pattern in skip_patterns:
+            for essential in essential_dirs:
+                if essential in pattern.lower():
+                    warnings.append(
+                        f"Skip pattern '{pattern}' may exclude essential directory '{essential}'"
+                    )
+
+        return warnings
+
+
 class AgenticSpecConfig(BaseModel):
     """Complete configuration for agentic-spec."""
 
@@ -95,6 +403,7 @@ class AgenticSpecConfig(BaseModel):
     workflow: WorkflowSettings = Field(default_factory=WorkflowSettings)
     directories: DirectorySettings = Field(default_factory=DirectorySettings)
     ai_settings: AISettings = Field(default_factory=AISettings)
+    sync_foundation: SyncFoundationConfig = Field(default_factory=SyncFoundationConfig)
     custom_settings: dict[str, Any] = Field(default_factory=dict)
 
 

@@ -75,8 +75,8 @@ class TestCLIHelp:
 class TestGenerateCommand:
     """Test the generate command functionality."""
 
-    @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.get_prompt_input")
+    @patch("agentic_spec.cli_core.initialize_generator")
+    @patch("agentic_spec.cli_core.get_prompt_input")
     def test_generate_with_prompt_argument(
         self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
     ):
@@ -118,8 +118,8 @@ class TestGenerateCommand:
         assert "Specification generated" in result.stdout
         mock_get_prompt.assert_called_once_with("test prompt")
 
-    @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.get_prompt_input")
+    @patch("agentic_spec.cli_core.initialize_generator")
+    @patch("agentic_spec.cli_core.get_prompt_input")
     def test_generate_with_validation_error(
         self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
     ):
@@ -142,8 +142,8 @@ class TestGenerateCommand:
         assert result.exit_code == 1
         assert "No prompt provided" in result.stdout
 
-    @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.get_prompt_input")
+    @patch("agentic_spec.cli_core.initialize_generator")
+    @patch("agentic_spec.cli_core.get_prompt_input")
     def test_generate_with_inherits(
         self, mock_get_prompt, mock_init_gen, cli_runner, temp_dirs
     ):
@@ -229,7 +229,7 @@ class TestReviewCommand:
 class TestTemplatesCommand:
     """Test the templates command functionality."""
 
-    @patch("agentic_spec.cli.create_base_templates")
+    @patch("agentic_spec.cli_template.create_base_templates")
     def test_templates_create(self, mock_create_templates, cli_runner, temp_dirs):
         """Test templates command to create base templates."""
         templates_dir, specs_dir = temp_dirs
@@ -249,7 +249,7 @@ class TestTemplatesCommand:
         assert "Base templates created" in result.stdout
         mock_create_templates.assert_called_once_with(templates_dir, "test-project")
 
-    @patch("agentic_spec.cli.create_base_templates")
+    @patch("agentic_spec.cli_template.create_base_templates")
     def test_templates_create_error(self, mock_create_templates, cli_runner, temp_dirs):
         """Test templates command with error."""
         templates_dir, specs_dir = temp_dirs
@@ -267,7 +267,7 @@ class TestTemplatesCommand:
 class TestExpandCommand:
     """Test the expand command functionality."""
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_expand_step_success(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command success."""
         templates_dir, specs_dir = temp_dirs
@@ -279,11 +279,8 @@ class TestExpandCommand:
         mock_sub_spec.metadata.id = "sub123"
 
         mock_generator.find_spec_by_id.return_value = mock_parent_spec
-        mock_generator.generate_sub_spec = AsyncMock(return_value=mock_sub_spec)
+        mock_generator.expand_step = AsyncMock(return_value=mock_sub_spec)
         mock_generator.save_spec.return_value = specs_dir / "sub-spec.yaml"
-        mock_generator.review_spec = AsyncMock(
-            return_value=["Review note 1", "Review note 2"]
-        )
 
         mock_init_gen.return_value = mock_generator
 
@@ -300,14 +297,11 @@ class TestExpandCommand:
         )
 
         assert result.exit_code == 0
-        assert "Sub-specification generated" in result.stdout
+        assert "Expanded specification saved" in result.stdout
         assert "sub123" in result.stdout
-        mock_generator.find_spec_by_id.assert_called_once_with("parent123")
-        mock_generator.generate_sub_spec.assert_called_once_with(
-            mock_parent_spec, "parent123:1"
-        )
+        mock_generator.expand_step.assert_called_once_with("parent123", 1)
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_expand_invalid_step_id(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command with invalid step ID format."""
         templates_dir, specs_dir = temp_dirs
@@ -327,7 +321,7 @@ class TestExpandCommand:
         assert result.exit_code == 0
         assert "Step ID must be in format" in result.stdout
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_expand_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test expand command with spec not found."""
         templates_dir, specs_dir = temp_dirs
@@ -355,7 +349,7 @@ class TestExpandCommand:
 class TestPublishCommand:
     """Test the publish command functionality."""
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     @patch("agentic_spec.graph_visualization.print_spec_graph")
     def test_publish_spec_success(
         self, mock_print_graph, mock_init_gen, cli_runner, temp_dirs
@@ -381,7 +375,7 @@ class TestPublishCommand:
         assert mock_target_spec.metadata.status == "implemented"
         mock_generator.save_spec.assert_called_once_with(mock_target_spec)
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_publish_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test publish command with spec not found."""
         templates_dir, specs_dir = temp_dirs
@@ -401,7 +395,7 @@ class TestPublishCommand:
 class TestConfigCommand:
     """Test the config command functionality."""
 
-    @patch("agentic_spec.cli.get_config_manager")
+    @patch("agentic_spec.cli_utils.get_config_manager")
     def test_config_init(self, mock_get_config_manager, cli_runner):
         """Test config init command."""
         mock_config_manager = MagicMock()
@@ -416,7 +410,7 @@ class TestConfigCommand:
         assert "Default configuration created" in result.stdout
         mock_config_manager.create_default_config_file.assert_called_once()
 
-    @patch("agentic_spec.cli.get_config_manager")
+    @patch("agentic_spec.cli_utils.get_config_manager")
     def test_config_show(self, mock_get_config_manager, cli_runner):
         """Test config show command."""
         mock_config_manager = MagicMock()
@@ -431,7 +425,7 @@ class TestConfigCommand:
         assert "Current Configuration" in result.stdout
         assert "key" in result.stdout
 
-    @patch("agentic_spec.cli.get_config_manager")
+    @patch("agentic_spec.cli_utils.get_config_manager")
     def test_config_validate_valid(self, mock_get_config_manager, cli_runner):
         """Test config validate command with valid config."""
         mock_config_manager = MagicMock()
@@ -445,9 +439,9 @@ class TestConfigCommand:
         result = cli_runner.invoke(app, ["config", "validate"])
 
         assert result.exit_code == 0
-        assert "Configuration is valid" in result.stdout
+        assert "All configurations are valid!" in result.stdout
 
-    @patch("agentic_spec.cli.get_config_manager")
+    @patch("agentic_spec.cli_utils.get_config_manager")
     def test_config_validate_invalid(self, mock_get_config_manager, cli_runner):
         """Test config validate command with invalid config."""
         mock_config_manager = MagicMock()
@@ -475,7 +469,7 @@ class TestConfigCommand:
 class TestTemplateManagementCommand:
     """Test the template management command functionality."""
 
-    @patch("agentic_spec.cli.list_templates")
+    @patch("agentic_spec.cli_template.list_templates")
     def test_template_list(self, mock_list_templates, cli_runner):
         """Test template list command."""
         mock_list_templates.return_value = ["template1.yaml", "template2.yaml"]
@@ -487,7 +481,7 @@ class TestTemplateManagementCommand:
         assert "template1.yaml" in result.stdout
         assert "template2.yaml" in result.stdout
 
-    @patch("agentic_spec.cli.list_templates")
+    @patch("agentic_spec.cli_template.list_templates")
     def test_template_list_empty(self, mock_list_templates, cli_runner):
         """Test template list command with no templates."""
         mock_list_templates.return_value = []
@@ -497,7 +491,7 @@ class TestTemplateManagementCommand:
         assert result.exit_code == 0
         assert "No templates found" in result.stdout
 
-    @patch("agentic_spec.cli.TemplateLoader")
+    @patch("agentic_spec.cli_template.TemplateLoader")
     def test_template_info(self, mock_template_loader_class, cli_runner, temp_dirs):
         """Test template info command."""
         templates_dir, specs_dir = temp_dirs
@@ -545,7 +539,7 @@ class TestTemplateManagementCommand:
 class TestValidateCommand:
     """Test the validate command functionality."""
 
-    @patch("agentic_spec.cli.TemplateValidator")
+    @patch("agentic_spec.cli_utils.TemplateValidator")
     def test_validate_templates_success(
         self, mock_validator_class, cli_runner, temp_dirs
     ):
@@ -583,7 +577,7 @@ class TestValidateCommand:
         assert "❌ template2.yaml" in result.stdout
         assert "Missing required field" in result.stdout
 
-    @patch("agentic_spec.cli.TemplateValidator")
+    @patch("agentic_spec.cli_utils.TemplateValidator")
     def test_validate_no_templates(self, mock_validator_class, cli_runner, temp_dirs):
         """Test validate command with no templates."""
         templates_dir, specs_dir = temp_dirs
@@ -603,8 +597,8 @@ class TestValidateCommand:
 class TestRenderCommand:
     """Test the render command functionality."""
 
-    @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.render_specification_template")
+    @patch("agentic_spec.cli_core.initialize_generator")
+    @patch("agentic_spec.cli_utils.render_specification_template")
     @patch("dataclasses.asdict")
     def test_render_spec_to_stdout(
         self, mock_asdict, mock_render, mock_init_gen, cli_runner, temp_dirs
@@ -638,8 +632,8 @@ class TestRenderCommand:
         assert "Rendered Template" in result.stdout
         assert "Rendered template content" in result.stdout
 
-    @patch("agentic_spec.cli.initialize_generator")
-    @patch("agentic_spec.cli.render_specification_template")
+    @patch("agentic_spec.cli_core.initialize_generator")
+    @patch("agentic_spec.cli_utils.render_specification_template")
     @patch("dataclasses.asdict")
     def test_render_spec_to_file(
         self, mock_asdict, mock_render, mock_init_gen, cli_runner, temp_dirs
@@ -675,7 +669,7 @@ class TestRenderCommand:
         assert output_file.exists()
         assert output_file.read_text() == "Rendered template content"
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_render_spec_not_found(self, mock_init_gen, cli_runner, temp_dirs):
         """Test render command with spec not found."""
         templates_dir, specs_dir = temp_dirs
@@ -731,7 +725,7 @@ class TestTemplateBrowsing:
         assert result.exit_code == 1
         assert "Failed to preview template" in result.stdout
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_generate_with_template_flag(self, mock_init_gen, cli_runner, temp_dirs):
         """Test generate command with --template flag."""
         templates_dir, specs_dir = temp_dirs
@@ -853,7 +847,7 @@ class TestErrorHandling:
             # Note: This test is tricky with Typer's CliRunner
             # The actual KeyboardInterrupt handling is tested in the main() function
 
-    @patch("agentic_spec.cli.initialize_generator")
+    @patch("agentic_spec.cli_core.initialize_generator")
     def test_configuration_error_handling(self, mock_init_gen, cli_runner, temp_dirs):
         """Test configuration error handling."""
         templates_dir, specs_dir = temp_dirs

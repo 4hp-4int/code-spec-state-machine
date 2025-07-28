@@ -44,3 +44,27 @@ class ConnectionError(DatabaseError):
 
 class TransactionError(DatabaseError):
     """Exception raised for database transaction errors."""
+
+
+class SyncFoundationConfigError(ConfigurationError):
+    """Exception raised for sync-foundation configuration errors."""
+
+    def __init__(
+        self, message: str, config_path: str | None = None, field: str | None = None
+    ):
+        self.config_path = config_path
+        self.field = field
+        details = []
+        if config_path:
+            details.append(f"Config file: {config_path}")
+        if field:
+            details.append(f"Field: {field}")
+        super().__init__(message, "; ".join(details) if details else None)
+
+
+class ConfigValidationError(SyncFoundationConfigError):
+    """Exception raised when configuration validation fails."""
+
+
+class ConfigParsingError(SyncFoundationConfigError):
+    """Exception raised when configuration file parsing fails."""

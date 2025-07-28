@@ -83,7 +83,7 @@ context:
     usage_context:
     - cli
     - testing
-    import_frequency: 5
+    import_frequency: 6
     transitive_dependencies:
     - click
     - typing-extensions
@@ -110,7 +110,8 @@ context:
     source: pyproject.toml
     usage_context:
     - database
-    import_frequency: 1
+    - testing
+    import_frequency: 2
     transitive_dependencies:
     - typing_extensions
     - attribution
@@ -129,7 +130,8 @@ context:
     source: pyproject.toml
     usage_context:
     - web_ui
-    import_frequency: 5
+    - testing
+    import_frequency: 8
     transitive_dependencies:
     - starlette<0.48.0,
     - pydantic
@@ -171,7 +173,28 @@ context:
     - core_logic
     - database
     - testing
-    import_frequency: 11
+    import_frequency: 13
+  - name: agentic_spec
+    version: unknown
+    description: 'Core dependency: agentic_spec'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    - testing
+    - web_ui
+    import_frequency: 27
+    transitive_dependencies:
+    - openai
+    - pyyaml
+    - networkx
+    - matplotlib
+    - jinja2
+    - typer
+    - pytest-cov
+    - aiosqlite
+    - fastapi
+    - uvicorn
   - name: __future__
     version: unknown
     description: 'Core dependency: __future__'
@@ -190,18 +213,6 @@ context:
     - database
     - general
     import_frequency: 2
-  - name: ''
-    version: unknown
-    description: 'Core dependency: '
-    category: core
-    source: import_analysis
-    usage_context:
-    - database
-    - cli
-    - core_logic
-    - general
-    - web_ui
-    import_frequency: 50
   - name: dataclasses
     version: unknown
     description: 'Core dependency: dataclasses'
@@ -243,27 +254,6 @@ context:
     usage_context:
     - general
     import_frequency: 1
-  - name: agentic_spec
-    version: unknown
-    description: 'Core dependency: agentic_spec'
-    category: core
-    source: import_analysis
-    usage_context:
-    - general
-    - testing
-    - web_ui
-    import_frequency: 23
-    transitive_dependencies:
-    - openai
-    - pyyaml
-    - networkx
-    - matplotlib
-    - jinja2
-    - typer
-    - pytest-cov
-    - aiosqlite
-    - fastapi
-    - uvicorn
   - name: pytest
     version: unknown
     description: 'Testing framework: pytest'
@@ -272,7 +262,7 @@ context:
     usage_context:
     - testing
     - web_ui
-    import_frequency: 9
+    import_frequency: 11
     transitive_dependencies:
     - colorama
     - exceptiongroup
@@ -306,26 +296,53 @@ context:
     usage_context:
     - testing
     import_frequency: 1
+  - name: setuptools
+    version: unknown
+    description: 'Core dependency: setuptools'
+    category: core
+    source: import_analysis
+    usage_context:
+    - testing
+    import_frequency: 1
+  - name: custom_module
+    version: unknown
+    description: 'Core dependency: custom_module'
+    category: core
+    source: import_analysis
+    usage_context:
+    - testing
+    import_frequency: 1
+  - name: src
+    version: unknown
+    description: 'Core dependency: src'
+    category: core
+    source: import_analysis
+    usage_context:
+    - testing
+    import_frequency: 1
   architecture_overview: agentic-spec is a Python CLI tool that generates detailed
     programming specifications using AI with a FastAPI web interface for workflow
     visualization and SQLite database backend for task tracking featuring template
     inheritance and automated review workflows.
   current_codebase_structure: "agentic_spec/\n\u251C\u2500\u2500 async_db.py  # Database\n\
-    \u251C\u2500\u2500 cli.py  # Database\n\u251C\u2500\u2500 config.py\n\u251C\u2500\
-    \u2500 core.py\n\u251C\u2500\u2500 db.py  # Database\n\u251C\u2500\u2500 exceptions.py\n\
-    \u251C\u2500\u2500 graph_visualization.py\n\u251C\u2500\u2500 models.py\n\u251C\
-    \u2500\u2500 models_backup.py\n\u251C\u2500\u2500 prompt_editor.py\n\u251C\u2500\
-    \u2500 prompt_engineering.py\n\u251C\u2500\u2500 prompt_template_loader.py\n\u251C\
-    \u2500\u2500 template_loader.py\n\u251C\u2500\u2500 template_validator.py\n\u251C\
-    \u2500\u2500 web_ui.py  # Web UI\n\u251C\u2500\u2500 workflow.py\n\u251C\u2500\
-    \u2500 web_templates/      # Jinja2 HTML templates and static assets\n\u251C\u2500\
-    \u2500 migrations/         # Database migration scripts\ntemplates/          \
-    \    # YAML specification templates\nspecs/                  # Generated specifications\
-    \ and SQLite database\ntests/                  # Unit and integration tests\n\
-    tools/                  # Utility scripts and automation"
+    \u251C\u2500\u2500 cli.py\n\u251C\u2500\u2500 config.py\n\u251C\u2500\u2500 core.py\n\
+    \u251C\u2500\u2500 db.py  # Database\n\u251C\u2500\u2500 exceptions.py\n\u251C\
+    \u2500\u2500 graph_visualization.py\n\u251C\u2500\u2500 models.py\n\u251C\u2500\
+    \u2500 models_backup.py  # Database\n\u251C\u2500\u2500 prompt_editor.py\n\u251C\
+    \u2500\u2500 prompt_engineering.py\n\u251C\u2500\u2500 prompt_template_loader.py\n\
+    \u251C\u2500\u2500 template_loader.py\n\u251C\u2500\u2500 template_validator.py\n\
+    \u251C\u2500\u2500 web_ui.py  # Web UI\n\u251C\u2500\u2500 workflow.py\n\u251C\
+    \u2500\u2500 web_templates/      # Jinja2 HTML templates and static assets\n\u251C\
+    \u2500\u2500 migrations/         # Database migration scripts\ntemplates/    \
+    \          # YAML specification templates\nspecs/                  # Generated\
+    \ specifications and SQLite database\ntests/                  # Unit and integration\
+    \ tests\ntools/                  # Utility scripts and automation"
   file_categorization:
     cli_files:
+    - agentic_spec\cli.py
     - tests\test_cli.py
+    - tests\test_enhanced_analysis.py
+    - tests\test_models_db.py
     - tests\test_typer_integration.py
     web_ui_files: &id001
     - agentic_spec\web_ui.py
@@ -346,14 +363,12 @@ context:
     api_files: []
     database_files: &id002
     - agentic_spec\async_db.py
-    - agentic_spec\cli.py
     - agentic_spec\db.py
+    - agentic_spec\models_backup.py
     - tests\test_async_db.py
-    - tests\test_models_db.py
     - tests\test_simple_async_db.py
     - agentic_spec\ai_providers\base.py
     - agentic_spec\ai_providers\openai_provider.py
-    - agentic_spec\migrations\002_add_enhanced_tracking_fields.py
     - agentic_spec.db
     - specs\specifications.db
     - archive\specs-archive-2025-07-27-184732\specifications.db
@@ -361,6 +376,7 @@ context:
     - analyze_yaml_schema.py
     - agentic_spec\models.py
     - agentic_spec\migrations\001_add_tracking_fields.py
+    - agentic_spec\migrations\002_add_enhanced_tracking_fields.py
     - agentic_spec\migrations\migration_manager.py
     - agentic_spec\migrations\__init__.py
     test_files: &id003
@@ -375,14 +391,14 @@ context:
     - Makefile
     data_files: []
     statistics:
-      python_files: 40
+      python_files: 42
       web_ui_files: 15
-      database_files: 12
+      database_files: 10
       test_files: 3
       config_files: 1
       template_files: 0
-      migration_files: 5
-      cli_files: 2
+      migration_files: 6
+      cli_files: 5
       api_files: 0
       data_files: 0
       documentation_files: 0
@@ -435,6 +451,5 @@ architectural_patterns:
 - Web UI with FastAPI/Jinja2 templates
 - Database-backed workflow with async operations
 - Asynchronous database operations
-- Database migrations
-_last_synced: '2025-07-27T19:25:10.015186'
+_last_synced: '2025-07-27T21:17:48.257678'
 _sync_version: '2.0'

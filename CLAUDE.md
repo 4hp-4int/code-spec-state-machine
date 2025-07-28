@@ -32,6 +32,39 @@ This project includes custom slash commands for Claude Code:
 
 ### Complete Command Reference
 
+The CLI has been refactored into a modular architecture with both **direct access** and **sub-application access** patterns:
+
+#### CLI Architecture
+
+**Modular Structure**: Commands are organized into logical modules:
+- **Core Commands** (`cli_core.py`): Core specification operations
+- **Workflow Commands** (`cli_workflow.py`): Task and workflow management
+- **Template Commands** (`cli_template.py`): Template operations and browsing
+- **Database Commands** (`cli_db.py`): Database migrations and management
+- **Utility Commands** (`cli_utils.py`): Configuration and utility functions
+
+**Access Patterns**: All commands support both access methods:
+```bash
+# Direct access (backward compatible)
+agentic-spec generate "task description"
+agentic-spec task-start spec_id:0
+agentic-spec config show
+
+# Sub-application access (new modular approach)
+agentic-spec core generate "task description"
+agentic-spec workflow task-start spec_id:0
+agentic-spec utils config show
+```
+
+**Sub-Application Commands**:
+```bash
+agentic-spec core     # Core specification commands (4 commands)
+agentic-spec workflow # Task workflow management (12 commands)
+agentic-spec template # Template operations (4 commands)
+agentic-spec database # Database and migrations (4 commands)
+agentic-spec utils    # Configuration and utilities (5 commands)
+```
+
 #### Core Commands
 
 **generate** - Generate a new programming specification from a prompt
@@ -201,19 +234,48 @@ agentic-spec validate --templates-dir ./templates
 
 #### Foundation Sync Commands
 
-**sync-foundation** - Sync foundation specification with current codebase state
+**sync-foundation** - Configurable codebase analysis and foundation specification sync
 ```bash
+# Basic sync with auto-discovery
 agentic-spec sync-foundation
-agentic-spec sync-foundation --force  # Force sync even if current
+
+# Force sync even if current
+agentic-spec sync-foundation --force
+
+# Use custom configuration file
+agentic-spec sync-foundation --discovery-config my-project-config.yaml
+
+# Specify custom templates directory
+agentic-spec sync-foundation --templates-dir ./custom-templates
 ```
 
-The foundation sync command now includes enhanced analysis capabilities:
-- **Multi-source dependency detection**: Extracts dependencies from pyproject.toml, requirements.txt, and setup.py
-- **Transitive dependency resolution**: Uses importlib.metadata to detect transitive dependencies
-- **Advanced file categorization**: Automatically categorizes files into CLI, web UI, database, API, test, config, documentation, build, and migration files
-- **Content-based analysis**: Analyzes file content to improve categorization accuracy
-- **Architectural pattern detection**: Identifies FastAPI applications, async operations, database migrations
-- **Smart filtering**: Excludes virtual environments (.venv), build artifacts, and cache directories
+**🆕 NEW: Configurable for Any Project Type!**
+
+The sync-foundation command is now fully configurable via YAML files, making it work seamlessly with any project structure:
+
+**Enhanced Analysis Capabilities:**
+- **🔍 Multi-source dependency detection**: pyproject.toml, requirements.txt, setup.py with proper TOML/Python parsing
+- **📁 Configurable file categorization**: Custom patterns for CLI, web UI, database, API, test, config files
+- **🏗️ Architectural pattern detection**: FastAPI, async operations, database migrations
+- **⚙️ YAML-based configuration**: Fully customizable project analysis rules
+- **🚀 Auto-discovery**: Automatically finds config files in project root
+- **✅ Validation system**: Built-in error checking and warning system
+
+**Configuration Files (Auto-Discovery Order):**
+1. `sync_foundation_config.yaml` (recommended)
+2. `sync-foundation-config.yaml`
+3. `project_discovery.yaml`
+4. `project-discovery.yaml`
+5. `.sync-foundation.yaml`
+
+**Configuration Validation:**
+```bash
+# Validate all configurations including sync-foundation config
+agentic-spec config validate
+
+# Test sync with specific config
+agentic-spec sync-foundation --discovery-config test-config.yaml
+```
 
 **check-foundation** - Check if foundation specification needs to be synced
 ```bash
@@ -242,6 +304,61 @@ agentic-spec render spec_id --template template.html
 
 # Render to file
 agentic-spec render spec_id --template template.html --output output.html
+```
+
+### Modular CLI API Reference
+
+#### Core Module (`agentic-spec core` or direct access)
+```bash
+agentic-spec core generate       # Generate new specification
+agentic-spec core review         # List existing specifications
+agentic-spec core graph          # Show dependency graph
+agentic-spec core expand         # Expand implementation step
+```
+
+#### Workflow Module (`agentic-spec workflow`)
+```bash
+agentic-spec workflow task-start spec_id:step      # Start working on task
+agentic-spec workflow task-complete spec_id:step   # Mark task completed
+agentic-spec workflow task-approve spec_id:step    # Approve completed task
+agentic-spec workflow task-reject spec_id:step     # Reject task for rework
+agentic-spec workflow task-block spec_id:step      # Block task (dependencies)
+agentic-spec workflow task-unblock spec_id:step    # Unblock task
+agentic-spec workflow task-override spec_id:step   # Override strict mode
+agentic-spec workflow task-status spec_id:step     # Show task status
+agentic-spec workflow workflow-status spec_id      # Show full workflow status
+agentic-spec workflow publish spec_id              # Publish as implemented
+agentic-spec workflow sync-foundation              # Sync foundation spec
+agentic-spec workflow check-foundation             # Check foundation status
+```
+
+#### Template Module (`agentic-spec template`)
+```bash
+agentic-spec template templates          # Create base templates
+agentic-spec template manage list        # List available templates
+agentic-spec template manage info --template name  # Show template info
+agentic-spec template browse             # Browse prompt templates
+agentic-spec template preview name       # Preview template content
+```
+
+#### Database Module (`agentic-spec database`)
+```bash
+agentic-spec database migrate-bulk          # Migrate all specs to database
+agentic-spec database migrate-incremental   # Migrate only changed specs
+agentic-spec database migration-status      # Show migration status
+agentic-spec database migration-report      # Generate migration report
+```
+
+#### Utils Module (`agentic-spec utils`)
+```bash
+agentic-spec utils init                  # Initialize new project
+agentic-spec utils config init          # Create default configuration
+agentic-spec utils config show          # Show current configuration
+agentic-spec utils config validate      # Validate configuration
+agentic-spec utils validate             # Validate templates
+agentic-spec utils render spec_id       # Render specification
+agentic-spec utils prompt edit name     # Edit prompt in system editor
+agentic-spec utils prompt list          # List available prompts
 ```
 
 ### Makefile Commands
@@ -312,7 +429,12 @@ make test-verbose
 
 ### Core Components
 
-- **CLI Module** (`cli.py`): Command-line interface with support for multiple input sources and comprehensive workflow commands
+- **Main CLI Module** (`cli.py`): Main CLI entrypoint that aggregates sub-applications and provides backward compatibility
+- **Core CLI Commands** (`cli_core.py`): Core specification operations (generate, review, graph, expand, validate, render)
+- **Workflow CLI Commands** (`cli_workflow.py`): Task tracking and workflow management commands
+- **Template CLI Commands** (`cli_template.py`): Template management and browsing commands
+- **Database CLI Commands** (`cli_db.py`): Database migration and management commands
+- **Utility CLI Commands** (`cli_utils.py`): Configuration and utility commands
 - **Core Engine** (`core.py`): Specification generation logic with AI integration, template inheritance, and database migration
 - **Data Models** (`models.py`): Enhanced dataclass and Pydantic definitions with workflow tracking, task management, and database support
 - **Database Layer** (`async_db.py`): Async SQLite backend with comprehensive task and specification tracking
@@ -334,11 +456,17 @@ make test-verbose
 - **Migration System**: Automated YAML-to-database migration with change detection and validation
 - **Error Handling**: Custom exception hierarchy with informative user messages
 - **Typer CLI**: Modern CLI framework with automatic help generation and type validation
+- **Modular CLI Architecture**: Commands organized into logical modules with both direct access (`agentic-spec generate`) and sub-app access (`agentic-spec core generate`)
 
 ### File Structure
 ```
 agentic_spec/
-├── cli.py                      # CLI entry point with Typer commands and workflow management
+├── cli.py                      # Main CLI entrypoint that aggregates sub-applications
+├── cli_core.py                 # Core specification commands (generate, review, graph, expand)
+├── cli_workflow.py             # Workflow and task management commands
+├── cli_template.py             # Template management and browsing commands
+├── cli_db.py                   # Database and migration commands
+├── cli_utils.py                # Configuration and utility commands
 ├── core.py                     # SpecGenerator class, AI integration, and database migration
 ├── models.py                   # Enhanced data models with workflow tracking and database support
 ├── async_db.py                 # Async SQLite database backend with comprehensive indexing
@@ -439,6 +567,7 @@ The SQLite database includes:
 - **DECOMPOSITION RULE**: Whenever you encounter a composite task, decompose using the expand command, go 3 levels of nesting deep, if you need to go further, ask for approval.
 - All 39 existing specifications have been marked as completed in the database
 - **TEMPLATE INHERITANCE**: Ensure generated specs inherit from the correct templates
+- **🆕 CONFIGURABLE SYNC-FOUNDATION**: The sync-foundation command is now configurable for any project type via YAML files. Use `sync_foundation_config.yaml` for custom file categorization, dependency detection, and project analysis patterns. Auto-discovery enabled.
 
 ## Interactive Workflow Usage
 

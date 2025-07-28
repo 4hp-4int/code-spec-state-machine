@@ -34,12 +34,15 @@ class SpecGenerator:
         spec_templates_dir: Path,
         specs_dir: Path,
         config: AgenticSpecConfig | None = None,
+        discovery_config_file: Path | None = None,
     ):
         self.spec_templates_dir = spec_templates_dir
         self.specs_dir = specs_dir
         self.spec_templates_dir.mkdir(parents=True, exist_ok=True)
         self.specs_dir.mkdir(parents=True, exist_ok=True)
         self.config = config or AgenticSpecConfig()
+        self.discovery_config_file = discovery_config_file
+        self.sync_foundation_config = self._load_sync_foundation_config()
 
         # Initialize prompt template loader
         prompt_templates_dir = (
@@ -220,6 +223,121 @@ class SpecGenerator:
 
         return context
 
+    def _load_sync_foundation_config(self) -> "SyncFoundationConfig | None":
+        """Load sync-foundation configuration from file with comprehensive error handling."""
+
+        from .exceptions import (
+            ConfigParsingError,
+            ConfigValidationError,
+            SyncFoundationConfigError,
+        )
+
+        config_path = None
+        try:
+            # If explicit path provided, use it
+            if self.discovery_config_file:
+                config_path = Path(self.discovery_config_file)
+                if not config_path.exists():
+                    raise SyncFoundationConfigError(
+                        f"Specified discovery config file not found: {config_path}",
+                        config_path=str(config_path),
+                    )
+
+                return self._load_config_from_path(config_path)
+
+            # Auto-discovery: check for common config file names
+            project_root = self.spec_templates_dir.parent
+            config_names = [
+                "sync_foundation_config.yaml",
+                "sync-foundation-config.yaml",
+                "project_discovery.yaml",
+                "project-discovery.yaml",
+                ".sync-foundation.yaml",
+            ]
+
+            for config_name in config_names:
+                config_path = project_root / config_name
+                if config_path.exists():
+                    print(f"📄 Using discovery config: {config_path.name}")
+                    return self._load_config_from_path(config_path)
+
+            # No config found, return None to use defaults
+            return None
+
+        except (ConfigParsingError, ConfigValidationError, SyncFoundationConfigError):
+            # Re-raise our custom exceptions
+            raise
+        except Exception as e:
+            # Wrap unexpected errors
+            raise SyncFoundationConfigError(
+                f"Unexpected error loading sync-foundation config: {e}",
+                config_path=str(config_path) if config_path else None,
+            ) from e
+
+    def _load_config_from_path(self, config_path: Path) -> "SyncFoundationConfig":
+        """Load and validate config from a specific path."""
+        from pydantic import ValidationError
+        import yaml
+
+        from .config import SyncFoundationConfig
+        from .exceptions import ConfigParsingError, ConfigValidationError
+
+        try:
+            # Read and parse YAML
+            with config_path.open(encoding="utf-8") as f:
+                config_data = yaml.safe_load(f)
+
+            if config_data is None:
+                raise ConfigParsingError(
+                    "Config file is empty or contains only comments",
+                    config_path=str(config_path),
+                )
+
+            if not isinstance(config_data, dict):
+                raise ConfigParsingError(
+                    f"Config file must contain a YAML object, got {type(config_data).__name__}",
+                    config_path=str(config_path),
+                )
+
+        except yaml.YAMLError as e:
+            raise ConfigParsingError(
+                f"Failed to parse YAML: {e}", config_path=str(config_path)
+            ) from e
+        except (OSError, UnicodeDecodeError) as e:
+            raise ConfigParsingError(
+                f"Failed to read config file: {e}", config_path=str(config_path)
+            ) from e
+
+        try:
+            # Create and validate config object
+            config = SyncFoundationConfig(**config_data)
+
+            # Run additional validation checks
+            pattern_warnings = config.validate_patterns()
+            skip_warnings = config.validate_skip_patterns()
+
+            # Log warnings but don't fail
+            all_warnings = pattern_warnings + skip_warnings
+            if all_warnings:
+                print(f"⚠️  Configuration warnings for {config_path.name}:")
+                for warning in all_warnings:
+                    print(f"   • {warning}")
+
+            return config
+
+        except ValidationError as e:
+            # Convert Pydantic validation errors to our custom exception
+            error_details = []
+            for error in e.errors():
+                field = ".".join(str(x) for x in error["loc"])
+                message = error["msg"]
+                error_details.append(f"{field}: {message}")
+
+            raise ConfigValidationError(
+                f"Configuration validation failed: {'; '.join(error_details)}",
+                config_path=str(config_path),
+            ) from e
+
     def sync_foundation_spec(self) -> bool:
         """Sync foundation spec with current codebase state."""
         try:
@@ -294,7 +412,7 @@ class SpecGenerator:
         }
 
     def _categorize_files(self, project_root: Path) -> dict[str, Any]:
-        """Categorize files by type and purpose for enhanced analysis."""
+        """Categorize files by type and purpose using config-driven patterns."""
         categorization = {
             "python_files": [],
             "web_ui_files": [],
@@ -310,27 +428,31 @@ class SpecGenerator:
             "build_files": [],
         }
 
-        # Define skip patterns for better organization (use both forward and backslashes for Windows)
-        skip_patterns = [
-            ".venv\\",
-            ".venv/",
-            "venv\\",
-            "venv/",
-            "build\\",
-            "build/",
-            "dist\\",
-            "dist/",
-            "__pycache__\\",
-            "__pycache__/",
-            ".git\\",
-            ".git/",
-            ".pytest_cache\\",
-            ".pytest_cache/",
-            ".mypy_cache\\",
-            ".mypy_cache/",
-            "node_modules\\",
-            "node_modules/",
-        ]
+        # Get skip patterns from config or use defaults
+        if self.sync_foundation_config:
+            skip_patterns = self.sync_foundation_config.project_analysis.skip_patterns
+        else:
+            # Default skip patterns for better organization (use both forward and backslashes for Windows)
+            skip_patterns = [
+                ".venv\\",
+                ".venv/",
+                "venv\\",
+                "venv/",
+                "build\\",
+                "build/",
+                "dist\\",
+                "dist/",
+                "__pycache__\\",
+                "__pycache__/",
+                ".git\\",
+                ".git/",
+                ".pytest_cache\\",
+                ".pytest_cache/",
+                ".mypy_cache\\",
+                ".mypy_cache/",
+                "node_modules\\",
+                "node_modules/",
+            ]
 
         # Categorize Python files with enhanced detection
         for py_file in project_root.rglob("*.py"):
@@ -345,65 +467,10 @@ class SpecGenerator:
             # Read file content for better categorization
             content_indicators = self._analyze_file_content(py_file)
 
-            # Migration files (check first to avoid being categorized as database files)
-            if (
-                any(
-                    indicator in file_path.lower()
-                    for indicator in ["migration", "migrate"]
-                )
-                or "migration" in content_indicators
-            ):
-                categorization["migration_files"].append(file_path)
-
-            # Web UI files (enhanced detection)
-            elif any(
-                indicator in file_path.lower()
-                for indicator in ["web_ui", "webui", "fastapi", "templates"]
-            ) or any(
-                indicator in content_indicators
-                for indicator in ["fastapi", "starlette", "@app.route", "HTMLResponse"]
-            ):
-                categorization["web_ui_files"].append(file_path)
-
-            # API files
-            elif any(
-                indicator in file_path.lower()
-                for indicator in ["api", "routes", "endpoints"]
-            ) or any(
-                indicator in content_indicators
-                for indicator in ["@app.", "APIRouter", "FastAPI"]
-            ):
-                categorization["api_files"].append(file_path)
-
-            # Database files (enhanced detection)
-            elif any(
-                indicator in file_path.lower()
-                for indicator in ["db", "database", "sqlite", "async_db"]
-            ) or any(
-                indicator in content_indicators
-                for indicator in ["sqlite", "aiosqlite", "CREATE TABLE", "async def"]
-            ):
-                categorization["database_files"].append(file_path)
-
-            # CLI files
-            elif any(
-                indicator in file_path.lower()
-                for indicator in ["cli", "command", "main"]
-            ) or any(
-                indicator in content_indicators
-                for indicator in ["typer", "click", "argparse", "@app.command"]
-            ):
-                categorization["cli_files"].append(file_path)
-
-            # Test files (enhanced detection)
-            elif any(
-                indicator in file_path.lower()
-                for indicator in ["test_", "_test", "tests/", "conftest"]
-            ) or any(
-                indicator in content_indicators
-                for indicator in ["pytest", "def test_", "class Test"]
-            ):
-                categorization["test_files"].append(file_path)
+            # Use config-driven categorization
+            file_category = self._categorize_single_file(file_path, content_indicators)
+            if file_category:
+                categorization[file_category].append(file_path)
 
         # Enhanced non-Python file categorization
         file_mappings = {
@@ -451,6 +518,107 @@ class SpecGenerator:
         }
 
         return categorization
+
+    def _categorize_single_file(
+        self, file_path: str, content_indicators: list[str]
+    ) -> str | None:
+        """Categorize a single file using config-driven patterns."""
+        if self.sync_foundation_config:
+            config = self.sync_foundation_config.file_categorization
+
+            # Check migration files first (to avoid being categorized as database files)
+            if any(
+                pattern in file_path.lower() for pattern in config.migration_patterns
+            ) or any(
+                indicator in content_indicators
+                for indicator in config.migration_content_indicators
+            ):
+                return "migration_files"
+
+            # Check each category with both path and content patterns
+            categorization_rules = [
+                ("cli_files", config.cli_patterns, config.cli_content_indicators),
+                (
+                    "web_ui_files",
+                    config.web_ui_patterns,
+                    config.web_ui_content_indicators,
+                ),
+                ("api_files", config.api_patterns, config.api_content_indicators),
+                (
+                    "database_files",
+                    config.database_patterns,
+                    config.database_content_indicators,
+                ),
+                ("test_files", config.test_patterns, config.test_content_indicators),
+            ]
+
+            for category, path_patterns, content_patterns in categorization_rules:
+                if any(
+                    pattern in file_path.lower() for pattern in path_patterns
+                ) or any(
+                    indicator in content_indicators for indicator in content_patterns
+                ):
+                    return category
+        # Fallback to hardcoded logic if no config
+        # Migration files (check first to avoid being categorized as database files)
+        elif (
+            any(
+                indicator in file_path.lower() for indicator in ["migration", "migrate"]
+            )
+            or "migration" in content_indicators
+        ):
+            return "migration_files"
+
+        # Web UI files (enhanced detection)
+        elif any(
+            indicator in file_path.lower()
+            for indicator in ["web_ui", "webui", "fastapi", "templates"]
+        ) or any(
+            indicator in content_indicators
+            for indicator in ["fastapi", "starlette", "@app.route", "HTMLResponse"]
+        ):
+            return "web_ui_files"
+
+        # API files
+        elif any(
+            indicator in file_path.lower()
+            for indicator in ["api", "routes", "endpoints"]
+        ) or any(
+            indicator in content_indicators
+            for indicator in ["@app.", "APIRouter", "FastAPI"]
+        ):
+            return "api_files"
+
+        # Database files (enhanced detection)
+        elif any(
+            indicator in file_path.lower()
+            for indicator in ["db", "database", "sqlite", "async_db"]
+        ) or any(
+            indicator in content_indicators
+            for indicator in ["sqlite", "aiosqlite", "CREATE TABLE", "async def"]
+        ):
+            return "database_files"
+
+        # CLI files
+        elif any(
+            indicator in file_path.lower() for indicator in ["cli", "command", "main"]
+        ) or any(
+            indicator in content_indicators
+            for indicator in ["typer", "click", "argparse", "@app.command"]
+        ):
+            return "cli_files"
+
+        # Test files (enhanced detection)
+        elif any(
+            indicator in file_path.lower()
+            for indicator in ["test_", "_test", "tests/", "conftest"]
+        ) or any(
+            indicator in content_indicators
+            for indicator in ["pytest", "def test_", "class Test"]
+        ):
+            return "test_files"
+
+        return None
 
     def _analyze_file_content(self, file_path: Path) -> list[str]:
         """Analyze file content to extract key indicators for categorization."""
@@ -509,7 +677,35 @@ class SpecGenerator:
         return indicators
 
     def _infer_domain(self, file_analysis: dict[str, Any]) -> str:
-        """Infer project domain from file analysis."""
+        """Infer project domain from file analysis using config-driven patterns."""
+        if self.sync_foundation_config:
+            config = self.sync_foundation_config.project_analysis
+            language = config.default_language
+            base_domain = config.default_domain
+
+            # Use config patterns to generate domain description
+            if file_analysis["web_ui_files"]:
+                if file_analysis["database_files"]:
+                    pattern = config.domain_patterns.get(
+                        "full_stack",
+                        "Full-stack {language} application with CLI, web UI, and database components",
+                    )
+                    return pattern.format(language=language, domain=base_domain)
+                pattern = config.domain_patterns.get(
+                    "web_cli", "{language} CLI tool with web UI for {domain}"
+                )
+                return pattern.format(language=language, domain=base_domain)
+            if file_analysis["database_files"]:
+                pattern = config.domain_patterns.get(
+                    "database_cli",
+                    "{language} CLI tool with database backend for {domain}",
+                )
+                return pattern.format(language=language, domain=base_domain)
+            pattern = config.domain_patterns.get(
+                "simple_cli", "{language} CLI tool for {domain}"
+            )
+            return pattern.format(language=language, domain=base_domain)
+        # Fallback to hardcoded logic
         if file_analysis["web_ui_files"]:
             if file_analysis["database_files"]:
                 return "Full-stack Python application with CLI, web UI, and database components"
@@ -662,11 +858,21 @@ class SpecGenerator:
         return dependencies
 
     def _extract_from_requirements(self, project_root: Path) -> list[dict[str, Any]]:
-        """Extract dependencies from requirements files."""
+        """Extract dependencies from requirements files using config-driven patterns."""
         dependencies = []
 
-        # Common requirements file patterns
-        req_patterns = ["requirements.txt", "requirements/*.txt", "requirements-*.txt"]
+        # Get requirements file patterns from config or use defaults
+        if self.sync_foundation_config:
+            req_patterns = (
+                self.sync_foundation_config.dependency_detection.requirements_files
+            )
+        else:
+            # Default requirements file patterns
+            req_patterns = [
+                "requirements.txt",
+                "requirements/*.txt",
+                "requirements-*.txt",
+            ]
 
         for pattern in req_patterns:
             for req_file in project_root.glob(pattern):
@@ -760,61 +966,67 @@ class SpecGenerator:
         return dep_spec, "latest"
 
     def _is_third_party_package(self, module_name: str) -> bool:
-        """Check if a module is likely a third-party package (not stdlib)."""
-        # Common stdlib modules to exclude
-        stdlib_modules = {
-            "os",
-            "sys",
-            "re",
-            "json",
-            "urllib",
-            "http",
-            "pathlib",
-            "typing",
-            "asyncio",
-            "logging",
-            "datetime",
-            "collections",
-            "itertools",
-            "functools",
-            "inspect",
-            "importlib",
-            "unittest",
-            "sqlite3",
-            "csv",
-            "xml",
-            "email",
-            "html",
-            "math",
-            "random",
-            "string",
-            "threading",
-            "multiprocessing",
-            "subprocess",
-            "shutil",
-            "tempfile",
-            "glob",
-            "fnmatch",
-            "warnings",
-            "traceback",
-            "io",
-            "contextlib",
-            "copy",
-            "pickle",
-            "struct",
-            "zlib",
-            "hashlib",
-            "hmac",
-            "secrets",
-            "base64",
-            "binascii",
-            "uuid",
-            "time",
-            "calendar",
-            "argparse",
-            "configparser",
-            "tomllib",
-        }
+        """Check if a module is likely a third-party package using config-driven stdlib detection."""
+        # Get stdlib modules from config or use defaults
+        if self.sync_foundation_config:
+            stdlib_modules = set(
+                self.sync_foundation_config.dependency_detection.stdlib_modules
+            )
+        else:
+            # Default stdlib modules to exclude
+            stdlib_modules = {
+                "os",
+                "sys",
+                "re",
+                "json",
+                "urllib",
+                "http",
+                "pathlib",
+                "typing",
+                "asyncio",
+                "logging",
+                "datetime",
+                "collections",
+                "itertools",
+                "functools",
+                "inspect",
+                "importlib",
+                "unittest",
+                "sqlite3",
+                "csv",
+                "xml",
+                "email",
+                "html",
+                "math",
+                "random",
+                "string",
+                "threading",
+                "multiprocessing",
+                "subprocess",
+                "shutil",
+                "tempfile",
+                "glob",
+                "fnmatch",
+                "warnings",
+                "traceback",
+                "io",
+                "contextlib",
+                "copy",
+                "pickle",
+                "struct",
+                "zlib",
+                "hashlib",
+                "hmac",
+                "secrets",
+                "base64",
+                "binascii",
+                "uuid",
+                "time",
+                "calendar",
+                "argparse",
+                "configparser",
+                "tomllib",
+            }
 
         return module_name.lower() not in stdlib_modules
 
@@ -846,31 +1058,79 @@ class SpecGenerator:
             return []
 
     def _categorize_dependency(self, name: str) -> dict[str, str]:
-        """Categorize dependency by type and provide enhanced description."""
+        """Categorize dependency by type using config-driven patterns."""
         name_lower = name.lower()
 
-        if name_lower in ["fastapi", "uvicorn", "starlette"]:
-            return {"category": "web", "description": f"Web framework: {name}"}
-        if name_lower in ["aiosqlite", "sqlite3", "sqlalchemy"]:
-            return {"category": "database", "description": f"Database: {name}"}
-        if name_lower in ["jinja2", "mako"]:
-            return {"category": "templates", "description": f"Template engine: {name}"}
-        if name_lower in ["pytest", "pytest-cov", "pytest-asyncio"]:
-            return {"category": "testing", "description": f"Testing framework: {name}"}
-        if name_lower in ["openai", "anthropic"]:
-            return {"category": "ai", "description": f"AI integration: {name}"}
-        if name_lower in ["pyyaml", "toml", "tomllib"]:
-            return {
-                "category": "config",
-                "description": f"Configuration parsing: {name}",
-            }
-        if name_lower in ["typer", "click", "argparse"]:
-            return {"category": "cli", "description": f"CLI framework: {name}"}
-        if name_lower in ["networkx", "matplotlib"]:
-            return {
-                "category": "visualization",
-                "description": f"Graph/visualization: {name}",
-            }
+        if self.sync_foundation_config:
+            config = self.sync_foundation_config.dependency_detection
+
+            # Check each category using config patterns
+            if name_lower in [lib.lower() for lib in config.web_frameworks]:
+                return {"category": "web", "description": f"Web framework: {name}"}
+            if name_lower in [lib.lower() for lib in config.database_libs]:
+                return {"category": "database", "description": f"Database: {name}"}
+            if name_lower in [lib.lower() for lib in config.template_engines]:
+                return {
+                    "category": "templates",
+                    "description": f"Template engine: {name}",
+                }
+            if name_lower in [lib.lower() for lib in config.testing_frameworks]:
+                return {
+                    "category": "testing",
+                    "description": f"Testing framework: {name}",
+                }
+            if name_lower in [lib.lower() for lib in config.ai_libraries]:
+                return {"category": "ai", "description": f"AI integration: {name}"}
+            if name_lower in [lib.lower() for lib in config.config_parsers]:
+                return {
+                    "category": "config",
+                    "description": f"Configuration parsing: {name}",
+                }
+            if name_lower in [lib.lower() for lib in config.cli_frameworks]:
+                return {"category": "cli", "description": f"CLI framework: {name}"}
+            if name_lower in [lib.lower() for lib in config.visualization_libs]:
+                return {
+                    "category": "visualization",
+                    "description": f"Graph/visualization: {name}",
+                }
+
+            # Check if it's a standard library module
+            if name_lower in [mod.lower() for mod in config.stdlib_modules]:
+                return {
+                    "category": "stdlib",
+                    "description": f"Standard library: {name}",
+                }
+        else:
+            # Fallback to hardcoded logic if no config
+            if name_lower in ["fastapi", "uvicorn", "starlette"]:
+                return {"category": "web", "description": f"Web framework: {name}"}
+            if name_lower in ["aiosqlite", "sqlite3", "sqlalchemy"]:
+                return {"category": "database", "description": f"Database: {name}"}
+            if name_lower in ["jinja2", "mako"]:
+                return {
+                    "category": "templates",
+                    "description": f"Template engine: {name}",
+                }
+            if name_lower in ["pytest", "pytest-cov", "pytest-asyncio"]:
+                return {
+                    "category": "testing",
+                    "description": f"Testing framework: {name}",
+                }
+            if name_lower in ["openai", "anthropic"]:
+                return {"category": "ai", "description": f"AI integration: {name}"}
+            if name_lower in ["pyyaml", "toml", "tomllib"]:
+                return {
+                    "category": "config",
+                    "description": f"Configuration parsing: {name}",
+                }
+            if name_lower in ["typer", "click", "argparse"]:
+                return {"category": "cli", "description": f"CLI framework: {name}"}
+            if name_lower in ["networkx", "matplotlib"]:
+                return {
+                    "category": "visualization",
+                    "description": f"Graph/visualization: {name}",
+                }
+
         return {"category": "core", "description": f"Core dependency: {name}"}
 
     def _analyze_imports(self, python_files: list[Path]) -> dict[str, dict[str, Any]]:
@@ -878,6 +1138,10 @@ class SpecGenerator:
         import_analysis = {}
 
         for py_file in python_files:
+            # Only analyze actual Python files
+            if not py_file.name.endswith(".py"):
+                continue
+
             try:
                 with py_file.open("r", encoding="utf-8") as f:
                     content = f.read()
@@ -895,6 +1159,13 @@ class SpecGenerator:
                         module = line.split()[1].split(".")[0]
                     else:
                         module = line.split()[1].split(".")[0]
+
+                    # Skip invalid module names
+                    if (
+                        not module
+                        or not module.replace("_", "").replace("-", "").isalnum()
+                    ):
+                        continue
 
                     if module not in import_analysis:
                         import_analysis[module] = {"frequency": 0, "context": []}
@@ -1155,6 +1426,16 @@ class SpecGenerator:
         # Create spec object
         implementation_steps = []
         for i, step_data in enumerate(spec_data.get("implementation", [])):
+            # Ensure decomposition_hint is never null - add fallback logic
+            if not step_data.get("decomposition_hint"):
+                effort = step_data.get("estimated_effort", "medium")
+                if effort == "high":
+                    step_data["decomposition_hint"] = (
+                        "composite: high-effort task requiring breakdown"
+                    )
+                else:
+                    step_data["decomposition_hint"] = "atomic"
+
             step = ImplementationStep(**step_data)
             step.step_id = f"{spec_id}:{i}"
             implementation_steps.append(step)
@@ -1365,13 +1646,25 @@ Return ONLY valid JSON matching this structure:
         if "title" not in metadata:
             metadata["title"] = f"Specification {metadata['id']}"
 
+        # Fix null decomposition_hints in loaded specs
+        implementation_steps = []
+        for step_data in data["implementation"]:
+            # Ensure decomposition_hint is never null - add fallback logic
+            if not step_data.get("decomposition_hint"):
+                effort = step_data.get("estimated_effort", "medium")
+                if effort == "high":
+                    step_data["decomposition_hint"] = (
+                        "composite: high-effort task requiring breakdown"
+                    )
+                else:
+                    step_data["decomposition_hint"] = "atomic"
+            implementation_steps.append(ImplementationStep(**step_data))
+
         return ProgrammingSpec(
             metadata=SpecMetadata(**metadata),
             context=SpecContext(**data["context"]),
             requirements=SpecRequirement(**data["requirements"]),
-            implementation=[
-                ImplementationStep(**step) for step in data["implementation"]
-            ],
+            implementation=implementation_steps,
             review_notes=data.get("review_notes", []),
         )
 

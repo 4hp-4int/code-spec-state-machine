@@ -130,6 +130,141 @@ agentic-spec publish spec_id
 make spec-complete
 ```
 
+## 🔄 Migration Guide
+
+### Upgrading to Configurable Sync-Foundation
+
+If you're upgrading from an earlier version, the sync-foundation command is now configurable for any project type. Here's how to migrate:
+
+#### 1. **No Action Required (Basic Usage)**
+The sync-foundation command continues to work with sensible defaults:
+```bash
+agentic-spec sync-foundation  # Still works exactly as before
+```
+
+#### 2. **Custom Project Configuration (Recommended)**
+Create a configuration file to customize analysis for your project:
+
+```bash
+# Copy the example configuration
+cp templates/sync_foundation_config.example.yaml sync_foundation_config.yaml
+
+# Edit for your project structure
+nano sync_foundation_config.yaml
+```
+
+**Example customizations for different project types:**
+
+**Web Framework Projects (Django/Flask):**
+```yaml
+file_categorization:
+  web_ui_patterns:
+    - "templates/"
+    - "static/"
+    - "views/"
+  api_patterns:
+    - "api/"
+    - "views/"
+    - "serializers/"
+```
+
+**Microservices Architecture:**
+```yaml
+file_categorization:
+  api_patterns:
+    - "services/"
+    - "*-service/"
+    - "handlers/"
+  database_patterns:
+    - "repositories/"
+    - "entities/"
+```
+
+**Data Science Projects:**
+```yaml
+file_categorization:
+  analysis_patterns:
+    - "notebooks/"
+    - "analysis/"
+    - "models/"
+  data_patterns:
+    - "data/"
+    - "datasets/"
+```
+
+#### 3. **Validate Your Configuration**
+Test your configuration before using it:
+```bash
+# Validate all configurations
+agentic-spec config validate
+
+# Test sync-foundation with your config
+agentic-spec sync-foundation --discovery-config your-config.yaml
+```
+
+#### 4. **Auto-Discovery Setup**
+For automatic configuration loading, use one of these filenames:
+- `sync_foundation_config.yaml` (recommended)
+- `sync-foundation-config.yaml`
+- `project_discovery.yaml`
+- `.sync-foundation.yaml`
+
+#### 5. **Common Migration Issues**
+
+**Issue**: Dependency count too high with wrong file types detected as dependencies
+```bash
+# Old behavior: TOML config sections treated as dependencies
+# Solution: Use the new config system which properly separates file types
+```
+
+**Issue**: Files categorized incorrectly for your project type
+```bash
+# Solution: Add custom patterns to sync_foundation_config.yaml
+file_categorization:
+  your_category_patterns:
+    - "your/custom/pattern"
+```
+
+**Issue**: Too many files being analyzed
+```bash
+# Solution: Add skip patterns for irrelevant directories
+project_analysis:
+  skip_patterns:
+    - "build/"
+    - "dist/"
+    - "vendor/"
+    - "node_modules/"
+```
+
+#### 6. **Backward Compatibility**
+✅ All existing commands work unchanged
+✅ Existing foundation specs are automatically compatible
+✅ Default behavior matches previous versions
+✅ No breaking changes to CLI interface
+
+#### 7. **New Features Available**
+🆕 **Multi-language project support** via custom patterns
+🆕 **Enhanced dependency detection** with proper TOML/Python parsing
+🆕 **Configurable file categorization** for any project structure
+🆕 **Validation and warning system** for configuration issues
+🆕 **Auto-discovery** of configuration files
+
+#### 8. **Migration Verification**
+Verify your migration worked correctly:
+```bash
+# Check that dependencies are correctly detected
+agentic-spec sync-foundation --force
+
+# Validate the foundation spec was updated properly
+agentic-spec template info --template agentic-spec-foundation
+
+# Ensure no configuration errors
+agentic-spec config validate
+```
+
+### Legacy Support
+Previous hardcoded analysis behavior is preserved when no custom configuration is provided, ensuring zero-friction upgrades.
+
 ## 🔧 Command Reference
 
 ### Core Commands
@@ -235,6 +370,112 @@ agentic-spec config validate
 agentic-spec generate "task" --set prompt_settings.temperature=0.2
 agentic-spec generate "task" --set workflow.auto_review=false
 ```
+
+### Foundation Sync Commands
+
+#### `sync-foundation` - Configurable Codebase Analysis
+```bash
+agentic-spec sync-foundation [OPTIONS]
+```
+
+Analyzes your codebase and updates the foundation specification with current project state. **Now configurable for any project type!**
+
+**Key Features:**
+- 🔍 **Multi-source dependency detection** (pyproject.toml, requirements.txt, setup.py)
+- 📁 **Configurable file categorization** (CLI, web UI, database, API, tests, config files)
+- 🏗️ **Architectural pattern detection** (FastAPI, async operations, migrations)
+- ⚙️ **YAML-based configuration** for custom project analysis
+
+**Options:**
+- `--discovery-config PATH`: Use custom sync-foundation configuration file
+- `--force`: Force sync even if foundation spec is current
+- `--templates-dir PATH`: Templates directory (default: templates)
+
+**Examples:**
+```bash
+# Basic sync with auto-discovery
+agentic-spec sync-foundation
+
+# Use custom configuration
+agentic-spec sync-foundation --discovery-config my-project-config.yaml
+
+# Force sync even if current
+agentic-spec sync-foundation --force
+```
+
+#### `check-foundation` - Check Sync Status
+```bash
+agentic-spec check-foundation
+```
+
+Checks if the foundation specification needs to be synced with current codebase state.
+
+### Configurable Project Analysis
+
+Create a `sync_foundation_config.yaml` file in your project root to customize how agentic-spec analyzes your codebase:
+
+```yaml
+# File categorization patterns - customize for your project structure
+file_categorization:
+  cli_patterns:
+    - "cli"
+    - "command"
+    - "scripts"
+
+  web_ui_patterns:
+    - "web_ui"
+    - "frontend"
+    - "templates"
+
+  api_patterns:
+    - "api"
+    - "routes"
+    - "endpoints"
+
+  database_patterns:
+    - "db"
+    - "database"
+    - "models"
+
+# Dependency detection configuration
+dependency_detection:
+  # Plain text requirements files only
+  requirements_files:
+    - "requirements.txt"
+    - "requirements/*.txt"
+    - "requirements-*.txt"
+
+  # Structured config files (handled by dedicated parsers)
+  config_files:
+    - "pyproject.toml"
+    - "setup.py"
+    - "setup.cfg"
+
+# Project analysis behavior
+project_analysis:
+  skip_patterns:
+    - ".venv/"
+    - "build/"
+    - "__pycache__/"
+
+  default_language: "Python"
+  default_domain: "Your project description"
+```
+
+**Auto-Discovery:** If no config file is specified, agentic-spec automatically looks for:
+- `sync_foundation_config.yaml`
+- `sync-foundation-config.yaml`
+- `project_discovery.yaml`
+- `project-discovery.yaml`
+- `.sync-foundation.yaml`
+
+**Benefits of Custom Configuration:**
+- 🎯 **Accurate categorization** for your project structure
+- 🔧 **Custom patterns** for domain-specific file types
+- 📊 **Better dependency analysis** with project-specific rules
+- 🚫 **Smart filtering** to skip irrelevant files and directories
+
+**Validation:** Use `agentic-spec config validate` to check your configuration for errors and warnings.
 
 ## 🏗️ Architecture Overview
 

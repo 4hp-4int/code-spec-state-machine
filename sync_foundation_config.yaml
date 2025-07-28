@@ -1,0 +1,60 @@
+# Test sync-foundation configuration file
+# This file configures how agentic-spec analyzes the project for foundation template generation
+
+# File categorization patterns - customize based on project structure
+file_categorization:
+  # Path-based patterns (checked first)
+  cli_patterns:
+    - "cli"
+    - "command"
+    - "main"
+    - "scripts"
+
+  web_ui_patterns:
+    - "web_ui"
+    - "webui"
+    - "frontend"
+    - "static"
+    - "templates"
+
+  api_patterns:
+    - "api"
+    - "routes"
+    - "endpoints"
+    - "handlers"
+
+  database_patterns:
+    - "db"
+    - "database"
+    - "models"
+    - "schema"
+    - "async_db"
+
+# Dependency detection configuration
+dependency_detection:
+  # Files to scan for dependencies (plain text requirements files only)
+  requirements_files:
+    - "requirements.txt"
+    - "requirements/*.txt"
+    - "requirements-*.txt"
+
+  # Package categorization - customize for your domain
+  web_frameworks:
+    - "fastapi"
+    - "uvicorn"
+    - "starlette"
+
+# Project analysis behavior
+project_analysis:
+  # Directories/patterns to skip during analysis
+  skip_patterns:
+    - ".venv\\"
+    - ".venv/"
+    - "venv\\"
+    - "venv/"
+    - "build\\"
+    - "build/"
+
+  # Default project characteristics (customize for your project)
+  default_language: "Python"
+  default_domain: "CLI tool for AI-powered specification generation"
