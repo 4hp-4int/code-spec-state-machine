@@ -23,6 +23,10 @@ from .prompt_editor import PromptEditor
 from .template_loader import render_specification_template
 from .template_validator import TemplateValidator
 from .templates.base import create_base_templates
+from .templates.default_specs import (
+    create_default_specification_templates,
+    create_getting_started_guide,
+)
 
 # Create the utility command group
 utils_app = typer.Typer(
@@ -330,18 +334,39 @@ def init_project(
         except Exception as e:
             print(f"  ⚠️  Warning: Could not create prompt templates: {e}")
 
+        # Create default specification examples
+        print("📋 Creating example specifications...")
+        try:
+            created_specs = create_default_specification_templates(
+                specs_path, project_name
+            )
+            print(f"  ✅ Created {len(created_specs)} example specifications")
+
+            # Create getting started guide
+            guide_path = create_getting_started_guide(
+                specs_path, project_name, created_specs
+            )
+            print("  ✅ Getting started guide created")
+        except Exception as e:
+            print(f"  ⚠️  Warning: Could not create example specifications: {e}")
+
         print()
         print("🎉 Project initialized successfully!")
         print()
-        print("Next steps:")
-        print("  1. Run 'agentic-spec generate \"your first specification\"'")
+        print("🚀 Quick Start:")
+        print(f"  1. Read the getting started guide: {specs_dir}/GETTING_STARTED.md")
         print(
-            f"  2. Check the {spec_templates_dir}/ directory for YAML inheritance templates"
+            '  2. Try an example: agentic-spec generate "Set up project infrastructure" --inherits setup-infrastructure'
         )
-        print(
-            f"  3. Edit prompt templates in {prompt_templates_dir}/ to customize generation"
-        )
-        print("  4. Use 'agentic-spec review' to see your specifications")
+        print("  3. Explore available specs: agentic-spec review")
+        print("  4. View project structure: agentic-spec graph")
+        print()
+        print("📁 What was created:")
+        print(f"  • {spec_templates_dir}/ - Template inheritance files")
+        print(f"  • {prompt_templates_dir}/ - AI prompt templates")
+        print(f"  • {specs_dir}/ - Example specifications + getting started guide")
+        print("  • logs/ - Application logs")
+        print("  • agentic_spec_config.yaml - Configuration file")
         print()
 
         if not api_key:

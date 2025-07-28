@@ -1,0 +1,169 @@
+metadata:
+  id: 15f7a02f
+  title: Enhance the init command to provide comprehensive default spec templates
+    so u...
+  inherits: []
+  created: '2025-07-28T09:06:25.255568'
+  version: '1.0'
+  status: draft
+  parent_spec_id: null
+  child_spec_ids: null
+  author: Khalen
+  last_modified: '2025-07-28T09:06:32.721267'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/template_loader.py
+  - templates/default_spec.yaml
+  - templates/example_pattern.yaml
+  - templates/README.md
+requirements:
+  functional:
+  - Extend the 'init' CLI command to generate a set of default specification templates
+    in the templates/ directory.
+  - Include practical example templates that demonstrate common patterns and best
+    practices for agentic-spec usage.
+  - Ensure generated templates are immediately usable for new projects, enabling users
+    to generate specs without additional setup.
+  - Document the structure and usage of the default templates within a README.md placed
+    in the templates/ directory.
+  non_functional:
+  - Maintain human-readable YAML format for all templates.
+  - Ensure all generated files are lint-compliant and follow project coding standards.
+  - Support both Windows and Unix line endings (CRLF/LF) in generated files.
+  - Provide clear error messages if template generation fails or if files already
+    exist.
+  constraints:
+  - Do not introduce new dependencies; use only those already present in the codebase.
+  - Generated templates must not overwrite existing files unless explicitly confirmed
+    by the user.
+  - All file operations must use pathlib.Path for compatibility.
+  - Follow configuration-driven behavior; avoid hard-coded values where possible.
+  - Maintain compatibility with Python 3.12+.
+implementation:
+- task: Design a set of default specification templates and practical example patterns
+    for new projects.
+  details: Create YAML templates that illustrate common agentic-spec patterns, such
+    as hierarchical specs, template inheritance, and context-aware prompting. Include
+    at least one foundational spec, one example with parent-child relationships, and
+    one demonstrating template inheritance.
+  files:
+  - templates/default_spec.yaml
+  - templates/example_pattern.yaml
+  acceptance: Templates are human-readable, lint-compliant, and demonstrate at least
+    three distinct agentic-spec features. Templates are validated by the template_validator
+    module.
+  estimated_effort: medium
+  step_id: 15f7a02f:0
+  sub_spec_id: null
+  decomposition_hint: 'composite: requires both template authoring and validation
+    for multiple agentic-spec features'
+  progress: null
+  approvals: null
+- task: Update the 'init' CLI command to generate the default templates and supporting
+    README.md in the templates/ directory.
+  details: Modify agentic_spec/cli.py to copy or generate the default templates and
+    a README.md into the templates/ directory when the init command is run. Ensure
+    the command checks for existing files and prompts the user before overwriting.
+  files:
+  - agentic_spec/cli.py
+  - templates/default_spec.yaml
+  - templates/example_pattern.yaml
+  - templates/README.md
+  acceptance: Running 'agentic-spec init' in a new directory creates the templates/
+    directory with the default templates and README.md. If files exist, the user is
+    prompted before overwrite. All file operations use pathlib.Path.
+  estimated_effort: medium
+  step_id: 15f7a02f:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: involves CLI logic, file system operations, and
+    user interaction'
+  progress: null
+  approvals: null
+- task: Document the structure and usage of the default templates in a README.md file
+    within the templates/ directory.
+  details: Write a concise README.md that explains the purpose of each template, how
+    to use them, and how to extend them for new projects. Include references to agentic-spec
+    best practices.
+  files:
+  - templates/README.md
+  acceptance: README.md is present, clear, and provides actionable guidance for new
+    users. It references all included templates and their intended use cases.
+  estimated_effort: low
+  step_id: 15f7a02f:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement comprehensive error handling and user feedback for the init command
+    template generation process.
+  details: Ensure that all errors (e.g., permission issues, existing files, invalid
+    template content) are caught and reported with informative messages. Follow the
+    project's exception formatting standards.
+  files:
+  - agentic_spec/cli.py
+  acceptance: All error scenarios during template generation are handled gracefully,
+    with clear and actionable error messages. No unhandled exceptions are raised.
+  estimated_effort: low
+  step_id: 15f7a02f:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Write unit tests for the enhanced init command covering template generation,
+    file existence checks, user prompts, and error handling.
+  details: Add tests to ensure the init command creates the correct files, handles
+    existing files appropriately, and provides correct error messages. Use mocking
+    for file operations and user input.
+  files:
+  - tests/test_cli.py
+  acceptance: Tests cover all major code paths for the init command enhancements,
+    including success, overwrite prompt, and error scenarios. All tests pass.
+  estimated_effort: medium
+  step_id: 15f7a02f:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple behaviors (file creation, user interaction,
+    error handling)'
+  progress: null
+  approvals: null
+review_notes:
+- "```json\n[\n  \"Ensure that the 'init' command in 'agentic_spec/cli.py' uses Typer's\
+  \ built-in prompting capabilities to confirm overwriting existing files, providing\
+  \ a user-friendly and consistent CLI experience. ([typer.tiangolo.com](https://typer.tiangolo.com/tutorial/options/prompt/?utm_source=openai))\"\
+  ,\n  \"Implement comprehensive error handling in 'agentic_spec/cli.py' to manage\
+  \ scenarios like permission issues or invalid template content, raising 'typer.Exit'\
+  \ with appropriate status codes and messages to inform the user effectively. ([coderivers.org](https://coderivers.org/blog/typer-python/?utm_source=openai))\"\
+  ,\n  \"When writing binary data to files in 'agentic_spec/cli.py', utilize Typer's\
+  \ 'FileBinaryWrite' to handle file operations correctly, ensuring compatibility\
+  \ with Python 3.12+. ([typer.tiangolo.com](https://typer.tiangolo.com/tutorial/parameter-types/file/?utm_source=openai))\"\
+  ,\n  \"Before upgrading to Typer 0.12.0, uninstall the previous version to avoid\
+  \ potential issues due to recent packaging changes, ensuring a smooth transition.\
+  \ ([github.com](https://github.com/fastapi/typer/discussions/784?utm_source=openai))\"\
+  \n]\n```\n "
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

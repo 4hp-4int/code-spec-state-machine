@@ -2421,3 +2421,269 @@ Return a simple JSON array of strings - no markdown formatting."""
         )
 
         return spec_db
+
+    async def expand_step(self, spec_id: str, step_index: int) -> ProgrammingSpec:
+        """Expand a specific implementation step into a detailed sub-specification.
+
+        Args:
+            spec_id: ID of the parent specification
+            step_index: Index of the step to expand (0-based)
+
+        Returns:
+            ProgrammingSpec: New sub-specification for the expanded step
+
+        Raises:
+            FileNotFoundError: If the parent specification doesn't exist
+            IndexError: If the step index is out of range
+            AIServiceError: If AI generation fails
+        """
+        # Load the parent specification
+        parent_spec = self.find_spec_by_id(spec_id)
+        if not parent_spec:
+            raise FileNotFoundError(f"Specification {spec_id} not found")
+
+        # Validate step index
+        if step_index < 0 or step_index >= len(parent_spec.implementation):
+            raise IndexError(f"Step index {step_index} out of range for spec {spec_id}")
+
+        target_step = parent_spec.implementation[step_index]
+
+        # Create a detailed prompt for expanding this specific step
+        expansion_prompt = f"""
+Expand the following implementation step into a comprehensive sub-specification:
+
+**Parent Specification**: {parent_spec.metadata.title}
+**Step to Expand**: {target_step.task}
+**Step Details**: {target_step.details}
+**Files Involved**: {', '.join(target_step.files)}
+**Acceptance Criteria**: {target_step.acceptance}
+
+**Context from Parent Project**:
+- Project: {parent_spec.context.project}
+- Domain: {parent_spec.context.domain}
+- Dependencies: {[f"{dep.get('name', 'unknown')}@{dep.get('version', 'latest')}" for dep in parent_spec.context.dependencies]}
+
+Create a detailed specification that breaks down this step into:
+1. Clear sub-tasks with specific implementation details
+2. Proper file organization and structure
+3. Testing requirements and acceptance criteria
+4. Error handling and edge cases
+5. Integration points with the parent system
+
+The sub-specification should be comprehensive enough that a developer can implement it independently while maintaining compatibility with the parent specification.
+"""
+
+        # Generate the expanded specification using AI
+        if self.ai_provider:
+            # Build context parameters
+            context_params = ContextParameters(
+                user_role=self.config.default_context.user_role,
+                target_audience=self.config.default_context.target_audience,
+                desired_tone=self.config.default_context.desired_tone,
+                complexity_level=self.config.default_context.complexity_level,
+                time_constraints=self.config.default_context.time_constraints,
+            )
+
+            # Build comprehensive context
+            comprehensive_context = {
+                "project": parent_spec.context.project,
+                "domain": parent_spec.context.domain,
+                "dependencies": parent_spec.context.dependencies,
+                "parent_spec": parent_spec.metadata.title,
+                "step_context": {
+                    "task": target_step.task,
+                    "details": target_step.details,
+                    "files": target_step.files,
+                    "acceptance": target_step.acceptance,
+                },
+            }
+
+            # Generate using AI
+            spec_data = await self._generate_with_ai(
+                expansion_prompt,
+                comprehensive_context,
+                parent_spec.context.project,
+                context_params,
+            )
+
+            # Convert AI response to ProgrammingSpec
+            expanded_id = hashlib.md5(
+                f"{target_step.task}{datetime.now().isoformat()}".encode()
+            ).hexdigest()[:8]
+
+            # Create implementation steps
+            implementation_steps = []
+            for i, step_data in enumerate(spec_data.get("implementation", [])):
+                # Ensure decomposition_hint is never null
+                if not step_data.get("decomposition_hint"):
+                    effort = step_data.get("estimated_effort", "medium")
+                    if effort == "high":
+                        step_data["decomposition_hint"] = (
+                            "composite: high-effort task requiring breakdown"
+                        )
+                    else:
+                        step_data["decomposition_hint"] = "atomic"
+
+                step = ImplementationStep(**step_data)
+                step.step_id = f"{expanded_id}:{i}"
+                implementation_steps.append(step)
+
+            expanded_spec = ProgrammingSpec(
+                metadata=SpecMetadata(
+                    id=expanded_id,
+                    title=spec_data.get("title", f"Expanded: {target_step.task}"),
+                    inherits=parent_spec.metadata.inherits,
+                    created=datetime.now().isoformat(),
+                    version="1.0",
+                    status="draft",
+                    parent_spec_id=spec_id,
+                    child_spec_ids=None,
+                    author=os.environ.get("USER")
+                    or os.environ.get("USERNAME")
+                    or "unknown",
+                    last_modified=None,
+                ),
+                context=SpecContext(
+                    **spec_data.get(
+                        "context",
+                        {
+                            "project": parent_spec.context.project,
+                            "domain": f"{parent_spec.context.domain} - {target_step.task}",
+                            "dependencies": parent_spec.context.dependencies,
+                            "files_involved": target_step.files,
+                        },
+                    )
+                ),
+                requirements=SpecRequirement(
+                    **spec_data.get(
+                        "requirements",
+                        {
+                            "functional": [
+                                f"Complete implementation of: {target_step.task}"
+                            ],
+                            "non_functional": ["Code should follow project standards"],
+                            "constraints": [
+                                "Must be compatible with parent specification"
+                            ],
+                        },
+                    )
+                ),
+                implementation=implementation_steps,
+                review_notes=spec_data.get("review_notes", []),
+                context_parameters=context_params,
+            )
+        else:
+            # Fallback to basic generation if AI is not available
+            expanded_spec = self._create_basic_expanded_spec(
+                parent_spec, target_step, step_index
+            )
+
+        # Set up parent-child relationship
+        expanded_spec.metadata.parent_spec_id = spec_id
+        target_step.sub_spec_id = expanded_spec.metadata.id
+
+        # Update parent spec's child list
+        if not parent_spec.metadata.child_spec_ids:
+            parent_spec.metadata.child_spec_ids = []
+        if expanded_spec.metadata.id not in parent_spec.metadata.child_spec_ids:
+            parent_spec.metadata.child_spec_ids.append(expanded_spec.metadata.id)
+
+        # Save both specifications
+        self.save_spec(expanded_spec)
+        self.save_spec(parent_spec)
+
+        return expanded_spec
+
+    def _create_basic_expanded_spec(
+        self,
+        parent_spec: ProgrammingSpec,
+        target_step: ImplementationStep,
+        step_index: int,
+    ) -> ProgrammingSpec:
+        """Create a basic expanded specification when AI is not available."""
+        expanded_id = hashlib.md5(
+            f"{target_step.task}{datetime.now().isoformat()}".encode()
+        ).hexdigest()[:8]
+
+        # Create basic implementation steps by splitting the task
+        basic_steps = [
+            ImplementationStep(
+                task=f"Plan and design {target_step.task.lower()}",
+                details=f"Create detailed design and planning for: {target_step.details}",
+                files=["design.md", "planning.md"],
+                acceptance="Design is complete and approved",
+                estimated_effort="low",
+            ),
+            ImplementationStep(
+                task=f"Implement core functionality for {target_step.task.lower()}",
+                details=f"Build the main implementation: {target_step.details}",
+                files=target_step.files,
+                acceptance=target_step.acceptance,
+                estimated_effort="high",
+            ),
+            ImplementationStep(
+                task=f"Test {target_step.task.lower()}",
+                details=f"Create and run tests for: {target_step.task}",
+                files=[f"test_{f}" for f in target_step.files if f.endswith(".py")]
+                + ["tests/"],
+                acceptance="All tests pass with good coverage",
+                estimated_effort="medium",
+            ),
+            ImplementationStep(
+                task=f"Document {target_step.task.lower()}",
+                details=f"Create documentation for: {target_step.task}",
+                files=["README.md", "docs/"],
+                acceptance="Documentation is complete and clear",
+                estimated_effort="low",
+            ),
+        ]
+
+        # Add step IDs
+        for i, step in enumerate(basic_steps):
+            step.step_id = f"{expanded_id}:{i}"
+
+        expanded_spec = ProgrammingSpec(
+            metadata=SpecMetadata(
+                id=expanded_id,
+                title=f"Expanded: {target_step.task}",
+                inherits=parent_spec.metadata.inherits,
+                created=datetime.now().isoformat(),
+                version="1.0",
+                status="draft",
+                parent_spec_id=parent_spec.metadata.id,
+                child_spec_ids=None,
+                author=os.environ.get("USER")
+                or os.environ.get("USERNAME")
+                or "unknown",
+                last_modified=None,
+            ),
+            context=SpecContext(
+                project=parent_spec.context.project,
+                domain=f"{parent_spec.context.domain} - {target_step.task}",
+                dependencies=parent_spec.context.dependencies,
+                files_involved=target_step.files,
+            ),
+            requirements=SpecRequirement(
+                functional=[
+                    f"Complete implementation of: {target_step.task}",
+                    f"Meet acceptance criteria: {target_step.acceptance}",
+                    "Integrate properly with parent specification",
+                ],
+                non_functional=[
+                    "Code should follow project standards",
+                    "Implementation should be well-tested",
+                    "Documentation should be comprehensive",
+                ],
+                constraints=[
+                    "Must be compatible with parent specification",
+                    "Should follow existing project patterns",
+                ],
+            ),
+            implementation=basic_steps,
+            review_notes=[
+                "This is a basic expansion - consider using AI generation for more detailed specifications",
+                f"Expanded from parent spec {parent_spec.metadata.id}, step {step_index}",
+            ],
+        )
+
+        return expanded_spec
