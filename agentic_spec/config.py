@@ -6,6 +6,8 @@ from typing import Any
 from pydantic import BaseModel, Field, ValidationError, field_validator
 import yaml
 
+from .utils.deep_merge import merge_configs
+
 
 class PromptSettings(BaseModel):
     """Configuration for AI prompt generation."""
@@ -393,6 +395,32 @@ class SyncFoundationConfig(BaseModel):
         return warnings
 
 
+class WebUISettings(BaseModel):
+    """Configuration for the web UI server."""
+
+    host: str = "127.0.0.1"
+    port: int = 8000
+    auto_open_browser: bool = True
+    log_level: str = "info"
+
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        """Validate log level."""
+        valid_levels = ["debug", "info", "warning", "error", "critical"]
+        if v.lower() not in valid_levels:
+            raise ValueError(f"Invalid log level: {v}. Must be one of {valid_levels}")
+        return v.lower()
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v: int) -> int:
+        """Validate port number."""
+        if not (1 <= v <= 65535):
+            raise ValueError(f"Port must be between 1 and 65535, got {v}")
+        return v
+
+
 class AgenticSpecConfig(BaseModel):
     """Complete configuration for agentic-spec."""
 
@@ -404,6 +432,7 @@ class AgenticSpecConfig(BaseModel):
     directories: DirectorySettings = Field(default_factory=DirectorySettings)
     ai_settings: AISettings = Field(default_factory=AISettings)
     sync_foundation: SyncFoundationConfig = Field(default_factory=SyncFoundationConfig)
+    web_ui: WebUISettings = Field(default_factory=WebUISettings)
     custom_settings: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -427,7 +456,7 @@ class ConfigManager:
             try:
                 with self.config_file.open() as f:
                     file_config = yaml.safe_load(f) or {}
-                config_data = self._deep_merge(config_data, file_config)
+                config_data = merge_configs(config_data, file_config)
             except yaml.YAMLError as e:
                 msg = f"Invalid YAML in config file {self.config_file}: {e}"
                 raise ValueError(msg) from e
@@ -453,31 +482,13 @@ class ConfigManager:
 
         # Convert config to dict, merge overrides, then reconstruct
         config_dict = config.model_dump()
-        merged_dict = self._deep_merge(config_dict, cli_overrides)
+        merged_dict = merge_configs(config_dict, cli_overrides)
 
         try:
             return AgenticSpecConfig(**merged_dict)
         except ValidationError as e:
             msg = f"Configuration validation failed after CLI overrides: {e}"
             raise ValueError(msg) from e
-
-    def _deep_merge(
-        self, target: dict[str, Any], source: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Deep merge two dictionaries."""
-        result = target.copy()
-
-        for key, value in source.items():
-            if (
-                key in result
-                and isinstance(result[key], dict)
-                and isinstance(value, dict)
-            ):
-                result[key] = self._deep_merge(result[key], value)
-            else:
-                result[key] = value
-
-        return result
 
     def save_config(
         self, config: AgenticSpecConfig, file_path: Path | None = None

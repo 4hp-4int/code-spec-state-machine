@@ -68,3 +68,22 @@ class ConfigValidationError(SyncFoundationConfigError):
 
 class ConfigParsingError(SyncFoundationConfigError):
     """Exception raised when configuration file parsing fails."""
+
+
+class GitError(AgenticSpecError):
+    """Exception raised for git operation errors."""
+
+    def __init__(
+        self,
+        message: str,
+        git_command: str | None = None,
+        return_code: int | None = None,
+    ):
+        self.git_command = git_command
+        self.return_code = return_code
+        details = []
+        if git_command:
+            details.append(f"Git command: {git_command}")
+        if return_code is not None:
+            details.append(f"Return code: {return_code}")
+        super().__init__(message, "; ".join(details) if details else None)

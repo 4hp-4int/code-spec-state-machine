@@ -99,7 +99,7 @@ class FileBasedSpecStorage:
         filepath = self.specs_dir / filename
 
         # Convert to dict and save atomically
-        data = spec.to_dict()
+        data = spec.model_dump(exclude_none=True, mode="json")
         self._atomic_write(filepath, data)
 
         # Update index

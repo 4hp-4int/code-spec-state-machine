@@ -65,6 +65,7 @@ agentic-spec workflow # Task workflow management (12 commands)
 agentic-spec template # Template operations (4 commands)
 agentic-spec database # Database and migrations (4 commands)
 agentic-spec utils    # Configuration and utilities (5 commands)
+agentic-spec web      # Web UI server management (5 commands)
 ```
 
 #### Core Commands
@@ -300,6 +301,56 @@ agentic-spec sync-foundation --discovery-config test-config.yaml
 agentic-spec check-foundation
 ```
 
+#### Web UI Commands
+
+**web start** - Start the web UI server
+```bash
+# Start with default settings
+agentic-spec web start
+
+# Start with custom host and port
+agentic-spec web start --host 0.0.0.0 --port 8080
+
+# Start without opening browser
+agentic-spec web start --no-browser
+
+# Direct access command
+agentic-spec web-start
+```
+
+**web stop** - Stop the web UI server
+```bash
+agentic-spec web stop
+agentic-spec web-stop  # Direct access
+```
+
+**web status** - Check the status of the web UI server
+```bash
+agentic-spec web status
+agentic-spec web-status  # Direct access
+```
+
+**web open** - Open the web UI in the default browser
+```bash
+agentic-spec web open
+agentic-spec web-open  # Direct access
+```
+
+**web config** - Configure web UI settings
+```bash
+# Show current configuration
+agentic-spec web config
+
+# Update settings
+agentic-spec web config --port 9000
+agentic-spec web config --host 0.0.0.0
+agentic-spec web config --no-auto-browser
+agentic-spec web config --log-level debug
+
+# Direct access
+agentic-spec web-config --port 9000
+```
+
 #### Template Browsing Commands
 
 **browse-templates** - Browse available prompt templates
@@ -377,6 +428,15 @@ agentic-spec utils validate             # Validate templates
 agentic-spec utils render spec_id       # Render specification
 agentic-spec utils prompt edit name     # Edit prompt in system editor
 agentic-spec utils prompt list          # List available prompts
+```
+
+#### Web Module (`agentic-spec web`)
+```bash
+agentic-spec web start                   # Start web UI server
+agentic-spec web stop                    # Stop web UI server
+agentic-spec web status                  # Check server status
+agentic-spec web open                    # Open UI in browser
+agentic-spec web config                  # Manage web UI settings
 ```
 
 ### Makefile Commands

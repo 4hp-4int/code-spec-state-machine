@@ -443,12 +443,12 @@ def generate_spec(
                 print("-" * 40)
 
                 # Show the YAML content
-                from dataclasses import asdict
-
                 import yaml
 
                 spec_yaml = yaml.dump(
-                    asdict(spec), default_flow_style=False, sort_keys=False
+                    spec.model_dump(exclude_none=True, mode="json"),
+                    default_flow_style=False,
+                    sort_keys=False,
                 )
                 print(spec_yaml)
 

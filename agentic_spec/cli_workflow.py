@@ -15,8 +15,10 @@ from typer import Argument, Option
 
 from .async_db import AsyncSpecManager, SQLiteBackend
 from .cli_core import initialize_generator
+from .core import GitUtility
 from .exceptions import (
     AgenticSpecError,
+    GitError,
     SpecificationError,
     SyncFoundationConfigError,
 )
@@ -118,6 +120,38 @@ def start_task(
                             )
                             raise typer.Exit(1)
 
+                # Git branch management - attempt to create feature branch
+                git_branch_created = False
+                try:
+                    if GitUtility.is_git_repo():
+                        # Check for uncommitted changes
+                        if GitUtility.has_uncommitted_changes():
+                            print(
+                                "⚠️  Warning: Uncommitted changes detected in repository"
+                            )
+                            print(
+                                "   Consider committing or stashing changes before starting task"
+                            )
+
+                        # Generate branch name
+                        branch_name = GitUtility.generate_branch_name(
+                            step_id, target_task.task
+                        )
+
+                        # Create and checkout feature branch
+                        GitUtility.create_and_checkout_branch(branch_name)
+                        git_branch_created = True
+                        print(
+                            f"🌿 Created and checked out feature branch: {branch_name}"
+                        )
+                    else:
+                        print("ℹ️  Not in a git repository - skipping branch creation")
+                except GitError as git_err:
+                    print(f"⚠️  Git branch creation failed: {git_err.message}")
+                    print("   Task will continue without feature branch")
+                    if git_err.details:
+                        print(f"   Details: {git_err.details}")
+
                 # Update task to in_progress
                 target_task.status = TaskStatus.IN_PROGRESS
                 target_task.started_at = datetime.now()
@@ -135,6 +169,9 @@ def start_task(
                 print(
                     f"⏰ Started at: {target_task.started_at.strftime('%Y-%m-%d %H:%M:%S')}"
                 )
+
+                if git_branch_created:
+                    print("🔄 Working on feature branch for isolated development")
 
         except typer.BadParameter:
             raise

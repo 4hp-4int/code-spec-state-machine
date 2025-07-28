@@ -1,0 +1,112 @@
+metadata:
+  id: 1d9fad30
+  title: 'Expanded: Write comprehensive unit tests for model validation and deep merge
+    edge cases.'
+  inherits: []
+  created: '2025-07-28T15:17:06.670799'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 5e151092
+  child_spec_ids:
+  - ac05c0aa
+  author: Khalen
+  last_modified: '2025-07-28T16:37:22.465668'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: null
+  - name: pytest
+  files_involved:
+  - tests/
+requirements:
+  functional:
+  - Unit tests must cover model instantiation and validation, including both valid
+    and invalid data.
+  - Unit tests must cover deep merge logic, including edge cases with conflicting
+    types, nested structures, and missing/extra fields.
+  - Tests must be isolated, reproducible, and not depend on external state.
+  - All new and existing tests must pass with no regressions.
+  non_functional:
+  - Tests must be written using pytest.
+  - Test coverage must include all major edge cases for model validation and deep
+    merging.
+  - Tests should be easy to understand and maintain.
+  constraints:
+  - No changes to production code outside of test-specific fixtures or mocks.
+  - Tests must reside in the tests/ directory and follow existing naming conventions.
+  - No external dependencies beyond those already listed (pydantic, pytest).
+implementation:
+- task: Audit existing tests for model validation and deep merge logic
+  details: Review all tests in tests/ to identify current coverage for model instantiation,
+    validation errors, and deep merge scenarios. Document any missing edge cases or
+    insufficiently tested behaviors.
+  files:
+  - tests/
+  acceptance: A written summary (e.g., in a comment or markdown file) of current coverage
+    and identified gaps is produced. No regressions in existing tests.
+  estimated_effort: medium
+  step_id: 1d9fad30:0
+  sub_spec_id: ac05c0aa
+  decomposition_hint: atomic
+- task: Design comprehensive test cases for model validation edge cases
+  details: 'Enumerate and design test cases for model instantiation and validation,
+    including: required/optional fields, type mismatches, extra/missing fields, nested
+    model validation, and invalid enum values. Include both positive and negative
+    cases.'
+  files:
+  - tests/
+  acceptance: A list of test cases is documented (e.g., as pytest parameterizations
+    or comments). All major edge cases are represented.
+  estimated_effort: medium
+  step_id: 1d9fad30:1
+  decomposition_hint: atomic
+- task: Implement unit tests for model validation edge cases
+  details: Write pytest-based unit tests for each designed case. Use fixtures or factory
+    functions to generate valid/invalid data. Ensure tests are isolated and reproducible.
+  files:
+  - tests/test_model_validation.py
+  acceptance: All model validation edge cases are covered by passing tests. Tests
+    are isolated and reproducible. No regressions in existing suite.
+  estimated_effort: medium
+  step_id: 1d9fad30:2
+  decomposition_hint: atomic
+- task: Design comprehensive test cases for deep merge edge cases
+  details: 'Enumerate and design test cases for deep merge logic, including: conflicting
+    types (e.g., int vs str), nested structures (dicts within dicts), missing fields
+    in one or both sources, extra fields, and preservation of original data. Include
+    both expected merges and failure scenarios.'
+  files:
+  - tests/
+  acceptance: A list of deep merge test cases is documented (e.g., as pytest parameterizations
+    or comments). All major edge cases are represented.
+  estimated_effort: medium
+  step_id: 1d9fad30:3
+  decomposition_hint: atomic
+- task: Implement unit tests for deep merge edge cases
+  details: Write pytest-based unit tests for each deep merge scenario. Use representative
+    data structures to simulate real-world usage. Ensure tests are isolated, reproducible,
+    and assert both correct merges and proper error handling.
+  files:
+  - tests/test_deep_merge.py
+  acceptance: All deep merge edge cases are covered by passing tests. Tests are isolated
+    and reproducible. No regressions in existing suite.
+  estimated_effort: medium
+  step_id: 1d9fad30:4
+  decomposition_hint: atomic
+- task: Integrate new tests into CI and verify full suite passes
+  details: Ensure all new and existing tests are executed in the project's CI pipeline.
+    Fix any regressions or failures. Confirm that test coverage includes all specified
+    edge cases.
+  files:
+  - tests/
+  - .github/workflows/
+  - pyproject.toml
+  acceptance: CI pipeline passes with all tests. Coverage report confirms all edge
+    cases are tested. No regressions.
+  estimated_effort: low
+  step_id: 1d9fad30:5
+  decomposition_hint: atomic
+review_notes: []
+feedback_history: []

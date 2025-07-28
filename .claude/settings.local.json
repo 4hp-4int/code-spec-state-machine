@@ -16,7 +16,9 @@
       "Bash(git commit:*)",
       "Bash(rm:*)",
       "Bash(pytest:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(ls:*)",
+      "Bash(timeout 10 agentic-spec web start:*)"
     ],
     "deny": []
   }

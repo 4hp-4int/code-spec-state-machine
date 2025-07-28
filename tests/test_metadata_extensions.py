@@ -61,7 +61,7 @@ class TestSpecMetadata:
             last_modified=datetime.now().isoformat(),
         )
 
-        data = metadata.to_dict()
+        data = metadata.model_dump(exclude_none=True)
         assert "author" in data
         assert "last_modified" in data
         assert data["author"] == "test_user"

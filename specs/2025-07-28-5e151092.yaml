@@ -1,0 +1,105 @@
+metadata:
+  id: 5e151092
+  title: Harden data model consistency and deep merge edge cases - Fix mix-and-match
+    o...
+  inherits: []
+  created: '2025-07-28T15:14:23.736579'
+  version: '1.0'
+  status: implemented
+  child_spec_ids:
+  - 1a5e9df3
+  - 3569d3fb
+  - 1d9fad30
+  author: Khalen
+  last_modified: '2025-07-28T16:37:14.316728'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: null
+    description: Used for data validation and settings management
+  files_involved:
+  - agentic_spec/models.py
+  - tests/
+requirements:
+  functional:
+  - Unify all core data models in models.py under a single validation paradigm (Pydantic
+    BaseModel or dataclass, but not both).
+  - Ensure all configuration and specification models support robust deep merging,
+    including edge cases (e.g., nested lists, dicts, and optional fields).
+  - Provide comprehensive unit tests covering deep merge scenarios and model validation
+    failures.
+  non_functional:
+  - Maintain strict type hinting and lint compliance as per project standards.
+  - Ensure all changes are backward compatible with existing YAML templates and CLI
+    workflows.
+  - Provide clear and informative error messages for validation and merge failures.
+  constraints:
+  - Do not introduce new dependencies beyond those already present in the codebase.
+  - Follow the established file structure and coding standards (use pathlib.Path,
+    async/await where relevant, etc.).
+  - All data models must be human-readable and serializable to YAML.
+  - Maintain Windows compatibility and pre-commit hook compliance.
+implementation:
+- task: Audit and refactor models.py to use a single data modeling approach (Pydantic
+    BaseModel or dataclass).
+  details: Review all classes in agentic_spec/models.py. Decide on Pydantic BaseModel
+    as the unified paradigm (preferred for validation and serialization). Refactor
+    any dataclass-based models to inherit from Pydantic BaseModel, ensuring all fields
+    are properly typed and validated. Remove redundant or conflicting code.
+  files:
+  - agentic_spec/models.py
+  acceptance: All models in models.py inherit from Pydantic BaseModel, pass type checking,
+    and are free of dataclass usage. Lint passes with no new errors.
+  estimated_effort: medium
+  step_id: 5e151092:0
+  sub_spec_id: 1a5e9df3
+  decomposition_hint: 'composite: involves both model refactoring and validation logic
+    updates'
+- task: Implement robust deep merge logic for configuration/specification models,
+    handling nested structures and edge cases.
+  details: Design and implement a deep merge utility that can recursively merge nested
+    dicts, lists, and optional fields in Pydantic models. Ensure correct handling
+    of type mismatches, list concatenation vs. replacement, and preservation of required/optional
+    field semantics. Integrate this logic into relevant model methods or a utility
+    module.
+  files:
+  - agentic_spec/models.py
+  acceptance: Deep merge function passes unit tests for all documented edge cases
+    (nested dicts, lists, optional fields, type mismatches).
+  estimated_effort: medium
+  step_id: 5e151092:1
+  sub_spec_id: 3569d3fb
+  decomposition_hint: 'composite: spans model logic and utility function design'
+- task: Write comprehensive unit tests for model validation and deep merge edge cases.
+  details: 'Create or update tests in the tests/ directory to cover: (a) model instantiation
+    and validation errors, (b) deep merge scenarios including conflicting types, nested
+    structures, and missing/extra fields. Use pytest and ensure tests are isolated
+    and reproducible.'
+  files:
+  - tests/
+  acceptance: All new and existing tests pass. Coverage includes all major edge cases
+    for validation and merging. No regressions in existing test suite.
+  estimated_effort: medium
+  step_id: 5e151092:2
+  sub_spec_id: 1d9fad30
+  decomposition_hint: 'composite: covers both validation and merge logic across multiple
+    scenarios'
+review_notes:
+- Pydantic v2 introduced significant API changes (e.g., model construction, validation,
+  and serialization). Confirm that the codebase and any new code use the latest Pydantic
+  idioms (e.g., `model.model_dump()` instead of `dict(model)`) and avoid deprecated
+  patterns.
+- 'Deep merging of Pydantic models is non-trivial: Pydantic models are immutable by
+  default in v2, and merging nested structures (especially lists vs. dicts) requires
+  careful handling. Consider whether to implement merging as a standalone utility
+  function operating on `model_dump()` dicts, then reconstruct models, to avoid mutability
+  issues.'
+- YAML serialization with Pydantic may require custom encoders or use of `ruamel.yaml`/`PyYAML`
+  for human-readable output. Ensure that all models serialize cleanly to YAML, especially
+  after merging, and that field aliases and optional fields are preserved.
+- Lint and type-checking requirements (plus Windows compatibility) mean you should
+  avoid OS-specific path handling and ensure all file operations use `pathlib.Path`.
+  Double-check that any test fixtures or file writes in `tests/` are cross-platform.
+feedback_history: []

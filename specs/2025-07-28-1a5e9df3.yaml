@@ -1,0 +1,136 @@
+metadata:
+  id: 1a5e9df3
+  title: 'Expanded: Audit and refactor models.py to use a single data modeling approach
+    (Pydantic BaseModel or dataclass).'
+  inherits: []
+  created: '2025-07-28T15:16:21.932996'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 5e151092
+  child_spec_ids:
+  - a6395497
+  author: Khalen
+  last_modified: '2025-07-28T15:18:56.879258'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: null
+  files_involved:
+  - agentic_spec/models.py
+requirements:
+  functional:
+  - All data models in agentic_spec/models.py must inherit from Pydantic BaseModel.
+  - Remove all usage of Python dataclasses from models.py.
+  - Ensure all model fields are explicitly typed and leverage Pydantic's validation
+    features.
+  - Eliminate redundant or conflicting code related to previous data modeling approaches.
+  - Maintain compatibility with existing serialization and validation logic.
+  non_functional:
+  - Refactored code must pass linting (e.g., flake8, black) with no new errors.
+  - All models must pass static type checking (e.g., mypy) with no errors.
+  - Refactoring should not degrade runtime performance or introduce breaking changes
+    to public model interfaces.
+  - Code should be clear, maintainable, and follow project style conventions.
+  constraints:
+  - Only Pydantic BaseModel is permitted for data modeling in models.py.
+  - No dataclass usage is allowed in models.py after refactor.
+  - No changes to files outside agentic_spec/models.py unless strictly required for
+    compatibility.
+implementation:
+- task: Audit all classes in agentic_spec/models.py for data modeling approach
+  details: Review each class definition in models.py. Identify which classes use dataclass,
+    which use Pydantic BaseModel, and any that use neither. Document findings for
+    reference.
+  files:
+  - agentic_spec/models.py
+  acceptance: A list of all model classes with their current base (dataclass, BaseModel,
+    or other) is produced and reviewed.
+  estimated_effort: low
+  step_id: 1a5e9df3:0
+  sub_spec_id: a6395497
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Refactor dataclass-based models to inherit from Pydantic BaseModel
+  details: For each model currently using @dataclass, remove the decorator and refactor
+    the class to inherit from Pydantic BaseModel. Update field definitions to use
+    Pydantic's Field where appropriate. Ensure all fields are explicitly typed and
+    validated.
+  files:
+  - agentic_spec/models.py
+  acceptance: All former dataclass models now inherit from BaseModel, use explicit
+    typing, and leverage Pydantic validation. No @dataclass decorators remain.
+  estimated_effort: medium
+  step_id: 1a5e9df3:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: may require changes to multiple models and careful
+    field migration'
+  progress: null
+  approvals: null
+- task: Standardize all model fields for Pydantic compatibility
+  details: Ensure every model field is explicitly typed and, where necessary, uses
+    Pydantic's Field for default values, validation, or metadata. Remove any field
+    definitions incompatible with Pydantic.
+  files:
+  - agentic_spec/models.py
+  acceptance: All fields in all models are compatible with Pydantic BaseModel and
+    pass type checking.
+  estimated_effort: medium
+  step_id: 1a5e9df3:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: spans all model classes and may require field-by-field
+    review'
+  progress: null
+  approvals: null
+- task: Remove redundant or conflicting code related to previous data modeling approaches
+  details: Identify and eliminate any code (e.g., utility functions, imports, mixins)
+    that was only relevant to dataclass-based models or other legacy approaches. Ensure
+    no dead code remains.
+  files:
+  - agentic_spec/models.py
+  acceptance: No code related to dataclasses or other legacy modeling approaches remains.
+    Only Pydantic BaseModel is used.
+  estimated_effort: low
+  step_id: 1a5e9df3:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update and run linting and static type checking
+  details: Run the project's linting (e.g., flake8, black) and static type checking
+    (e.g., mypy) tools on models.py. Fix any new errors or warnings introduced by
+    the refactor.
+  files:
+  - agentic_spec/models.py
+  acceptance: Linting and type checking pass with no new errors or warnings.
+  estimated_effort: low
+  step_id: 1a5e9df3:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Test model serialization, validation, and integration with parent system
+  details: Verify that all refactored models serialize and validate as expected. Run
+    or update any existing tests that depend on models.py. If no tests exist, create
+    minimal tests to cover model instantiation, validation, and serialization. Confirm
+    that integration points with the parent system (e.g., CLI commands, spec generation
+    logic) are not broken.
+  files:
+  - agentic_spec/models.py
+  - tests/
+  - agentic_spec/
+  acceptance: All models pass serialization and validation tests. No integration points
+    with the parent system are broken.
+  estimated_effort: medium
+  step_id: 1a5e9df3:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: requires coordination between models, tests, and
+    integration points'
+  progress: null
+  approvals: null
+review_notes: []
+context_parameters: null
+feedback_history: []
+work_logs: null

@@ -1,0 +1,127 @@
+metadata:
+  id: 3569d3fb
+  title: 'Expanded: Implement robust deep merge logic for configuration/specification
+    models, handling nested structures and edge cases.'
+  inherits: []
+  created: '2025-07-28T15:16:46.965664'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 5e151092
+  child_spec_ids:
+  - 1de40c80
+  author: Khalen
+  last_modified: '2025-07-28T15:19:21.284031'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: null
+  files_involved:
+  - agentic_spec/models.py
+  - agentic_spec/utils/deep_merge.py
+  - tests/test_deep_merge.py
+requirements:
+  functional:
+  - Provide a deep merge utility that recursively merges nested dictionaries, lists,
+    and Pydantic model instances.
+  - Correctly handle merging of required and optional fields in Pydantic models.
+  - Support both list concatenation and replacement strategies, configurable per merge
+    operation.
+  - Gracefully handle type mismatches with clear error reporting or configurable conflict
+    resolution.
+  - Integrate deep merge logic into relevant model methods or expose as a utility
+    function.
+  - Document all supported edge cases and expected behaviors.
+  non_functional:
+  - Implementation must be performant for typical configuration sizes (≤1000 fields,
+    ≤5 nesting levels).
+  - Code must be type-annotated and linted (PEP8).
+  - Unit tests must cover all documented edge cases and error conditions.
+  - No external dependencies beyond Pydantic and standard library.
+  constraints:
+  - Must not mutate input objects; always return a new merged instance.
+  - Must be compatible with Pydantic v1 and v2 models.
+  - All new code must reside in agentic_spec/utils/deep_merge.py except for integration
+    points and tests.
+implementation:
+- task: Design deep merge algorithm for nested dicts, lists, and Pydantic models
+  details: 'Specify recursive merge rules for dicts (key-wise merge), lists (configurable:
+    concatenate or replace), and Pydantic models (field-wise merge, preserving required/optional
+    semantics). Define handling for type mismatches (raise error or skip, based on
+    config). Document all edge cases (e.g., merging None with value, conflicting types,
+    merging lists of models).'
+  files:
+  - agentic_spec/utils/deep_merge.py
+  acceptance: Algorithm design is documented in code comments and/or docstrings, covering
+    all edge cases and configuration options.
+  estimated_effort: medium
+  step_id: 3569d3fb:0
+  sub_spec_id: 1de40c80
+  decomposition_hint: 'composite: requires careful definition of merge semantics for
+    multiple data types and edge cases'
+  progress: null
+  approvals: null
+- task: Implement deep merge utility function
+  details: Implement a pure function (e.g., deep_merge(a, b, *, list_strategy='concat'|'replace',
+    on_type_mismatch='error'|'skip')) that applies the designed algorithm. Ensure
+    immutability of inputs. Support merging of Pydantic models, dicts, lists, and
+    primitives. Include type annotations and docstrings.
+  files:
+  - agentic_spec/utils/deep_merge.py
+  acceptance: Function passes all unit tests for documented behaviors and edge cases.
+    Inputs are not mutated.
+  estimated_effort: medium
+  step_id: 3569d3fb:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: involves recursive logic, type inspection, and configuration
+    handling'
+  progress: null
+  approvals: null
+- task: Integrate deep merge utility into relevant model methods
+  details: Identify where in agentic_spec/models.py deep merge is required (e.g.,
+    model update/merge methods). Refactor or add methods to use the new utility, ensuring
+    correct handling of required/optional fields and preserving model validation.
+  files:
+  - agentic_spec/models.py
+  acceptance: Integration points use the utility function; model methods behave as
+    expected and pass all relevant tests.
+  estimated_effort: medium
+  step_id: 3569d3fb:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: requires coordination between utility and model
+    layer, and may affect multiple methods'
+  progress: null
+  approvals: null
+- task: Write comprehensive unit tests for deep merge utility
+  details: 'Create tests covering all documented edge cases: nested dicts, lists (concat/replace),
+    Pydantic models with required/optional fields, type mismatches, None handling,
+    and immutability. Use pytest or unittest. Place tests in a dedicated file.'
+  files:
+  - tests/test_deep_merge.py
+  acceptance: All tests pass; coverage includes all edge cases and error conditions.
+  estimated_effort: medium
+  step_id: 3569d3fb:3
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple data types, edge cases, and error
+    scenarios'
+  progress: null
+  approvals: null
+- task: Document deep merge utility usage and edge cases
+  details: Add docstrings to the utility function and integration points. Provide
+    usage examples and enumerate supported edge cases and configuration options. Ensure
+    documentation is clear for solo developer use.
+  files:
+  - agentic_spec/utils/deep_merge.py
+  - agentic_spec/models.py
+  acceptance: Documentation is present, clear, and covers all behaviors and options.
+  estimated_effort: low
+  step_id: 3569d3fb:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes: []
+context_parameters: null
+feedback_history: []
+work_logs: null

@@ -1,0 +1,127 @@
+metadata:
+  id: a6395497
+  title: 'Expanded: Audit all classes in agentic_spec/models.py for data modeling
+    approach'
+  inherits: []
+  created: '2025-07-28T15:18:56.874257'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 1a5e9df3
+  child_spec_ids: null
+  author: Khalen
+  last_modified: '2025-07-28T15:18:56.884261'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: None@latest
+  files_involved:
+  - agentic_spec/models.py
+requirements:
+  functional:
+  - Enumerate all class definitions in agentic_spec/models.py.
+  - For each class, determine if it inherits from dataclass, Pydantic BaseModel, or
+    neither.
+  - Document the name of each class and its data modeling base.
+  - Produce a structured report (e.g., Markdown or JSON) listing all findings.
+  - Ensure the report is suitable for review and future refactoring.
+  non_functional:
+  - The audit process must be repeatable and scriptable.
+  - The output report must be clear, unambiguous, and easy to review.
+  - No changes should be made to agentic_spec/models.py during the audit.
+  - The audit script should handle syntax errors or malformed classes gracefully,
+    reporting any issues encountered.
+  constraints:
+  - Only agentic_spec/models.py is to be audited.
+  - No assumptions about class intent or usage—only inheritance/type is to be recorded.
+  - The audit must not introduce any new dependencies beyond those already listed.
+implementation:
+- task: Read and parse agentic_spec/models.py to enumerate all class definitions.
+  details: Use Python's ast module to parse the file and extract all class definitions.
+    Collect the class name and its base classes for further analysis.
+  files:
+  - agentic_spec/models.py
+  acceptance: All class names and their base classes are extracted without modifying
+    the source file. Handles syntax errors gracefully by reporting them in the output.
+  estimated_effort: low
+  step_id: a6395497:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Determine the data modeling approach for each class.
+  details: For each class, analyze its base classes to identify if it inherits from
+    dataclass (via @dataclass decorator or dataclasses.dataclass), Pydantic BaseModel,
+    or neither. Record the result for each class.
+  files:
+  - agentic_spec/models.py
+  acceptance: Each class is correctly classified as using dataclass, Pydantic BaseModel,
+    or other/none. Edge cases (e.g., multiple inheritance, custom base classes) are
+    handled and noted.
+  estimated_effort: low
+  step_id: a6395497:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Generate a structured audit report of all model classes and their data modeling
+    approach.
+  details: Produce a report (preferably in Markdown and/or JSON) listing each class,
+    its base(s), and the determined modeling approach. Include a summary section and
+    any anomalies or errors encountered during parsing.
+  files:
+  - agentic_spec/models.py
+  - audit_report.md
+  - audit_report.json
+  acceptance: Report lists all classes, their base(s), and modeling approach. Any
+    parsing errors or ambiguous cases are clearly documented. Report is suitable for
+    review and future refactoring.
+  estimated_effort: low
+  step_id: a6395497:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Integrate the audit script into the development workflow.
+  details: Provide instructions for running the audit script (e.g., as a CLI command
+    or Makefile target). Ensure the script can be executed independently and outputs
+    the report to a predictable location.
+  files:
+  - audit_models.py
+  - README.md
+  - Makefile
+  acceptance: Developer can run the audit script with a single command. Output is
+    generated in the expected location. Instructions are clear and tested.
+  estimated_effort: low
+  step_id: a6395497:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Test the audit process for correctness and robustness.
+  details: Create test cases with sample model files containing various class structures
+    (dataclass, BaseModel, neither, syntax errors, multiple inheritance). Verify that
+    the audit script correctly identifies and reports all cases.
+  files:
+  - tests/test_audit_models.py
+  - tests/sample_models.py
+  acceptance: All test cases pass. Script correctly handles all expected and edge
+    cases, including malformed classes and ambiguous inheritance.
+  estimated_effort: low
+  step_id: a6395497:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes: []
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

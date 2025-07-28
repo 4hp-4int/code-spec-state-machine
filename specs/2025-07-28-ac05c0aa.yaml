@@ -1,0 +1,122 @@
+metadata:
+  id: ac05c0aa
+  title: 'Expanded: Audit existing tests for model validation and deep merge logic'
+  inherits: []
+  created: '2025-07-28T15:19:35.922754'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 1d9fad30
+  child_spec_ids: null
+  author: Khalen
+  last_modified: '2025-07-28T15:19:35.934313'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pydantic
+    version: None@latest
+  - name: pytest
+    version: latest
+  files_involved:
+  - tests/
+requirements:
+  functional:
+  - Systematically review all test files in the tests/ directory for model validation
+    and deep merge logic.
+  - Identify and document current test coverage for model instantiation, validation
+    errors, and deep merge scenarios.
+  - Detect and record any missing edge cases or insufficiently tested behaviors related
+    to model validation and deep merge.
+  - Produce a written summary of findings, including coverage and gaps, in a dedicated
+    markdown or comment file.
+  non_functional:
+  - The audit process must not introduce regressions or modify existing test logic.
+  - Documentation must be clear, actionable, and suitable for a solo developer to
+    follow up.
+  - The process should be repeatable and leave a clear audit trail for future contributors.
+  constraints:
+  - No changes to production code or test logic during the audit step.
+  - All findings must be documented in a single, clearly named file (e.g., tests/TEST_AUDIT.md).
+  - The audit must cover all files in tests/, including subdirectories if present.
+implementation:
+- task: Enumerate all test files and relevant test cases in tests/ directory
+  details: List every test file and, within each, identify test functions/classes
+    related to model validation and deep merge logic. Note any files or tests that
+    appear unrelated or out of scope.
+  files:
+  - tests/
+  acceptance: A complete inventory of test files and relevant test cases is created,
+    either as a section in the audit summary or as a preparatory checklist.
+  estimated_effort: low
+  step_id: ac05c0aa:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Review test coverage for model instantiation and validation errors
+  details: For each relevant test, determine which aspects of model instantiation
+    and validation errors are covered (e.g., required fields, type errors, boundary
+    values). Note any missing or weakly tested scenarios.
+  files:
+  - tests/
+  acceptance: Coverage for model instantiation and validation errors is clearly described
+    in the audit summary, with gaps or weaknesses explicitly listed.
+  estimated_effort: medium
+  step_id: ac05c0aa:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Review test coverage for deep merge logic and edge cases
+  details: Analyze tests for deep merge functionality, focusing on edge cases such
+    as nested structures, conflicting keys, type mismatches, and empty/None values.
+    Identify any untested or under-tested behaviors.
+  files:
+  - tests/
+  acceptance: Coverage for deep merge logic and edge cases is documented in the audit
+    summary, with specific gaps or missing cases highlighted.
+  estimated_effort: medium
+  step_id: ac05c0aa:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Document findings and identified gaps in a summary file
+  details: 'Consolidate the results of the audit into a markdown file (e.g., tests/TEST_AUDIT.md).
+    The summary must include: (1) inventory of test files/cases, (2) coverage analysis
+    for model validation and deep merge, (3) explicit list of missing or insufficiently
+    tested cases, and (4) recommendations for future test improvements.'
+  files:
+  - tests/TEST_AUDIT.md
+  acceptance: A well-structured markdown file exists in tests/ with all required sections
+    and actionable findings. The file is clear and understandable to a solo developer.
+  estimated_effort: medium
+  step_id: ac05c0aa:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Verify no regressions or unintended changes in existing tests
+  details: Ensure that the audit process has not altered or removed any test logic
+    or files. Optionally, rerun the test suite to confirm all tests still pass.
+  files:
+  - tests/
+  acceptance: All tests pass as before; no changes to test logic or structure are
+    detected.
+  estimated_effort: low
+  step_id: ac05c0aa:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes: []
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  existing_codebase_context: null
+  custom_parameters: {}
+feedback_history: []
+work_logs: null

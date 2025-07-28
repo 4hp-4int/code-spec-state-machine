@@ -868,22 +868,19 @@ class AsyncSpecManager:
                 ),
                 child_spec_ids=getattr(spec.metadata, "child_spec_ids", []) or [],
                 context=(
-                    spec.context.to_dict()
+                    spec.context.model_dump(exclude_none=True)
                     if getattr(spec, "context", None)
-                    and hasattr(spec.context, "to_dict")
                     else {}
                 ),
                 requirements=(
-                    spec.requirements.to_dict()
+                    spec.requirements.model_dump(exclude_none=True)
                     if getattr(spec, "requirements", None)
-                    and hasattr(spec.requirements, "to_dict")
                     else {}
                 ),
                 review_notes=getattr(spec, "review_notes", []) or [],
                 context_parameters=(
-                    spec.context_parameters.to_dict()
+                    spec.context_parameters.model_dump(exclude_none=True)
                     if getattr(spec, "context_parameters", None)
-                    and hasattr(spec.context_parameters, "to_dict")
                     else None
                 ),
                 # Enhanced tracking fields with intelligent defaults

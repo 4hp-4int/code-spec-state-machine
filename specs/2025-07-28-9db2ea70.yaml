@@ -1,0 +1,159 @@
+metadata:
+  id: 9db2ea70
+  title: Expose web UI commands in the CLI for improved portability and quick project
+    ...
+  inherits: []
+  created: '2025-07-28T11:29:45.861151'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+  author: Khalen
+  last_modified: '2025-07-28T11:37:35.318611'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: typer
+    version: 0.12.0
+    description: 'Core dependency: CLI framework'
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - agentic_spec/web_ui.py
+  - agentic_spec/exceptions.py
+  - tests/test_cli.py
+requirements:
+  functional:
+  - Expose web UI management commands in the CLI for improved portability and project
+    status review.
+  - Add CLI command to start the web server for the web UI.
+  - Add CLI command to open the web UI in the default browser.
+  - Add CLI command to check the status of the web server.
+  - Add CLI command to configure web UI settings (e.g., port, host, theme).
+  - Integrate all new commands into the existing modular CLI architecture.
+  non_functional:
+  - Maintain compatibility with Windows and Unix-like systems.
+  - Ensure all commands provide clear, informative error messages.
+  - Support configuration-driven behavior for web UI settings.
+  - Maintain comprehensive unit test coverage for all new CLI commands.
+  - Ensure all new code passes linting and formatting checks (ruff, pre-commit hooks).
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary; prefer standard
+    library and existing dependencies.
+  - Follow established codebase structure and modular CLI design.
+  - Use Python 3.12+ features and type hints.
+  - Store all configuration in human-readable YAML format.
+  - Do not use external databases.
+  - Maintain file-based storage and configuration.
+implementation:
+- task: Design and implement web UI management commands in the CLI.
+  details: Define CLI commands for starting the web server, opening the browser, checking
+    server status, and configuring web UI settings. Ensure commands are grouped logically
+    under a 'web' or similar CLI namespace. Use Typer's modular CLI features to integrate
+    cleanly with the existing CLI structure.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/web_ui.py
+  acceptance: 'CLI exposes ''web'' command group with subcommands: ''start'', ''open'',
+    ''status'', ''config''. Each command is discoverable via --help and functions
+    as described.'
+  estimated_effort: 'composite: involves CLI design, command implementation, and integration
+    with web UI logic'
+  step_id: 9db2ea70:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement web server start/stop/status logic.
+  details: Provide async functions to start and stop the web server, and to check
+    if it is running. Use existing or minimal new code in agentic_spec/web_ui.py.
+    Ensure compatibility with both Windows and Unix-like systems.
+  files:
+  - agentic_spec/web_ui.py
+  acceptance: Web server can be started, stopped, and status checked via CLI commands.
+    Errors (e.g., port in use) are handled gracefully.
+  estimated_effort: atomic
+  step_id: 9db2ea70:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement logic to open the web UI in the default browser.
+  details: Add a CLI command that opens the web UI URL in the user's default browser
+    using the standard library (webbrowser module).
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/web_ui.py
+  acceptance: '''agentic-spec web open'' launches the web UI in the default browser,
+    with clear error messages if the server is not running.'
+  estimated_effort: atomic
+  step_id: 9db2ea70:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement configuration management for web UI settings.
+  details: Allow users to view and set web UI configuration options (e.g., port, host,
+    theme) via CLI. Store settings in YAML using the existing config management approach.
+    Ensure changes are validated and persisted.
+  files:
+  - agentic_spec/config.py
+  - agentic_spec/cli.py
+  acceptance: Users can view and update web UI settings via CLI. Changes are reflected
+    in the YAML config and used by the web server.
+  estimated_effort: atomic
+  step_id: 9db2ea70:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add comprehensive error handling and informative messages for all web UI CLI
+    commands.
+  details: Ensure all CLI commands handle errors gracefully and provide actionable
+    feedback. Use custom exceptions where appropriate and follow established exception
+    formatting standards.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/web_ui.py
+  - agentic_spec/exceptions.py
+  acceptance: All CLI commands provide clear, actionable error messages and do not
+    crash on user error or system issues.
+  estimated_effort: atomic
+  step_id: 9db2ea70:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Write unit tests for all new CLI commands and web UI management logic.
+  details: Add tests covering all new CLI commands, including edge cases and error
+    handling. Use Typer's testing utilities and pytest. Mock web server and browser
+    interactions as needed.
+  files:
+  - tests/test_cli.py
+  - agentic_spec/web_ui.py
+  acceptance: All new CLI commands and web UI logic are covered by unit tests with
+    >90% coverage. Tests pass on both Windows and Unix-like systems.
+  estimated_effort: 'composite: covers multiple commands and error scenarios'
+  step_id: 9db2ea70:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- "```json\n[\n  \"**Typer Versioning Issue**: Upgrading from Typer 0.9.0 to 0.12.0\
+  \ can lead to installation problems due to packaging changes. Ensure you uninstall\
+  \ the previous version before installing 0.12.0 to prevent conflicts. ([github.com](https://github.com/fastapi/typer/discussions/784?utm_source=openai))\"\
+  ,\n  \"**Modular CLI Design**: To maintain a clean and maintainable codebase, separate\
+  \ CLI-related code into distinct modules or files. This approach enhances modularity\
+  \ and simplifies future updates. ([coderivers.org](https://coderivers.org/blog/typer-python/?utm_source=openai))\"\
+  ,\n  \"**Error Handling**: Implement comprehensive error handling in your CLI commands\
+  \ to provide clear, actionable error messages. This practice improves user experience\
+  \ and aids in debugging. ([coderivers.org](https://coderivers.org/blog/python-typer/?utm_source=openai))\"\
+  ,\n  \"**Documentation**: Utilize docstrings in your functions to automatically\
+  \ generate help texts for CLI commands. This ensures users have access to detailed\
+  \ command descriptions directly from the CLI. ([typer.tiangolo.com](https://typer.tiangolo.com/tutorial/first-steps/?utm_source=openai))\"\
+  \n]\n``` "
+context_parameters: null
+feedback_history: []
+work_logs: null

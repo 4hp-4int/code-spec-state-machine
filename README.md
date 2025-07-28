@@ -849,6 +849,17 @@ agentic-spec config init --force
 7. **Run quality checks**: `make quality-gate`
 8. **Submit pull request** with clear description
 
+## 📚 Developer Documentation
+
+### Architecture and Design
+- [Deep Merge Utility Guide](docs/deep_merge_guide.md) - Comprehensive guide to the deep merge system used for configuration and template inheritance
+- [Architecture Overview](docs/architecture.md) - System design and component interactions
+- [Development Guide](docs/development.md) - Contributing guidelines and development setup
+
+### API Reference
+- [CLI Commands](docs/cli_reference.md) - Complete command reference
+- [Python API](docs/api_reference.md) - Programmatic usage documentation
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) file for details.

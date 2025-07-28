@@ -1,12 +1,13 @@
 """Core specification generation functionality."""
 
-from dataclasses import asdict
+# Removed dataclass asdict import - now using Pydantic model_dump
 from datetime import datetime
 import hashlib
 import json
 import os
 from pathlib import Path
 import re
+import subprocess
 from typing import Any
 import uuid
 
@@ -14,7 +15,7 @@ import yaml
 
 from .ai_providers import AIProviderFactory
 from .config import AgenticSpecConfig
-from .exceptions import ConfigurationError
+from .exceptions import ConfigurationError, GitError
 from .models import (
     ContextParameters,
     ImplementationStep,
@@ -25,6 +26,85 @@ from .models import (
 )
 from .prompt_engineering import PromptEngineer
 from .prompt_template_loader import PromptTemplateLoader
+from .utils.deep_merge import merge_configs
+
+
+class GitUtility:
+    """Git utility functions for workflow integration."""
+
+    @staticmethod
+    def is_git_repo(directory: Path = None) -> bool:
+        """Check if current or specified directory is a git repository."""
+        if directory is None:
+            directory = Path.cwd()
+        return (directory / ".git").exists()
+
+    @staticmethod
+    def run_git_command(
+        command: list[str], directory: Path = None, check: bool = True
+    ) -> subprocess.CompletedProcess:
+        """Run a git command and return the result."""
+        if directory is None:
+            directory = Path.cwd()
+
+        full_command = ["git"] + command
+        try:
+            result = subprocess.run(
+                full_command, cwd=directory, capture_output=True, text=True, check=check
+            )
+            return result
+        except subprocess.CalledProcessError as e:
+            raise GitError(
+                f"Git command failed: {e.stderr.strip() if e.stderr else 'Unknown error'}",
+                git_command=" ".join(full_command),
+                return_code=e.returncode,
+            )
+        except FileNotFoundError:
+            raise GitError(
+                "Git command not found. Please ensure git is installed and in your PATH."
+            )
+
+    @staticmethod
+    def get_current_branch(directory: Path = None) -> str:
+        """Get the current git branch name."""
+        result = GitUtility.run_git_command(["branch", "--show-current"], directory)
+        return result.stdout.strip()
+
+    @staticmethod
+    def has_uncommitted_changes(directory: Path = None) -> bool:
+        """Check if there are uncommitted changes in the repository."""
+        result = GitUtility.run_git_command(["status", "--porcelain"], directory)
+        return bool(result.stdout.strip())
+
+    @staticmethod
+    def create_and_checkout_branch(branch_name: str, directory: Path = None) -> None:
+        """Create and checkout a new git branch."""
+        if not GitUtility.is_git_repo(directory):
+            raise GitError("Not in a git repository")
+
+        # Check if branch already exists
+        try:
+            GitUtility.run_git_command(
+                ["show-ref", "--verify", f"refs/heads/{branch_name}"], directory
+            )
+            raise GitError(f"Branch '{branch_name}' already exists")
+        except GitError:
+            # Branch doesn't exist, which is what we want
+            pass
+
+        # Create and checkout the branch
+        GitUtility.run_git_command(["checkout", "-b", branch_name], directory)
+
+    @staticmethod
+    def generate_branch_name(task_id: str, task_title: str) -> str:
+        """Generate a standardized branch name from task ID and title."""
+        # Clean the task title for use in branch name
+        task_slug = re.sub(r"[^a-zA-Z0-9\s\-_]", "", task_title)
+        task_slug = re.sub(r"\s+", "-", task_slug.strip())
+        task_slug = task_slug.lower()[:50]  # Limit length
+        task_slug = task_slug.rstrip("-")
+
+        return f"feature/{task_id}_{task_slug}"
 
 
 class SpecGenerator:
@@ -153,22 +233,10 @@ class SpecGenerator:
 
         for template_name in inherits:
             template = self.load_template(template_name)
-            # Simple deep merge - could be enhanced
-            self._deep_merge(merged, template)
+            # Use robust deep merge utility with template inheritance semantics
+            merged = merge_configs(merged, template)
 
         return merged
-
-    def _deep_merge(self, target: dict, source: dict):
-        """Deep merge dictionaries."""
-        for key, value in source.items():
-            if (
-                key in target
-                and isinstance(target[key], dict)
-                and isinstance(value, dict)
-            ):
-                self._deep_merge(target[key], value)
-            else:
-                target[key] = value
 
     def load_parent_spec_context(self, spec: ProgrammingSpec) -> dict[str, Any]:
         """Load context from parent specification if it exists."""
@@ -204,7 +272,7 @@ class SpecGenerator:
         # 1. Load foundation spec context (always include)
         try:
             foundation_context = self.load_template("agentic-spec-foundation")
-            self._deep_merge(context, {"foundation": foundation_context})
+            context = merge_configs(context, {"foundation": foundation_context})
         except (FileNotFoundError, KeyError, ValueError):
             # Foundation spec not found - this indicates it needs to be synced
             context["foundation_sync_needed"] = True
@@ -212,7 +280,7 @@ class SpecGenerator:
         # 2. Load inherited template context
         inherited_context = self.resolve_inheritance(inherits or [])
         if inherited_context:
-            self._deep_merge(context, {"inherited": inherited_context})
+            context = merge_configs(context, {"inherited": inherited_context})
 
         # 3. Load parent spec context if provided
         if parent_spec_id:
@@ -220,7 +288,7 @@ class SpecGenerator:
             if parent_spec:
                 parent_context = self.load_parent_spec_context(parent_spec)
                 if parent_context:
-                    self._deep_merge(context, {"parent": parent_context})
+                    context = merge_configs(context, {"parent": parent_context})
 
         return context
 
@@ -1639,7 +1707,12 @@ Return ONLY valid JSON matching this structure:
         spec.metadata.last_modified = datetime.now().isoformat()
 
         with spec_path.open("w") as f:
-            yaml.dump(asdict(spec), f, default_flow_style=False, sort_keys=False)
+            yaml.dump(
+                spec.model_dump(exclude_none=True),
+                f,
+                default_flow_style=False,
+                sort_keys=False,
+            )
 
         return spec_path
 
@@ -1709,7 +1782,9 @@ Provide 2-4 concise, actionable insights. Skip generic advice about user stories
 
 Return a simple JSON array of strings - no markdown formatting."""
 
-        spec_yaml = yaml.dump(asdict(spec), default_flow_style=False)
+        spec_yaml = yaml.dump(
+            spec.model_dump(exclude_none=True), default_flow_style=False
+        )
 
         try:
             # Use AI provider with web search for current best practices
@@ -2410,10 +2485,10 @@ Return a simple JSON array of strings - no markdown formatting."""
             child_spec_ids=spec.metadata.child_spec_ids
             if spec.metadata.child_spec_ids
             else [],
-            context=spec.context.to_dict(),
-            requirements=spec.requirements.to_dict(),
+            context=spec.context.model_dump(exclude_none=True),
+            requirements=spec.requirements.model_dump(exclude_none=True),
             review_notes=spec.review_notes or [],
-            context_parameters=spec.context_parameters.to_dict()
+            context_parameters=spec.context_parameters.model_dump(exclude_none=True)
             if spec.context_parameters
             else None,
             tasks=tasks,
@@ -2455,13 +2530,13 @@ Expand the following implementation step into a comprehensive sub-specification:
 **Parent Specification**: {parent_spec.metadata.title}
 **Step to Expand**: {target_step.task}
 **Step Details**: {target_step.details}
-**Files Involved**: {', '.join(target_step.files)}
+**Files Involved**: {", ".join(target_step.files)}
 **Acceptance Criteria**: {target_step.acceptance}
 
 **Context from Parent Project**:
 - Project: {parent_spec.context.project}
 - Domain: {parent_spec.context.domain}
-- Dependencies: {[f"{dep.get('name', 'unknown')}@{dep.get('version', 'latest')}" for dep in parent_spec.context.dependencies]}
+- Dependencies: {[f"{dep.get('name', 'unknown') if isinstance(dep, dict) else str(dep)}@{dep.get('version', 'latest') if isinstance(dep, dict) else 'latest'}" for dep in parent_spec.context.dependencies]}
 
 Create a detailed specification that breaks down this step into:
 1. Clear sub-tasks with specific implementation details
@@ -2528,6 +2603,39 @@ The sub-specification should be comprehensive enough that a developer can implem
                 step.step_id = f"{expanded_id}:{i}"
                 implementation_steps.append(step)
 
+            # Prepare context data with dependency format normalization
+            default_context = {
+                "project": parent_spec.context.project,
+                "domain": f"{parent_spec.context.domain} - {target_step.task}",
+                "dependencies": parent_spec.context.dependencies,
+                "files_involved": target_step.files,
+            }
+
+            # Merge with AI-generated context, but normalize dependencies
+            context_data = {**default_context, **spec_data.get("context", {})}
+
+            # Normalize dependencies to proper format if they're strings
+            if "dependencies" in context_data:
+                normalized_deps = []
+                for dep in context_data["dependencies"]:
+                    if isinstance(dep, str):
+                        # Convert string format 'name@version' to dict format
+                        if "@" in dep:
+                            name, version = dep.split("@", 1)
+                            # Convert 'None' string to actual None
+                            if version == "None":
+                                version = None
+                            normalized_deps.append({"name": name, "version": version})
+                        else:
+                            normalized_deps.append({"name": dep})
+                    elif isinstance(dep, dict):
+                        # Already in correct format
+                        normalized_deps.append(dep)
+                    else:
+                        # DependencyModel or other type, keep as-is
+                        normalized_deps.append(dep)
+                context_data["dependencies"] = normalized_deps
+
             expanded_spec = ProgrammingSpec(
                 metadata=SpecMetadata(
                     id=expanded_id,
@@ -2543,17 +2651,7 @@ The sub-specification should be comprehensive enough that a developer can implem
                     or "unknown",
                     last_modified=None,
                 ),
-                context=SpecContext(
-                    **spec_data.get(
-                        "context",
-                        {
-                            "project": parent_spec.context.project,
-                            "domain": f"{parent_spec.context.domain} - {target_step.task}",
-                            "dependencies": parent_spec.context.dependencies,
-                            "files_involved": target_step.files,
-                        },
-                    )
-                ),
+                context=SpecContext(**context_data),
                 requirements=SpecRequirement(
                     **spec_data.get(
                         "requirements",

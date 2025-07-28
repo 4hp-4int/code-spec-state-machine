@@ -177,7 +177,7 @@ class TestProgrammingSpecSerialization:
     def test_spec_to_dict(self, sample_spec_data):
         """Test converting spec to dictionary."""
         spec = ProgrammingSpec.from_dict(sample_spec_data)
-        data = spec.to_dict()
+        data = spec.model_dump(exclude_none=True, mode="json")
 
         assert data["metadata"]["id"] == "test123"
         assert len(data["context"]["dependencies"]) == 2
@@ -187,7 +187,7 @@ class TestProgrammingSpecSerialization:
     def test_spec_roundtrip(self, sample_spec_data):
         """Test spec serialization roundtrip."""
         spec1 = ProgrammingSpec.from_dict(sample_spec_data)
-        data = spec1.to_dict()
+        data = spec1.model_dump(exclude_none=True)
         spec2 = ProgrammingSpec.from_dict(data)
 
         assert spec1.metadata.id == spec2.metadata.id

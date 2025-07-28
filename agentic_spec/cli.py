@@ -16,6 +16,7 @@ from .cli_core import core_app
 from .cli_db import db_app
 from .cli_template import template_app
 from .cli_utils import utils_app
+from .cli_web import app as web_app
 from .cli_workflow import workflow_app
 from .exceptions import (
     AgenticSpecError,
@@ -209,6 +210,7 @@ app.add_typer(workflow_app, name="workflow")
 app.add_typer(template_app, name="template")
 app.add_typer(db_app, name="database")
 app.add_typer(utils_app, name="utils")
+app.add_typer(web_app, name="web")
 
 # Import core commands for direct access
 from .cli_core import expand_step, generate_spec, review_specs, show_graph
@@ -217,6 +219,21 @@ from .cli_template import (
     create_templates,
     manage_templates,
     preview_template,
+)
+from .cli_web import (
+    config as web_config,
+)
+from .cli_web import (
+    open as web_open,
+)
+from .cli_web import (
+    start as web_start,
+)
+from .cli_web import (
+    status as web_status,
+)
+from .cli_web import (
+    stop as web_stop,
 )
 from .cli_workflow import (
     approve_task,
@@ -262,6 +279,13 @@ app.command("config")(utils_commands.manage_config)
 app.command("validate")(utils_commands.validate_templates)
 app.command("render")(utils_commands.render_spec)
 app.command("prompt")(utils_commands.prompt_command)
+
+# Web UI commands for direct access
+app.command("web-start")(web_start)
+app.command("web-stop")(web_stop)
+app.command("web-status")(web_status)
+app.command("web-open")(web_open)
+app.command("web-config")(web_config)
 
 
 def main():

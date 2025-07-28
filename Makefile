@@ -1,7 +1,7 @@
 # Makefile for agentic-spec project
 # Provides automated code quality workflows and development tasks
 
-.PHONY: help install install-dev format lint check test test-coverage clean build docs spec-commit spec-publish spec-publish-all spec-complete
+.PHONY: help install install-dev format lint check test test-coverage clean build docs spec-commit spec-publish spec-publish-all spec-complete audit-models
 
 # Default target
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "  format-check Check if code needs formatting"
 	@echo "  lint-fix     Auto-fix linting issues where possible"
 	@echo "  quality      Run comprehensive code quality checks"
+	@echo "  audit-models Audit data model consistency (dataclass vs Pydantic)"
 	@echo ""
 	@echo "Specification Workflow Commands:"
 	@echo "  spec-commit     Commit specifications and implementation changes"
@@ -169,6 +170,11 @@ docker-build:
 
 docker-test:
 	@echo "Docker test not yet implemented"
+
+# Model consistency audit
+audit-models:
+	@echo "🔍 Auditing data model consistency..."
+	@python tools/audit_models.py
 
 # IDE integration helpers
 vscode-setup:
