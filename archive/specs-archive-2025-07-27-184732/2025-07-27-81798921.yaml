@@ -1,0 +1,138 @@
+metadata:
+  id: '81798921'
+  title: Update the project's documentation to provide comprehensive user-facing summa...
+  inherits: []
+  created: '2025-07-27T07:56:48.033834'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - README.md
+  - docs/overview.md
+  - docs/architecture.md
+  - docs/usage.md
+  - docs/development.md
+  - docs/api_reference.md
+requirements:
+  functional:
+  - Provide a clear, concise, and comprehensive README.md with user-facing summaries,
+    installation instructions, and quickstart examples.
+  - Create technical documentation for developers, including architecture overview,
+    codebase structure, development workflows, and API reference.
+  - Document configuration options, template inheritance patterns, and error handling
+    strategies.
+  - Ensure all documentation is accessible and understandable for solo developers
+    with intermediate Python experience.
+  non_functional:
+  - Documentation must be easy to navigate and maintain, using Markdown format.
+  - All technical docs should be human-readable and version-controlled within the
+    repository.
+  - Documentation must reflect the latest codebase state and coding standards.
+  - Ensure documentation is compatible with Windows and Unix line endings.
+  constraints:
+  - Do not introduce new dependencies for documentation generation.
+  - All documentation must be stored in the repository (no external hosting).
+  - Follow the established file organization and naming conventions.
+  - Documentation must not conflict with existing codebase or project requirements.
+implementation:
+- task: Revise and expand README.md
+  details: Update README.md to include a project summary, key features, installation
+    steps, quickstart usage, example commands, and links to further documentation.
+    Emphasize solo developer workflows and Windows compatibility.
+  files:
+  - README.md
+  acceptance: README.md provides a clear overview, accurate instructions, and is free
+    of outdated or missing information.
+  estimated_effort: medium
+  step_id: '81798921:0'
+  sub_spec_id: null
+- task: Create docs/overview.md
+  details: Write a high-level overview of the agentic-spec project, its purpose, and
+    its main capabilities. Include a summary of the AI-powered specification workflow
+    and template inheritance.
+  files:
+  - docs/overview.md
+  acceptance: Overview is concise, accurate, and understandable to new users.
+  estimated_effort: low
+  step_id: '81798921:1'
+  sub_spec_id: null
+- task: Document architecture and codebase structure
+  details: Create docs/architecture.md describing the main modules, their responsibilities,
+    and how they interact. Include a diagram or text-based outline of the codebase
+    structure.
+  files:
+  - docs/architecture.md
+  acceptance: Architecture documentation matches the current codebase and highlights
+    key design patterns.
+  estimated_effort: medium
+  step_id: '81798921:2'
+  sub_spec_id: null
+- task: Write detailed usage guide
+  details: Develop docs/usage.md with step-by-step instructions for common tasks,
+    CLI commands, configuration options, and troubleshooting tips. Include examples
+    for both basic and advanced usage.
+  files:
+  - docs/usage.md
+  acceptance: Usage guide covers all major workflows and is validated against the
+    current CLI interface.
+  estimated_effort: medium
+  step_id: '81798921:3'
+  sub_spec_id: null
+- task: Document development workflows and contribution guidelines
+  details: Create docs/development.md covering coding standards, pre-commit hooks,
+    testing, linting, and the make-based workflow. Include instructions for running
+    and updating specs, and guidelines for contributing.
+  files:
+  - docs/development.md
+  acceptance: Development documentation is clear, actionable, and aligned with current
+    workflows.
+  estimated_effort: medium
+  step_id: '81798921:4'
+  sub_spec_id: null
+- task: Generate API reference documentation
+  details: Write docs/api_reference.md summarizing the public API of the main modules
+    (functions, classes, CLI commands). Use docstrings and code comments as the source
+    of truth.
+  files:
+  - docs/api_reference.md
+  acceptance: API reference is accurate, up-to-date, and covers all user-facing interfaces.
+  estimated_effort: medium
+  step_id: '81798921:5'
+  sub_spec_id: null
+review_notes:
+- 'Missing Implementation Details: The spec does not clarify how to validate that
+  documentation (especially API reference and usage examples) stays in sync with the
+  evolving codebase. Consider specifying a manual review checklist or a script to
+  flag outdated docstrings or CLI command changes.'
+- 'Technical Gotchas: Windows compatibility is emphasized, but no mention is made
+  of handling path separators, shell command differences, or line ending normalization
+  in documentation examples. Explicitly test and document any platform-specific quirks,
+  especially for CLI usage and make-based workflows.'
+- 'Integration Points: If the codebase is still evolving, ensure that architecture
+  and API docs are generated or updated after major refactors. Otherwise, these docs
+  will quickly become stale and misleading.'
+- "Quick Wins: For API reference, leverage existing docstrings and code comments directly\u2014\
+  avoid duplicating information manually. Tools like pydoc or Sphinx (without new\
+  \ dependencies) can help extract this, or provide a simple script to automate doc\
+  \ extraction."
+context_parameters: null
+feedback_history: []

@@ -11,38 +11,54 @@ repos:
       # Run the linter with auto-fix
       - id: ruff
         args: [--fix, --exit-zero]
-        fail_when_modified: false
+        # Allow hooks to modify files and auto-restage them
+        stages: [pre-commit]
       # Run the formatter (auto-formats files)
       - id: ruff-format
-        fail_when_modified: false
+        # Allow hooks to modify files and auto-restage them
+        stages: [pre-commit]
 
   # Standard pre-commit hooks for general quality
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
+        stages: [pre-commit]
       - id: end-of-file-fixer
+        stages: [pre-commit]
       - id: check-yaml
+        stages: [pre-commit]
       - id: check-toml
+        stages: [pre-commit]
       - id: check-added-large-files
+        stages: [pre-commit]
       - id: check-merge-conflict
+        stages: [pre-commit]
       - id: debug-statements
+        stages: [pre-commit]
 
   # Check for secrets
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.10.0
     hooks:
       - id: python-check-blanket-noqa
+        stages: [pre-commit]
       - id: python-check-blanket-type-ignore
+        stages: [pre-commit]
       - id: python-no-log-warn
+        stages: [pre-commit]
       - id: python-use-type-annotations
+        stages: [pre-commit]
 
 
-# Configure to run on commit
+# Configure to run on commit and allow modification
 default_stages: [pre-commit]
 
-# Fail fast - stop running hooks after first failure
+# Don't fail fast - run all hooks to catch all issues
 fail_fast: false
 
-# Configure hooks to auto-format files during staging
-# When ruff makes changes, the user can simply re-stage and commit
+# Configure git to automatically restage files modified by hooks
+# This prevents the "files were modified by hooks" issue
+ci:
+    autoupdate_schedule: weekly
+    skip: []

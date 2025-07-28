@@ -5,34 +5,31 @@ Tests cover required fields, type validation, field constraints,
 enum validation, and Pydantic v2 features after refactoring from dataclass.
 """
 
-import pytest
 from datetime import datetime, timedelta
-from typing import Any
 
 from pydantic import ValidationError
+import pytest
 
 from agentic_spec.models import (
-    # Enums
-    TaskStatus,
     ApprovalLevel,
-    SpecStatus,
-    WorkflowStatus,
+    ApprovalRecord,
+    ContextParameters,
     # Models
     DependencyModel,
-    SpecMetadata,
-    SpecContext,
-    SpecRequirement,
-    TaskProgress,
-    ApprovalRecord,
-    ImplementationStep,
-    ContextParameters,
     FeedbackData,
-    WorkLogEntry,
+    ImplementationStep,
     ProgrammingSpec,
+    SpecContext,
     SpecificationDB,
+    SpecMetadata,
+    SpecRequirement,
+    SpecStatus,
     TaskDB,
-    ApprovalDB,
-    WorkLogDB,
+    TaskProgress,
+    # Enums
+    TaskStatus,
+    WorkflowStatus,
+    WorkLogEntry,
 )
 
 
@@ -81,9 +78,7 @@ class TestDependencyModel:
     def test_valid_complete(self):
         """Test creating with all fields."""
         dep = DependencyModel(
-            name="pytest",
-            version=">=7.0.0",
-            description="Testing framework"
+            name="pytest", version=">=7.0.0", description="Testing framework"
         )
         assert dep.name == "pytest"
         assert dep.version == ">=7.0.0"
@@ -93,7 +88,7 @@ class TestDependencyModel:
         """Test validation error for missing name."""
         with pytest.raises(ValidationError) as exc_info:
             DependencyModel()
-        
+
         errors = exc_info.value.errors()
         assert len(errors) == 1
         assert errors[0]["loc"] == ("name",)
@@ -103,16 +98,14 @@ class TestDependencyModel:
         """Test type validation for name field."""
         with pytest.raises(ValidationError) as exc_info:
             DependencyModel(name=123)
-        
+
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("name",) for error in errors)
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed."""
         dep = DependencyModel(
-            name="pytest",
-            extra_field="extra_value",
-            another_extra=123
+            name="pytest", extra_field="extra_value", another_extra=123
         )
         assert dep.name == "pytest"
         # Extra fields should be accessible
@@ -128,7 +121,7 @@ class TestSpecMetadata:
             id="test123",
             title="Test Spec",
             created=datetime.now().isoformat(),
-            version="1.0"
+            version="1.0",
         )
         assert metadata.id == "test123"
         assert metadata.title == "Test Spec"
@@ -148,7 +141,7 @@ class TestSpecMetadata:
             parent_spec_id="parent123",
             child_spec_ids=["child1", "child2"],
             author="test_user",
-            last_modified=now
+            last_modified=now,
         )
         assert metadata.id == "test123"
         assert len(metadata.inherits) == 2
@@ -158,10 +151,12 @@ class TestSpecMetadata:
         """Test validation errors for missing required fields."""
         with pytest.raises(ValidationError) as exc_info:
             SpecMetadata(id="test123")  # Missing title, inherits, etc.
-        
+
         errors = exc_info.value.errors()
         required_fields = {"title", "created", "version"}
-        missing_fields = {error["loc"][0] for error in errors if error["type"] == "missing"}
+        missing_fields = {
+            error["loc"][0] for error in errors if error["type"] == "missing"
+        }
         assert required_fields.issubset(missing_fields)
 
     def test_status_as_string(self):
@@ -171,22 +166,17 @@ class TestSpecMetadata:
             title="Test",
             created=datetime.now().isoformat(),
             version="1.0",
-            status="custom_status"
+            status="custom_status",
         )
         assert metadata.status == "custom_status"
 
     def test_datetime_serialization(self):
         """Test datetime field serialization."""
         now = datetime.now().isoformat()
-        metadata = SpecMetadata(
-            id="test123",
-            title="Test",
-            created=now,
-            version="1.0"
-        )
-        
+        metadata = SpecMetadata(id="test123", title="Test", created=now, version="1.0")
+
         # Test model_dump with json mode
-        data = metadata.model_dump(mode='json')
+        data = metadata.model_dump(mode="json")
         assert isinstance(data["created"], str)  # created field as string
         assert data["status"] == "draft"  # default status value
 
@@ -210,7 +200,7 @@ class TestTaskProgress:
             completed_at=now,
             time_spent_minutes=120,
             completion_notes="Task completed successfully",
-            blockers=["Dependency issue resolved"]
+            blockers=["Dependency issue resolved"],
         )
         assert progress.status == TaskStatus.COMPLETED
         assert progress.time_spent_minutes == 120
@@ -221,10 +211,10 @@ class TestTaskProgress:
         # Test negative time
         with pytest.raises(ValidationError) as exc_info:
             TaskProgress(time_spent_minutes=-10)
-        
+
         errors = exc_info.value.errors()
         assert any("time_spent_minutes" in error["loc"] for error in errors)
-        
+
         # Test valid time
         progress = TaskProgress(time_spent_minutes=0)
         assert progress.time_spent_minutes == 0
@@ -234,11 +224,11 @@ class TestTaskProgress:
         # Test with valid blockers
         progress = TaskProgress(blockers=["API unavailable", "Need approval"])
         assert len(progress.blockers) == 2
-        
+
         # Test with empty list
         progress = TaskProgress(blockers=[])
         assert progress.blockers == []
-        
+
         # Test with None (default)
         progress = TaskProgress()
         assert progress.blockers is None
@@ -247,7 +237,7 @@ class TestTaskProgress:
         """Test invalid enum value for status."""
         with pytest.raises(ValidationError) as exc_info:
             TaskProgress(status="invalid_status")
-        
+
         errors = exc_info.value.errors()
         assert any("status" in error["loc"] for error in errors)
 
@@ -270,7 +260,7 @@ class TestFeedbackData:
             relevance_score=5,
             comments="Excellent work",
             suggested_improvements="Consider edge cases",
-            timestamp="2023-01-01T12:00:00"
+            timestamp="2023-01-01T12:00:00",
         )
         assert feedback.rating == 5
         assert feedback.accuracy_score == 4
@@ -281,14 +271,14 @@ class TestFeedbackData:
         # Test rating > 5
         with pytest.raises(ValidationError) as exc_info:
             FeedbackData(rating=6)
-        
+
         errors = exc_info.value.errors()
         assert any("rating" in error["loc"] for error in errors)
-        
+
         # Test rating < 1
         with pytest.raises(ValidationError) as exc_info:
             FeedbackData(rating=0)
-        
+
         errors = exc_info.value.errors()
         assert any("rating" in error["loc"] for error in errors)
 
@@ -297,7 +287,7 @@ class TestFeedbackData:
         # Test accuracy_score > 5
         with pytest.raises(ValidationError):
             FeedbackData(accuracy_score=6)
-        
+
         # Test relevance_score < 1
         with pytest.raises(ValidationError):
             FeedbackData(relevance_score=0)
@@ -324,7 +314,7 @@ class TestWorkLogEntry:
             spec_id="spec123",
             step_id="step001",
             action="started",
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
         assert log.spec_id == "spec123"
         assert log.duration_minutes is None
@@ -339,7 +329,7 @@ class TestWorkLogEntry:
             timestamp=datetime.now(),
             duration_minutes=60,
             notes="Task completed successfully",
-            metadata={"priority": "high"}
+            metadata={"priority": "high"},
         )
         assert log.duration_minutes == 60
         assert log.notes == "Task completed successfully"
@@ -349,10 +339,12 @@ class TestWorkLogEntry:
         """Test validation errors for missing required fields."""
         with pytest.raises(ValidationError) as exc_info:
             WorkLogEntry(spec_id="spec123")  # Missing step_id, action, timestamp
-        
+
         errors = exc_info.value.errors()
         required_fields = {"step_id", "action", "timestamp"}
-        missing_fields = {error["loc"][0] for error in errors if error["type"] == "missing"}
+        missing_fields = {
+            error["loc"][0] for error in errors if error["type"] == "missing"
+        }
         assert required_fields.issubset(missing_fields)
 
     def test_negative_duration(self):
@@ -363,9 +355,9 @@ class TestWorkLogEntry:
                 step_id="step001",
                 action="completed",
                 timestamp=datetime.now(),
-                duration_minutes=-30
+                duration_minutes=-30,
             )
-        
+
         errors = exc_info.value.errors()
         assert any("duration_minutes" in error["loc"] for error in errors)
 
@@ -376,9 +368,7 @@ class TestApprovalRecord:
     def test_valid_minimal(self):
         """Test creating with only required fields."""
         approval = ApprovalRecord(
-            level=ApprovalLevel.PEER,
-            approved_by="reviewer",
-            approved_at=datetime.now()
+            level=ApprovalLevel.PEER, approved_by="reviewer", approved_at=datetime.now()
         )
         assert approval.level == ApprovalLevel.PEER
         assert approval.comments is None
@@ -391,7 +381,7 @@ class TestApprovalRecord:
             approved_by="admin_user",
             approved_at=datetime.now(),
             comments="Approved with minor suggestions",
-            override_reason="Urgent deadline"
+            override_reason="Urgent deadline",
         )
         assert approval.override_reason == "Urgent deadline"
 
@@ -399,21 +389,21 @@ class TestApprovalRecord:
         """Test validation errors for missing required fields."""
         with pytest.raises(ValidationError) as exc_info:
             ApprovalRecord(level=ApprovalLevel.PEER)
-        
+
         errors = exc_info.value.errors()
         required_fields = {"approved_by", "approved_at"}
-        missing_fields = {error["loc"][0] for error in errors if error["type"] == "missing"}
+        missing_fields = {
+            error["loc"][0] for error in errors if error["type"] == "missing"
+        }
         assert required_fields.issubset(missing_fields)
 
     def test_invalid_approval_level(self):
         """Test invalid enum value for approval level."""
         with pytest.raises(ValidationError) as exc_info:
             ApprovalRecord(
-                level="invalid_level",
-                approved_by="user",
-                approved_at=datetime.now()
+                level="invalid_level", approved_by="user", approved_at=datetime.now()
             )
-        
+
         errors = exc_info.value.errors()
         assert any("level" in error["loc"] for error in errors)
 
@@ -426,7 +416,7 @@ class TestImplementationStep:
         step = ImplementationStep(
             task="Implement feature",
             details="Detailed implementation steps",
-            acceptance="Tests pass"
+            acceptance="Tests pass",
         )
         assert step.task == "Implement feature"
         assert step.details == "Detailed implementation steps"
@@ -437,11 +427,9 @@ class TestImplementationStep:
         """Test creating with all fields including nested objects."""
         progress = TaskProgress(status=TaskStatus.IN_PROGRESS)
         approval = ApprovalRecord(
-            level=ApprovalLevel.PEER,
-            approved_by="reviewer",
-            approved_at=datetime.now()
+            level=ApprovalLevel.PEER, approved_by="reviewer", approved_at=datetime.now()
         )
-        
+
         step = ImplementationStep(
             task="Implement feature",
             details="Detailed implementation plan",
@@ -452,7 +440,7 @@ class TestImplementationStep:
             sub_spec_id="sub_spec_123",
             decomposition_hint="atomic",
             progress=progress,
-            approvals=[approval]
+            approvals=[approval],
         )
         assert step.progress.status == TaskStatus.IN_PROGRESS
         assert len(step.approvals) == 1
@@ -462,7 +450,7 @@ class TestImplementationStep:
         """Test validation error for missing task."""
         with pytest.raises(ValidationError) as exc_info:
             ImplementationStep(acceptance="Tests pass")
-        
+
         errors = exc_info.value.errors()
         assert any(error["loc"] == ("task",) for error in errors)
 
@@ -471,13 +459,13 @@ class TestImplementationStep:
         # Invalid TaskProgress
         with pytest.raises(ValidationError) as exc_info:
             ImplementationStep(
-                task="Task",
-                acceptance="Accept",
-                progress={"status": "invalid_status"}
+                task="Task", acceptance="Accept", progress={"status": "invalid_status"}
             )
-        
+
         errors = exc_info.value.errors()
-        assert any("progress" in error["loc"] and "status" in error["loc"] for error in errors)
+        assert any(
+            "progress" in error["loc"] and "status" in error["loc"] for error in errors
+        )
 
 
 class TestProgrammingSpec:
@@ -490,7 +478,7 @@ class TestProgrammingSpec:
             id="spec123",
             title="Test Specification",
             created=datetime.now().isoformat(),
-            version="1.0"
+            version="1.0",
         )
 
     @pytest.fixture
@@ -499,10 +487,8 @@ class TestProgrammingSpec:
         return SpecContext(
             project="test_project",
             domain="testing",
-            dependencies=[
-                DependencyModel(name="pytest", version=">=7.0")
-            ],
-            affected_files=["test.py"]
+            dependencies=[DependencyModel(name="pytest", version=">=7.0")],
+            affected_files=["test.py"],
         )
 
     @pytest.fixture
@@ -511,7 +497,7 @@ class TestProgrammingSpec:
         return SpecRequirement(
             functional=["Feature must work"],
             non_functional=["Must be fast"],
-            constraints=["Python 3.8+"]
+            constraints=["Python 3.8+"],
         )
 
     def test_valid_minimal(self, valid_metadata, valid_context, valid_requirements):
@@ -520,7 +506,7 @@ class TestProgrammingSpec:
             metadata=valid_metadata,
             context=valid_context,
             requirements=valid_requirements,
-            implementation=[]
+            implementation=[],
         )
         assert spec.metadata.id == "spec123"
         assert spec.review_notes is None
@@ -532,9 +518,9 @@ class TestProgrammingSpec:
             task="Implement",
             details="Implementation details",
             acceptance="Done",
-            progress=TaskProgress(status=TaskStatus.COMPLETED)
+            progress=TaskProgress(status=TaskStatus.COMPLETED),
         )
-        
+
         spec = ProgrammingSpec(
             metadata=valid_metadata,
             context=valid_context,
@@ -542,42 +528,39 @@ class TestProgrammingSpec:
             implementation=[step],
             review_notes=["Consider performance"],
             context_parameters=ContextParameters(),
-            feedback_history=[
-                FeedbackData(
-                    rating=5,
-                    comments="Good approach"
-                )
-            ],
+            feedback_history=[FeedbackData(rating=5, comments="Good approach")],
             work_logs=[
                 WorkLogEntry(
                     spec_id="spec123",
                     step_id="step001",
                     action="Started implementation",
                     timestamp=datetime.now(),
-                    notes="Beginning work on feature"
+                    notes="Beginning work on feature",
                 )
-            ]
+            ],
         )
         assert len(spec.implementation) == 1
         assert len(spec.feedback_history) == 1
         assert len(spec.work_logs) == 1
 
-    def test_model_dump_json_mode(self, valid_metadata, valid_context, valid_requirements):
+    def test_model_dump_json_mode(
+        self, valid_metadata, valid_context, valid_requirements
+    ):
         """Test model_dump with json mode for enum serialization."""
         spec = ProgrammingSpec(
             metadata=valid_metadata,
             context=valid_context,
             requirements=valid_requirements,
-            implementation=[]
+            implementation=[],
         )
-        
+
         # Dump with json mode
-        data = spec.model_dump(mode='json', exclude_none=True)
-        
+        data = spec.model_dump(mode="json", exclude_none=True)
+
         # Check enums are serialized as strings
         assert data["metadata"]["status"] == "draft"
         assert isinstance(data["metadata"]["created"], str)
-        
+
         # Check nested objects are properly serialized
         assert data["context"]["dependencies"][0]["name"] == "pytest"
 
@@ -589,9 +572,9 @@ class TestProgrammingSpec:
                 metadata={"id": "test"},  # Missing required fields
                 context=valid_context,
                 requirements=valid_requirements,
-                implementation=[]
+                implementation=[],
             )
-        
+
         errors = exc_info.value.errors()
         assert any("metadata" in error["loc"] for error in errors)
 
@@ -608,7 +591,7 @@ class TestDatabaseModels:
             created=now,
             updated=now,
             version="1.0",
-            status=SpecStatus.DRAFT
+            status=SpecStatus.DRAFT,
         )
         assert spec_db.id == "spec123"
         assert spec_db.status == SpecStatus.DRAFT
@@ -624,7 +607,7 @@ class TestDatabaseModels:
             details="Detailed implementation plan",
             files=["src/feature.py"],
             acceptance="Feature works correctly",
-            estimated_effort="medium"
+            estimated_effort="medium",
         )
         assert task_db.id == "task001"
         assert task_db.status == TaskStatus.PENDING
@@ -642,9 +625,9 @@ class TestDatabaseModels:
                 files=["file.py"],
                 acceptance="Done",
                 estimated_effort="low",
-                time_spent_minutes=-30
+                time_spent_minutes=-30,
             )
-        
+
         errors = exc_info.value.errors()
         assert any("time_spent_minutes" in error["loc"] for error in errors)
 
@@ -657,7 +640,7 @@ class TestEdgeCases:
         # Required string field with empty string
         dep = DependencyModel(name="")
         assert dep.name == ""  # Empty string is valid
-        
+
         # Optional string field with empty string
         dep = DependencyModel(name="test", version="")
         assert dep.version == ""  # Empty string is valid
@@ -670,9 +653,9 @@ class TestEdgeCases:
             domain="test",
             dependencies=[
                 {"name": "valid_dict"},
-                DependencyModel(name="valid_model", version="1.0")
+                DependencyModel(name="valid_model", version="1.0"),
             ],
-            affected_files=[]
+            affected_files=[],
         )
         assert len(context.dependencies) == 2
         assert context.dependencies[0] == {"name": "valid_dict"}
@@ -683,7 +666,7 @@ class TestEdgeCases:
         data = {
             "level": "peer",
             "approved_by": "user",
-            "approved_at": "2023-01-01T12:00:00"
+            "approved_at": "2023-01-01T12:00:00",
         }
         approval = ApprovalRecord(**data)
         assert isinstance(approval.approved_at, datetime)
@@ -691,15 +674,13 @@ class TestEdgeCases:
     def test_model_validate_round_trip(self):
         """Test model_validate for round-trip serialization."""
         progress = TaskProgress(
-            status=TaskStatus.IN_PROGRESS,
-            rating=4,
-            time_spent_minutes=60
+            status=TaskStatus.IN_PROGRESS, rating=4, time_spent_minutes=60
         )
-        
+
         # Serialize and deserialize
         data = progress.model_dump()
         progress2 = TaskProgress.model_validate(data)
-        
+
         assert progress2.status == progress.status
         assert progress2.rating == progress.rating
         assert progress2.time_spent_minutes == progress.time_spent_minutes

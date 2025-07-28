@@ -1,0 +1,124 @@
+metadata:
+  id: cff0c970
+  title: Specification cff0c970
+  inherits: []
+  created: '2025-07-27T05:52:38.448374'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: caching/performance
+  dependencies:
+  - sentence-transformers (to be removed)
+  - numpy (indirect dependency to be removed)
+  files_involved:
+  - agentic_spec/semantic_cache.py
+  - agentic_spec/core.py
+  - pyproject.toml
+  - tests/test_semantic_cache.py (if exists)
+requirements:
+  functional:
+  - Remove all semantic caching functionality including embeddings and similarity
+    matching
+  - Delete the semantic_cache.py module entirely
+  - Simplify core.py caching to use exact-match only
+  - Remove sentence-transformers dependency from pyproject.toml
+  - Update SQLite schema to remove embedding-related columns
+  - Ensure backward compatibility by migrating existing cache entries where possible
+  non_functional:
+  - Maintain existing cache performance characteristics
+  - Preserve cache TTL and expiration functionality
+  - Keep caching transparent to API callers
+  - Ensure no breaking changes to public APIs
+  constraints:
+  - Must preserve existing exact-match caching behavior
+  - Should not lose valid cached data during migration
+  - Must maintain SQLite as the cache backend
+implementation:
+- task: Remove semantic_cache.py module and all references
+  details: Delete the entire semantic_cache.py file as it will no longer be needed
+  files:
+  - agentic_spec/semantic_cache.py
+  acceptance: File removed and no imports remain in codebase
+  estimated_effort: low
+  step_id: cff0c970:0
+  sub_spec_id: null
+- task: Simplify caching in core.py to exact-match only
+  details: '- Remove _is_semantically_similar() method
+
+    - Simplify _get_cache_key() to use only exact parameters (no semantic elements)
+
+    - Update _get_cached_response() to remove similarity matching logic
+
+    - Keep only exact-match queries based on cache_key
+
+    - Remove semantic classification methods like _classify_prompt_type()
+
+    '
+  files:
+  - agentic_spec/core.py
+  acceptance: Cache uses only exact key matching without any semantic logic
+  estimated_effort: medium
+  step_id: cff0c970:1
+  sub_spec_id: null
+- task: Update SQLite schema and migrate data
+  details: "- Modify _init_cache_db() to create simplified schema without embedding\
+    \ columns\n- Create migration logic to transfer existing cache entries:\n  - Keep\
+    \ cache_key, response_data, created_at, ttl_hours, model, temperature\n  - Drop\
+    \ embedding and input_text columns (input_text only needed for similarity)\n-\
+    \ Add index on cache_key for performance\n"
+  files:
+  - agentic_spec/core.py
+  acceptance: New schema active with existing valid cache entries preserved
+  estimated_effort: medium
+  step_id: cff0c970:2
+  sub_spec_id: null
+- task: Remove sentence-transformers dependency
+  details: Remove sentence-transformers>=2.2.2 from dependencies list in pyproject.toml
+  files:
+  - pyproject.toml
+  acceptance: Dependency removed and package installs without sentence-transformers
+  estimated_effort: low
+  step_id: cff0c970:3
+  sub_spec_id: null
+- task: Update cache key generation for exact matching
+  details: "- Simplify _get_cache_key() to generate deterministic hash from:\n  -\
+    \ model name\n  - full input text (exact match)\n  - temperature (exact match)\n\
+    \  - tools configuration\n- Remove all semantic elements and classification\n"
+  files:
+  - agentic_spec/core.py
+  acceptance: Cache keys are deterministic and based only on exact inputs
+  estimated_effort: low
+  step_id: cff0c970:4
+  sub_spec_id: null
+- task: Clean up tests and add migration tests
+  details: '- Remove any tests for semantic_cache.py if they exist
+
+    - Update existing cache tests to verify exact-match behavior
+
+    - Add tests for schema migration to ensure data preservation
+
+    - Verify cache performance characteristics remain acceptable
+
+    '
+  files:
+  - tests/test_semantic_cache.py (if exists)
+  - tests/test_core.py (if exists)
+  acceptance: All tests pass with simplified caching implementation
+  estimated_effort: medium
+  step_id: cff0c970:5
+  sub_spec_id: null
+review_notes:
+- Ensure that all references to the semantic caching system, including code, dependencies,
+  and database operations, are thoroughly identified and removed to prevent residual
+  issues.
+- Implement exact-match caching by creating an index on the key column in the SQLite
+  database to enhance query performance. ([sqliteforum.com](https://www.sqliteforum.com/p/indexing-and-performance-tuning-in?utm_source=openai))
+- Establish a cache invalidation strategy, such as time-based expiration, to prevent
+  stale data from persisting in the cache. ([peerdh.com](https://peerdh.com/blogs/programming-insights/implementing-caching-strategies-with-sqlite-in-a-web-application?utm_source=openai))
+- Regularly monitor and adjust the cache size using the `PRAGMA cache_size` command
+  to balance memory usage and performance. ([unrepo.com](https://www.unrepo.com/sqlite/caching-and-memory-optimization-in-sqlite-tutorial?utm_source=openai))
+context_parameters: null
+feedback_history: []

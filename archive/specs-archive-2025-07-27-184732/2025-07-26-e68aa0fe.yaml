@@ -1,0 +1,158 @@
+metadata:
+  id: e68aa0fe
+  title: Specification e68aa0fe
+  inherits: []
+  created: '2025-07-26T21:34:38.784239'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 1d8de70e
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: setuptools
+    version: '>=77.0.3'
+    description: Build backend for packaging
+  - name: wheel
+    version: '>=0.36.2'
+    description: Support for building wheels
+  files_involved:
+  - pyproject.toml
+  - setup.py
+  - setup.cfg
+  - MANIFEST.in
+requirements:
+  functional:
+  - Migrate project configuration from setup.py and setup.cfg to pyproject.toml
+  - Ensure all project metadata, dependencies, and tool configurations are accurately
+    represented in pyproject.toml
+  - Maintain compatibility with existing build and installation workflows
+  non_functional:
+  - Adhere to PEP 621 standards for project metadata
+  - Ensure the migration does not introduce breaking changes
+  - Maintain code quality and consistency with existing standards
+  constraints:
+  - Use Python 3.12+
+  - Avoid introducing new dependencies unless necessary
+  - Ensure compatibility with existing development workflows and tools
+implementation:
+- task: Create pyproject.toml with build-system configuration
+  details: Define the build system requirements and backend in pyproject.toml to specify
+    setuptools as the build backend.
+  files:
+  - pyproject.toml
+  acceptance: pyproject.toml contains a [build-system] table with requires and build-backend
+    fields correctly set.
+  estimated_effort: low
+  step_id: e68aa0fe:0
+  sub_spec_id: null
+- task: Transfer project metadata to pyproject.toml
+  details: Move static project metadata such as name, version, description, authors,
+    and license from setup.py to the [project] table in pyproject.toml.
+  files:
+  - pyproject.toml
+  - setup.py
+  acceptance: pyproject.toml includes all necessary project metadata under the [project]
+    table.
+  estimated_effort: low
+  step_id: e68aa0fe:1
+  sub_spec_id: null
+- task: Define dependencies in pyproject.toml
+  details: List all runtime dependencies under the dependencies field in the [project]
+    table of pyproject.toml.
+  files:
+  - pyproject.toml
+  - setup.py
+  acceptance: All runtime dependencies are accurately listed in pyproject.toml under
+    [project].dependencies.
+  estimated_effort: low
+  step_id: e68aa0fe:2
+  sub_spec_id: null
+- task: Configure optional dependencies in pyproject.toml
+  details: Define optional dependencies (extras) under the optional-dependencies field
+    in the [project] table of pyproject.toml.
+  files:
+  - pyproject.toml
+  - setup.py
+  acceptance: Optional dependencies are correctly specified in pyproject.toml under
+    [project].optional-dependencies.
+  estimated_effort: low
+  step_id: e68aa0fe:3
+  sub_spec_id: null
+- task: Set up entry points in pyproject.toml
+  details: Define console scripts and other entry points under the [project.scripts]
+    table in pyproject.toml.
+  files:
+  - pyproject.toml
+  - setup.py
+  acceptance: Entry points are correctly defined in pyproject.toml under [project.scripts].
+  estimated_effort: low
+  step_id: e68aa0fe:4
+  sub_spec_id: null
+- task: Configure setuptools options in pyproject.toml
+  details: Transfer setuptools-specific configurations from setup.cfg to the [tool.setuptools]
+    table in pyproject.toml.
+  files:
+  - pyproject.toml
+  - setup.cfg
+  acceptance: Setuptools configurations are accurately represented in pyproject.toml
+    under [tool.setuptools].
+  estimated_effort: low
+  step_id: e68aa0fe:5
+  sub_spec_id: null
+- task: Include package data in pyproject.toml
+  details: Ensure include-package-data is set to true in the [tool.setuptools] table
+    of pyproject.toml to include package data as specified in MANIFEST.in.
+  files:
+  - pyproject.toml
+  - MANIFEST.in
+  acceptance: Package data inclusion is correctly configured in pyproject.toml.
+  estimated_effort: low
+  step_id: e68aa0fe:6
+  sub_spec_id: null
+- task: Test build and installation processes
+  details: Verify that building and installing the package using pyproject.toml works
+    as expected, ensuring compatibility with existing workflows.
+  files:
+  - pyproject.toml
+  acceptance: Package builds and installs successfully using pyproject.toml without
+    errors.
+  estimated_effort: medium
+  step_id: e68aa0fe:7
+  sub_spec_id: null
+- task: Update documentation and development workflows
+  details: Revise project documentation to reflect the migration to pyproject.toml
+    and update any development workflows accordingly.
+  files:
+  - README.md
+  - CONTRIBUTING.md
+  acceptance: Documentation and workflows are updated to reference pyproject.toml.
+  estimated_effort: low
+  step_id: e68aa0fe:8
+  sub_spec_id: null
+- task: Deprecate setup.py and setup.cfg
+  details: Remove or minimize setup.py and setup.cfg, ensuring they are no longer
+    required for building and installing the package.
+  files:
+  - setup.py
+  - setup.cfg
+  acceptance: setup.py and setup.cfg are deprecated or removed without affecting package
+    functionality.
+  estimated_effort: low
+  step_id: e68aa0fe:9
+  sub_spec_id: null
+review_notes:
+- Ensure that the `pyproject.toml` file includes a `[build-system]` table specifying
+  `setuptools` as the build backend, as this is essential for modern Python packaging
+  standards. ([packaging.python.org](https://packaging.python.org/guides/modernize-setup-py-project/?utm_source=openai))
+- Retain a minimal `setup.py` file to maintain compatibility with legacy tools and
+  workflows that may still rely on it. ([packaging.python.org](https://packaging.python.org/guides/modernize-setup-py-project/?utm_source=openai))
+- Verify that all static project metadata, such as name, version, and dependencies,
+  are accurately defined under the `[project]` table in `pyproject.toml` to adhere
+  to PEP 621 standards. ([packaging.python.org](https://packaging.python.org/guides/modernize-setup-py-project/?utm_source=openai))
+- Update project documentation to reflect the migration to `pyproject.toml`, ensuring
+  that all references to `setup.py` and `setup.cfg` are revised to prevent confusion.
+  ([packaging.python.org](https://packaging.python.org/guides/modernize-setup-py-project/?utm_source=openai))
+context_parameters: null
+feedback_history: []

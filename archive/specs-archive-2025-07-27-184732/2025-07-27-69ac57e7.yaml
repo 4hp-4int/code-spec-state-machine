@@ -1,0 +1,137 @@
+metadata:
+  id: 69ac57e7
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T13:56:00.324683'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: '56759291'
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies: []
+  files_involved:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  - webui/static/styles.css
+requirements:
+  functional:
+  - Review all UI templates for clarity of language and logical navigation structure.
+  - Ensure all interactive elements are accessible via keyboard navigation.
+  - Add or improve ARIA labels and roles for accessibility compliance.
+  - Refine visual hierarchy and spacing in styles.css to enhance readability and reduce
+    cognitive load.
+  - Minimize user friction by streamlining navigation and reducing unnecessary steps.
+  non_functional:
+  - All changes must maintain compatibility with existing functionality.
+  - Accessibility improvements should follow WCAG 2.1 AA guidelines where practical.
+  - Visual adjustments must not degrade usability on Windows or other supported platforms.
+  constraints:
+  - Do not introduce new dependencies.
+  - Do not alter backend logic or data models.
+  - All changes must be limited to the specified template and style files.
+  - Maintain human-readable, well-commented code for solo developer maintainability.
+implementation:
+- task: Audit and revise template language for clarity and consistency
+  details: Review all user-facing text in base.html, index.html, spec_detail.html,
+    and task_detail.html. Edit headings, labels, and instructions for clarity, brevity,
+    and consistency. Ensure terminology is consistent across pages.
+  files:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  acceptance: All user-facing text is clear, concise, and consistent. No ambiguous
+    or redundant language remains.
+  estimated_effort: low
+  step_id: 69ac57e7:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Evaluate and improve logical navigation structure
+  details: Check navigation menus, links, and page flows for logical order and minimal
+    user friction. Adjust navigation elements to ensure users can easily move between
+    main pages (index, spec detail, task detail) with minimal steps.
+  files:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  acceptance: Navigation between all main pages is logical and requires no more than
+    two clicks from any page. No dead ends or confusing flows.
+  estimated_effort: low
+  step_id: 69ac57e7:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Enhance accessibility with ARIA labels and keyboard navigation
+  details: Add or improve ARIA labels, roles, and attributes for all interactive elements
+    (buttons, links, forms). Ensure all navigation and actions are accessible via
+    keyboard (tab order, focus states).
+  files:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  acceptance: All interactive elements have appropriate ARIA attributes. Full navigation
+    and interaction possible using keyboard only.
+  estimated_effort: medium
+  step_id: 69ac57e7:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers both ARIA markup and keyboard accessibility,
+    which may require iterative template adjustments'
+  progress: null
+  approvals: null
+- task: Refine visual hierarchy and spacing in styles.css
+  details: Adjust font sizes, weights, colors, and spacing in styles.css to improve
+    readability and highlight key actions. Ensure sufficient contrast and logical
+    grouping of related elements.
+  files:
+  - webui/static/styles.css
+  acceptance: Visual hierarchy is clear; headings, buttons, and links are easily distinguishable.
+    All text meets minimum contrast requirements.
+  estimated_effort: low
+  step_id: 69ac57e7:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Manual accessibility and user flow verification
+  details: Test all pages using keyboard navigation and a screen reader. Verify that
+    all improvements work as intended and that user flow is smooth and accessible.
+  files:
+  - webui/templates/base.html
+  - webui/templates/index.html
+  - webui/templates/spec_detail.html
+  - webui/templates/task_detail.html
+  - webui/static/styles.css
+  acceptance: All pages are navigable and usable via keyboard and screen reader. No
+    accessibility blockers or major usability issues remain.
+  estimated_effort: low
+  step_id: 69ac57e7:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- Ensure all interactive elements are accessible via keyboard navigation by using
+  native HTML elements like `<button>` and `<a>` instead of `<div>` or `<span>` with
+  ARIA roles. ([codeblam.com](https://codeblam.com/blog/web-accessibility/aria-best-practices-for-making-accessible-web-apps/?utm_source=openai))
+- Implement ARIA attributes such as `aria-expanded` and `aria-controls` to enhance
+  accessibility for dynamic content, ensuring they are updated dynamically to reflect
+  the current state. ([w3.org](https://www.w3.org/TR/2024/WD-wai-aria-1.3-20240123/?utm_source=openai))
+- Maintain a logical heading structure using `<h1>` to `<h6>` to improve navigation
+  for screen reader users, ensuring a clear visual hierarchy. ([rtcamp.com](https://rtcamp.com/handbook/developing-for-block-editor-and-site-editor/accessibility-best-practices/?utm_source=openai))
+- Test all pages with screen readers and keyboard navigation to identify and address
+  any accessibility issues, ensuring compliance with WCAG 2.1 AA guidelines. ([accreditly.io](https://accreditly.io/articles/in-depth-guide-to-implementing-aria-for-web-accessibility?utm_source=openai))
+context_parameters: null
+feedback_history: []
+work_logs: null

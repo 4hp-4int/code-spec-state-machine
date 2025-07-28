@@ -1,0 +1,126 @@
+metadata:
+  id: 4f77ed39
+  title: Specification 4f77ed39
+  inherits: []
+  created: '2025-07-26T21:35:39.713447'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 1d8de70e
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: sqlite3
+    description: Standard library for SQLite database operations
+  - name: hashlib
+    description: Standard library for hashing operations
+  - name: openai
+    description: Core dependency for interacting with OpenAI API
+    version: 1.97.1
+  files_involved:
+  - agentic_spec/core.py
+requirements:
+  functional:
+  - Implement a caching mechanism for OpenAI API calls using SQLite to reduce costs
+    and improve performance.
+  - Ensure that identical API requests return cached responses when available.
+  - Provide a mechanism to invalidate or refresh cached responses as needed.
+  non_functional:
+  - Maintain compatibility with Python 3.12+.
+  - Ensure the caching mechanism adheres to existing coding standards and design patterns.
+  - Implement comprehensive error handling with informative messages.
+  - Write unit tests for all new functionality.
+  constraints:
+  - Use Python's standard libraries (sqlite3 and hashlib) to avoid introducing new
+    dependencies.
+  - Store all data in human-readable YAML format where applicable.
+  - Maintain Windows compatibility, including proper handling of CRLF/LF line endings.
+implementation:
+- task: Design the caching schema in SQLite.
+  details: Create a table named 'api_cache' with columns for the hashed request key,
+    response data, and timestamp.
+  files:
+  - agentic_spec/core.py
+  acceptance: The SQLite database contains an 'api_cache' table with the specified
+    schema.
+  estimated_effort: low
+  step_id: 4f77ed39:0
+  sub_spec_id: null
+- task: Implement a function to generate a unique cache key for each API request.
+  details: Use hashlib to create an MD5 hash of the API request parameters to serve
+    as the cache key.
+  files:
+  - agentic_spec/core.py
+  acceptance: The function returns a consistent and unique hash for identical API
+    request parameters.
+  estimated_effort: low
+  step_id: 4f77ed39:1
+  sub_spec_id: null
+- task: Develop a function to retrieve cached responses from the SQLite database.
+  details: Query the 'api_cache' table using the generated cache key to fetch the
+    stored response if it exists and is still valid.
+  files:
+  - agentic_spec/core.py
+  acceptance: The function returns the cached response for a given cache key if available;
+    otherwise, it returns None.
+  estimated_effort: medium
+  step_id: 4f77ed39:2
+  sub_spec_id: null
+- task: Implement a function to store new API responses in the cache.
+  details: Insert the cache key, response data, and current timestamp into the 'api_cache'
+    table.
+  files:
+  - agentic_spec/core.py
+  acceptance: The function successfully stores the API response in the SQLite database
+    with the correct cache key and timestamp.
+  estimated_effort: medium
+  step_id: 4f77ed39:3
+  sub_spec_id: null
+- task: Integrate the caching mechanism into the existing OpenAI API call workflow.
+  details: Modify the API call function to check for a cached response before making
+    a new API request and to store the response in the cache after a successful API
+    call.
+  files:
+  - agentic_spec/core.py
+  acceptance: The system utilizes cached responses when available and stores new responses
+    in the cache, reducing redundant API calls.
+  estimated_effort: high
+  step_id: 4f77ed39:4
+  sub_spec_id: null
+- task: Implement a cache invalidation strategy.
+  details: Provide a mechanism to invalidate or refresh cached responses based on
+    a defined time-to-live (TTL) or manual triggers.
+  files:
+  - agentic_spec/core.py
+  acceptance: The system can invalidate or refresh cached responses as needed, ensuring
+    data remains current.
+  estimated_effort: medium
+  step_id: 4f77ed39:5
+  sub_spec_id: null
+- task: Write unit tests for the caching functions.
+  details: Develop tests to verify the correctness of cache key generation, response
+    retrieval, response storage, and cache invalidation.
+  files:
+  - tests/test_core.py
+  acceptance: All caching functions have corresponding unit tests that pass successfully.
+  estimated_effort: medium
+  step_id: 4f77ed39:6
+  sub_spec_id: null
+review_notes:
+- '**Technical Gotchas**: Python 3.12 introduced changes to the `sqlite3` module,
+  including deprecation of default adapters and converters for `datetime` and `timestamp`
+  types. Ensure you implement custom adapters and converters as per the updated documentation
+  to avoid deprecation warnings. ([docs.python.org](https://docs.python.org/3.13/library/sqlite3.html?utm_source=openai))'
+- '**Integration Points**: The specification lacks details on how the caching mechanism
+  will integrate with the existing OpenAI API call workflow. Clarify how the caching
+  functions will be invoked within the current codebase to prevent potential conflicts
+  or redundant code paths.'
+- '**Scope Creep**: Implementing a cache invalidation strategy with both time-to-live
+  (TTL) and manual triggers may be ambitious for a single feature. Consider breaking
+  this down into separate tasks to ensure manageable development and testing phases.'
+- '**Quick Wins**: Instead of manually handling SQLite operations, consider using
+  a lightweight ORM like `peewee` to simplify database interactions and reduce boilerplate
+  code, while still maintaining control over the schema and queries.'
+context_parameters: null
+feedback_history: []

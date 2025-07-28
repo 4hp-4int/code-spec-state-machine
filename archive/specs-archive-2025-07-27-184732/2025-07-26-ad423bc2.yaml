@@ -1,0 +1,115 @@
+metadata:
+  id: ad423bc2
+  title: Specification ad423bc2
+  inherits: []
+  created: '2025-07-26T21:35:40.559178'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 1d8de70e
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pyyaml
+    version: 6.0.2
+    description: Core dependency for YAML parsing and serialization
+  files_involved:
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+requirements:
+  functional:
+  - Implement semantic versioning (SemVer) for templates to track changes and ensure
+    compatibility.
+  - Prompt users for migration when template versions are updated to maintain consistency.
+  non_functional:
+  - Ensure backward compatibility with existing templates.
+  - Maintain clear and informative user prompts regarding template version changes.
+  constraints:
+  - Adhere to the existing codebase structure and coding standards.
+  - Avoid introducing new dependencies unless absolutely necessary.
+implementation:
+- task: Define a versioning scheme for templates using SemVer.
+  details: Establish a versioning convention following the SemVer format (MAJOR.MINOR.PATCH)
+    to indicate the nature of changes in templates.
+  files: []
+  acceptance: A documented versioning scheme is established and communicated to the
+    development team.
+  estimated_effort: low
+  step_id: ad423bc2:0
+  sub_spec_id: null
+- task: Add a 'version' field to each template's metadata.
+  details: Modify existing templates to include a 'version' field in their metadata,
+    adhering to the SemVer format.
+  files:
+  - templates/*.yaml
+  acceptance: All templates contain a 'version' field with a valid SemVer value.
+  estimated_effort: medium
+  step_id: ad423bc2:1
+  sub_spec_id: null
+- task: Update 'template_loader.py' to parse and validate the 'version' field.
+  details: Enhance the template loading mechanism to read the 'version' field and
+    validate its format using regular expressions.
+  files:
+  - agentic_spec/template_loader.py
+  acceptance: Templates are loaded only if they contain a valid 'version' field in
+    SemVer format.
+  estimated_effort: medium
+  step_id: ad423bc2:2
+  sub_spec_id: null
+- task: Implement version comparison logic in 'template_validator.py'.
+  details: Develop functions to compare template versions and determine if an update
+    or migration is necessary.
+  files:
+  - agentic_spec/template_validator.py
+  acceptance: The system can accurately compare template versions and identify when
+    migrations are needed.
+  estimated_effort: medium
+  step_id: ad423bc2:3
+  sub_spec_id: null
+- task: Create a migration prompt mechanism for users.
+  details: Design and implement a user prompt that notifies and guides users through
+    the migration process when a template version update is detected.
+  files:
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+  acceptance: Users receive clear prompts and instructions when template versions
+    are updated, facilitating smooth migrations.
+  estimated_effort: high
+  step_id: ad423bc2:4
+  sub_spec_id: null
+- task: Develop unit tests for versioning and migration functionalities.
+  details: Write comprehensive unit tests to ensure the correctness of version parsing,
+    validation, comparison, and user prompting mechanisms.
+  files:
+  - tests/test_template_loader.py
+  - tests/test_template_validator.py
+  acceptance: All new functionalities are covered by unit tests, and tests pass successfully.
+  estimated_effort: medium
+  step_id: ad423bc2:5
+  sub_spec_id: null
+- task: Update documentation to reflect template versioning and migration processes.
+  details: Revise existing documentation to include information on the new versioning
+    scheme, how to handle template updates, and the migration process.
+  files:
+  - docs/template_versioning.md
+  acceptance: Documentation is updated and provides clear guidance on template versioning
+    and migration.
+  estimated_effort: low
+  step_id: ad423bc2:6
+  sub_spec_id: null
+review_notes:
+- The spec assumes regex validation for SemVer, but using a well-tested library like
+  'semver' (which is lightweight and pure Python) is safer and less error-prone than
+  hand-rolled regex. Consider making an exception to the 'no new dependencies' rule
+  for this.
+- "Be explicit about how to handle templates missing a 'version' field\u2014should\
+  \ they be rejected, defaulted, or flagged for migration? This is a likely edge case\
+  \ in real-world usage."
+- The migration prompt mechanism could become complex if templates have breaking changes.
+  Define a minimal viable prompt (e.g., CLI yes/no with clear rollback instructions)
+  to avoid scope creep.
+- Ensure that version comparison logic is robust against pre-release and build metadata
+  in SemVer (e.g., '1.0.0-alpha'). Many naive implementations miss these cases.
+context_parameters: null
+feedback_history: []

@@ -1,0 +1,164 @@
+{
+  "dataclass_models": [],
+  "pydantic_models": [
+    {
+      "name": "DependencyModel",
+      "line": 58,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "SpecMetadata",
+      "line": 68,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "SpecContext",
+      "line": 85,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "SpecRequirement",
+      "line": 99,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "TaskProgress",
+      "line": 109,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "ApprovalRecord",
+      "line": 122,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "ImplementationStep",
+      "line": 134,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "ContextParameters",
+      "line": 156,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "FeedbackData",
+      "line": 170,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "WorkLogEntry",
+      "line": 183,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "ProgrammingSpec",
+      "line": 197,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "SpecificationDB",
+      "line": 243,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "TaskDB",
+      "line": 287,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "ApprovalDB",
+      "line": 330,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    },
+    {
+      "name": "WorkLogDB",
+      "line": 344,
+      "decorators": [],
+      "bases": [
+        "BaseModel"
+      ]
+    }
+  ],
+  "enum_models": [
+    {
+      "name": "TaskStatus",
+      "line": 13,
+      "decorators": [],
+      "bases": [
+        "str",
+        "Enum"
+      ]
+    },
+    {
+      "name": "ApprovalLevel",
+      "line": 24,
+      "decorators": [],
+      "bases": [
+        "str",
+        "Enum"
+      ]
+    },
+    {
+      "name": "SpecStatus",
+      "line": 33,
+      "decorators": [],
+      "bases": [
+        "str",
+        "Enum"
+      ]
+    },
+    {
+      "name": "WorkflowStatus",
+      "line": 43,
+      "decorators": [],
+      "bases": [
+        "str",
+        "Enum"
+      ]
+    }
+  ],
+  "other_models": []
+}

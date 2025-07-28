@@ -1,0 +1,134 @@
+metadata:
+  id: a14041e9
+  title: 'Expand this implementation step into a detailed sub-specification:
+
+
+    Parent Sp...'
+  inherits: []
+  created: '2025-07-27T11:23:08.335436'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: 3d9915ba
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: pyyaml
+    version: 6.0.2
+  - name: pydantic
+    version: N/A (builtin)
+  - name: openai
+    version: 1.97.1
+  - name: typer
+    version: 0.12.0
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - specs/
+requirements:
+  functional:
+  - Read all YAML files from the specs/ directory.
+  - Validate each YAML file's contents against the appropriate Pydantic models.
+  - Insert or update records in the database using AsyncSpecManager.
+  - Support both full migration (all files) and incremental migration (only new or
+    changed files).
+  - Ensure atomicity and rollback on error during migration.
+  non_functional:
+  - Comprehensive error handling with informative messages.
+  - Maintain lint compliance and follow code quality standards.
+  - Support async/await for all I/O and database operations.
+  - Ensure migration is idempotent and safe to re-run.
+  constraints:
+  - Use only existing dependencies; do not introduce new ones.
+  - Maintain compatibility with Python 3.12+.
+  - Do not use external databases; use file-based storage.
+  - Follow established codebase structure and coding standards.
+  - All data must remain in human-readable YAML format.
+implementation:
+- task: Implement YAML file discovery and change detection logic
+  details: Develop functions to enumerate all YAML files in the specs/ directory,
+    and determine which files are new or have changed since the last migration. Use
+    file hashes or timestamps for change detection. Expose both full and incremental
+    modes.
+  files:
+  - agentic_spec/core.py
+  acceptance: All YAML files in specs/ can be listed; incremental mode reliably detects
+    new/changed files; unit tests cover edge cases.
+  estimated_effort: medium
+  step_id: a14041e9:0
+  sub_spec_id: null
+  decomposition_hint: 'composite: involves both file system traversal and change detection
+    logic'
+  progress: null
+  approvals: null
+- task: Validate YAML file contents against Pydantic models
+  details: For each discovered YAML file, load its contents and validate against the
+    appropriate Pydantic model(s) defined in models.py. Collect and report validation
+    errors with clear messages.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: All valid files pass validation; invalid files produce informative error
+    messages; validation logic is unit tested.
+  estimated_effort: medium
+  step_id: a14041e9:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers both YAML parsing and Pydantic validation'
+  progress: null
+  approvals: null
+- task: Implement bulk and incremental migration logic using AsyncSpecManager
+  details: Develop async functions to insert or update records in the database via
+    AsyncSpecManager for all validated files. Ensure both full and incremental migration
+    paths are supported. Track migration status for each file.
+  files:
+  - agentic_spec/core.py
+  acceptance: All valid files are inserted/updated as expected in both migration modes;
+    migration status is tracked; integration tests verify correct behavior.
+  estimated_effort: high
+  step_id: a14041e9:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: spans async database operations, status tracking,
+    and migration mode handling'
+  progress: null
+  approvals: null
+- task: Ensure atomicity and implement rollback on migration error
+  details: Wrap migration operations in an atomic transaction-like context. If any
+    error occurs during migration, rollback all changes made during that run and report
+    the error. Ensure no partial updates are left.
+  files:
+  - agentic_spec/core.py
+  acceptance: On migration error, no partial changes persist; error is logged and
+    reported; rollback logic is covered by tests.
+  estimated_effort: medium
+  step_id: a14041e9:3
+  sub_spec_id: null
+  decomposition_hint: 'composite: requires error handling, state tracking, and rollback
+    logic'
+  progress: null
+  approvals: null
+- task: Write comprehensive unit and integration tests for migration engine
+  details: Develop tests covering file discovery, change detection, validation, migration
+    (both modes), error handling, and rollback. Use mocking for async operations and
+    file I/O as needed.
+  files:
+  - tests/
+  acceptance: All migration engine features are covered by tests; tests pass and cover
+    edge cases; code coverage meets project standards.
+  estimated_effort: medium
+  step_id: a14041e9:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: covers multiple aspects of migration logic and error
+    handling'
+  progress: null
+  approvals: null
+review_notes:
+- "```json\n[\n  \"Ensure Pydantic is explicitly installed and up-to-date, as it is\
+  \ not a built-in module in Python 3.12. ([github.com](https://github.com/pydantic/pydantic/issues/9607?utm_source=openai))\"\
+  ,\n  \"Implement robust error handling and rollback mechanisms to maintain data\
+  \ integrity during migration failures.\",\n  \"Develop unit tests for file discovery,\
+  \ change detection, validation, migration modes, error handling, and rollback to\
+  \ ensure comprehensive coverage.\"\n]\n``` "
+context_parameters: null
+feedback_history: []
+work_logs: null

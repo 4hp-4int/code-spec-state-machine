@@ -1,0 +1,145 @@
+{
+  "model_classification": {
+    "dataclass_models": [
+      {
+        "name": "SpecMetadata",
+        "line": 69,
+        "fields": ["id", "title", "inherits", "created", "version", "status", "parent_spec_id", "child_spec_ids", "author", "last_modified"],
+        "has_to_dict": true,
+        "complexity": "medium"
+      },
+      {
+        "name": "SpecContext",
+        "line": 100,
+        "fields": ["project", "domain", "dependencies", "files_involved"],
+        "has_to_dict": true,
+        "complexity": "high",
+        "notes": "Mixed dependency types (dict | DependencyModel)"
+      },
+      {
+        "name": "SpecRequirement",
+        "line": 126,
+        "fields": ["functional", "non_functional", "constraints"],
+        "has_to_dict": true,
+        "complexity": "low"
+      },
+      {
+        "name": "ImplementationStep",
+        "line": 168,
+        "fields": ["task", "details", "files", "acceptance", "estimated_effort", "step_id", "sub_spec_id", "decomposition_hint", "progress", "approvals"],
+        "has_to_dict": true,
+        "complexity": "high",
+        "notes": "Contains Pydantic models as fields (TaskProgress, ApprovalRecord)"
+      },
+      {
+        "name": "ContextParameters",
+        "line": 211,
+        "fields": ["user_role", "target_audience", "desired_tone", "complexity_level", "time_constraints", "existing_codebase_context", "custom_parameters"],
+        "has_to_dict": true,
+        "complexity": "medium"
+      },
+      {
+        "name": "FeedbackData",
+        "line": 249,
+        "fields": ["rating", "accuracy_score", "relevance_score", "comments", "suggested_improvements", "timestamp"],
+        "has_to_dict": true,
+        "complexity": "low"
+      },
+      {
+        "name": "ProgrammingSpec",
+        "line": 286,
+        "fields": ["metadata", "context", "requirements", "implementation", "review_notes", "context_parameters", "feedback_history", "work_logs"],
+        "has_to_dict": true,
+        "has_from_dict": true,
+        "complexity": "very_high",
+        "notes": "Main orchestration model, complex serialization logic"
+      }
+    ],
+    "pydantic_models": [
+      {
+        "name": "DependencyModel",
+        "line": 58,
+        "config": "extra='allow'",
+        "fields": ["name", "version", "description"]
+      },
+      {
+        "name": "TaskProgress",
+        "line": 142,
+        "config": "extra='allow'",
+        "fields": ["status", "started_at", "completed_at", "time_spent_minutes", "completion_notes", "blockers"]
+      },
+      {
+        "name": "ApprovalRecord",
+        "line": 155,
+        "config": "extra='allow'",
+        "fields": ["level", "approved_by", "approved_at", "comments", "override_reason"]
+      },
+      {
+        "name": "WorkLogEntry",
+        "line": 271,
+        "config": "extra='allow'",
+        "fields": ["spec_id", "step_id", "action", "timestamp", "duration_minutes", "notes", "metadata"]
+      },
+      {
+        "name": "SpecificationDB",
+        "line": 386,
+        "config": "extra='allow'",
+        "fields": ["id", "title", "inherits", "created", "updated", "version", "status", "parent_spec_id", "child_spec_ids", "workflow_status", "is_completed", "completed_at", "last_accessed", "completion_percentage", "priority", "reviewed_at", "approved_at", "implemented_at", "created_by", "last_updated_by", "tags", "context", "requirements", "review_notes", "context_parameters", "tasks", "work_logs"],
+        "notes": "Database model with enhanced tracking"
+      },
+      {
+        "name": "TaskDB",
+        "line": 430,
+        "config": "extra='allow'",
+        "fields": ["id", "spec_id", "step_index", "task", "details", "files", "acceptance", "estimated_effort", "sub_spec_id", "decomposition_hint", "status", "started_at", "completed_at", "time_spent_minutes", "completion_notes", "blockers", "is_completed", "assigned_to", "priority", "last_accessed", "estimated_completion_date", "actual_effort_minutes", "dependencies", "blocked_at", "unblocked_at", "approved_at", "rejected_at", "approvals"],
+        "notes": "Database model for tasks with enhanced tracking"
+      },
+      {
+        "name": "ApprovalDB",
+        "line": 473,
+        "config": "extra='allow'",
+        "fields": ["id", "task_id", "level", "approved_by", "approved_at", "comments", "override_reason"]
+      },
+      {
+        "name": "WorkLogDB",
+        "line": 487,
+        "config": "extra='allow'",
+        "fields": ["id", "spec_id", "task_id", "action", "timestamp", "duration_minutes", "notes", "metadata"]
+      }
+    ],
+    "enum_models": [
+      {
+        "name": "TaskStatus",
+        "line": 13,
+        "base": "str, Enum",
+        "values": ["PENDING", "IN_PROGRESS", "COMPLETED", "BLOCKED", "APPROVED", "REJECTED"]
+      },
+      {
+        "name": "ApprovalLevel",
+        "line": 24,
+        "base": "str, Enum",
+        "values": ["SELF", "PEER", "AI", "ADMIN"]
+      },
+      {
+        "name": "SpecStatus",
+        "line": 33,
+        "base": "str, Enum",
+        "values": ["DRAFT", "REVIEWED", "APPROVED", "IMPLEMENTED", "ARCHIVED"]
+      },
+      {
+        "name": "WorkflowStatus",
+        "line": 43,
+        "base": "str, Enum",
+        "values": ["CREATED", "IN_PROGRESS", "READY_FOR_REVIEW", "UNDER_REVIEW", "CHANGES_REQUESTED", "READY_FOR_IMPLEMENTATION", "IMPLEMENTING", "TESTING", "COMPLETED", "ON_HOLD"]
+      }
+    ]
+  },
+  "summary": {
+    "total_classes": 19,
+    "dataclass_count": 7,
+    "pydantic_count": 8,
+    "enum_count": 4,
+    "conversion_needed": 7,
+    "high_complexity_conversions": ["SpecContext", "ImplementationStep", "ProgrammingSpec"]
+  }
+}
