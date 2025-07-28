@@ -8,6 +8,7 @@ import asyncio
 import dataclasses
 import json
 import logging
+import os
 from pathlib import Path
 
 import typer
@@ -162,11 +163,16 @@ def init_project(
         specs_path = Path(specs_dir)
 
         print("📁 Creating directories...")
-        spec_templates_path.mkdir(exist_ok=True)
-        prompt_templates_path.mkdir(exist_ok=True)
-        specs_path.mkdir(exist_ok=True)
-        logs_path = Path("logs")
-        logs_path.mkdir(exist_ok=True)
+        try:
+            spec_templates_path.mkdir(exist_ok=True)
+            prompt_templates_path.mkdir(exist_ok=True)
+            specs_path.mkdir(exist_ok=True)
+            logs_path = Path("logs")
+            logs_path.mkdir(exist_ok=True)
+        except OSError as e:
+            print(f"❌ Error creating directories: {e}")
+            print("💡 Check that you have write permissions in the current directory")
+            raise
 
         print(f"  ✅ {spec_templates_dir}/")
         print(f"  ✅ {prompt_templates_dir}/")
@@ -177,22 +183,59 @@ def init_project(
         # Interactive configuration
         print("⚙️  Let's configure your AI provider...")
 
-        # Ask for AI provider
-        provider_choice = typer.prompt(
-            "Choose AI provider",
-            type=typer.Choice(["openai"], case_sensitive=False),
-            default="openai",
-        )
+        # Ask for AI provider - avoid typer.Choice with single option to prevent errors
+        available_providers = ["openai"]
+        if len(available_providers) == 1:
+            provider_choice = available_providers[0]
+            print(f"Using AI provider: {provider_choice}")
+        else:
+            provider_choice = typer.prompt(
+                "Choose AI provider",
+                type=typer.Choice(available_providers, case_sensitive=False),
+                default="openai",
+            )
 
-        # Ask for API key (optional)
-        api_key = typer.prompt(
-            "Enter your OpenAI API key (or press Enter to use OPENAI_API_KEY env var)",
-            default="",
-            hide_input=True,
-        )
+        # Ask for API key (optional) - handle environment detection gracefully
+        existing_key = os.environ.get("OPENAI_API_KEY", "")
+        if existing_key:
+            print(f"Found OPENAI_API_KEY environment variable (***{existing_key[-4:]})")
+            try:
+                use_env_key = typer.confirm(
+                    "Use existing environment variable?", default=True
+                )
+                if use_env_key:
+                    api_key = ""  # Will use env var
+                else:
+                    api_key = typer.prompt(
+                        "Enter your OpenAI API key",
+                        default="",
+                        hide_input=True,
+                    )
+            except (typer.Abort, KeyboardInterrupt):
+                # Handle non-interactive environments or user cancellation
+                print("Using existing environment variable (non-interactive mode)")
+                api_key = ""  # Will use env var
+        else:
+            try:
+                api_key = typer.prompt(
+                    "Enter your OpenAI API key (or press Enter to use OPENAI_API_KEY env var later)",
+                    default="",
+                    hide_input=True,
+                )
+            except (typer.Abort, KeyboardInterrupt):
+                print(
+                    "No API key provided - you can set OPENAI_API_KEY environment variable later"
+                )
+                api_key = ""
 
         # Ask for project name
-        project_name = typer.prompt("What's your project name?", default="my-project")
+        try:
+            project_name = typer.prompt(
+                "What's your project name?", default="my-project"
+            )
+        except (typer.Abort, KeyboardInterrupt):
+            print("Using default project name: my-project")
+            project_name = "my-project"
 
         # Create configuration
         config_data = {
@@ -227,20 +270,29 @@ def init_project(
             },
         }
 
-        # Write configuration file
+        # Write configuration file - handle file permissions gracefully
         config_file = Path("agentic_spec_config.yaml")
-        if config_file.exists() and not force:
-            overwrite = typer.confirm(
-                f"Configuration file {config_file} already exists. Overwrite?"
-            )
-            if not overwrite:
-                print("❌ Setup cancelled.")
-                return
+        try:
+            if config_file.exists() and not force:
+                try:
+                    overwrite = typer.confirm(
+                        f"Configuration file {config_file} already exists. Overwrite?"
+                    )
+                    if not overwrite:
+                        print("❌ Setup cancelled.")
+                        return
+                except (typer.Abort, KeyboardInterrupt):
+                    print("❌ Setup cancelled (non-interactive mode).")
+                    return
 
-        with config_file.open("w") as f:
-            yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
+            with config_file.open("w") as f:
+                yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-        print(f"  ✅ {config_file}")
+            print(f"  ✅ {config_file}")
+        except (OSError, PermissionError) as e:
+            print(f"  ❌ Error creating config file: {e}")
+            print("  💡 Try running from a directory where you have write permissions")
+            return
         print()
 
         # Create base spec templates
@@ -261,9 +313,14 @@ def init_project(
             if success:
                 print("  ✅ Foundation spec created")
             else:
-                print("  ⚠️  Warning: Could not create foundation spec")
+                print(
+                    "  ⚠️  Warning: Could not create foundation spec (this is optional)"
+                )
+        except ImportError as e:
+            print(f"  ⚠️  Warning: Import error creating foundation spec: {e}")
         except Exception as e:
             print(f"  ⚠️  Warning: Could not create foundation spec: {e}")
+            print("  💡 You can create it later with: agentic-spec sync-foundation")
 
         # Create basic prompt templates
         print("✏️  Creating basic prompt templates...")
@@ -292,9 +349,25 @@ def init_project(
             print("   export OPENAI_API_KEY=your-api-key-here")
             print()
 
+    except KeyboardInterrupt:
+        print("❌ Initialization cancelled by user.")
+        raise typer.Exit(1) from None
+    except PermissionError as e:
+        logger.exception("Permission error during project initialization")
+        print(f"❌ Permission error: {e}")
+        print("💡 Try running from a directory where you have write permissions")
+        print("💡 Or run with appropriate permissions")
+        raise typer.Exit(1) from None
+    except OSError as e:
+        logger.exception("OS error during project initialization")
+        print(f"❌ File system error: {e}")
+        print("💡 Check that the directory exists and is writable")
+        raise typer.Exit(1) from None
     except Exception as e:
         logger.exception("Error during project initialization")
         print(f"❌ Initialization failed: {e}")
+        print("💡 Try running with --force to override existing files")
+        print("💡 Ensure you have write permissions in the current directory")
         raise typer.Exit(1) from None
 
 

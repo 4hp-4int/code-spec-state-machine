@@ -1,0 +1,176 @@
+metadata:
+  id: e9bfbf4b
+  title: Enhance spec detail metadata rendering and add task tree visualization for
+    su...
+  inherits:
+  - web-api
+  created: '2025-07-27T23:43:02.257389'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+  author: null
+  last_modified: '2025-07-28T08:25:29.357725'
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - core.py
+  - graph_visualization.py
+  - models.py
+  - cli.py
+  - template_loader.py
+  - template_validator.py
+  - tests/test_graph_visualization.py
+  - tests/test_core.py
+requirements:
+  functional:
+  - Render enhanced metadata for each specification, including author, creation date,
+    last modified, status, and parent/child relationships.
+  - Visualize the task tree of sub-specifications as a hierarchical graph, showing
+    dependencies and implementation status.
+  - Allow CLI users to request metadata and task tree visualization for any specification
+    file.
+  - Support output of task tree visualization as both ASCII (for CLI) and image (PNG/SVG)
+    formats.
+  non_functional:
+  - Maintain compatibility with file-based YAML storage and existing CLI workflows.
+  - Ensure visualization features are performant for specs with up to 100 sub-specifications.
+  - Provide clear error messages if metadata is missing or the task tree cannot be
+    rendered.
+  - Document new CLI commands and update inline code comments.
+  constraints:
+  - Do not introduce new dependencies unless strictly necessary; prefer networkx and
+    matplotlib for graph rendering.
+  - 'Follow established coding standards: async/await where appropriate, type hints,
+    pathlib.Path for file ops, dataclasses/Pydantic for models.'
+  - All new features must be covered by unit tests.
+  - CLI interface must remain scriptable and automation-friendly.
+  - No breaking changes to existing specification generation or template inheritance
+    logic.
+implementation:
+- task: Extend specification metadata model
+  details: Update the Pydantic/dataclass models in models.py to include fields for
+    author, creation date, last modified, status, and parent/child relationships.
+    Ensure backward compatibility with existing YAML files by making new fields optional
+    and providing sensible defaults.
+  files:
+  - models.py
+  - template_loader.py
+  - template_validator.py
+  acceptance: Metadata fields are accessible in Python objects and correctly loaded
+    from/saved to YAML. Existing specs without new fields load without errors.
+  estimated_effort: medium
+  step_id: e9bfbf4b:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Implement enhanced metadata rendering in CLI
+  details: Add CLI commands/subcommands in cli.py to display detailed metadata for
+    a given spec file. Format output for readability in terminal, showing all available
+    metadata fields and relationships.
+  files:
+  - cli.py
+  - core.py
+  acceptance: Running the CLI with the new command displays enhanced metadata for
+    any spec file, with clear formatting and error handling for missing fields.
+  estimated_effort: medium
+  step_id: e9bfbf4b:1
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Develop task tree visualization logic
+  details: Leverage networkx to build a directed graph of sub-specifications based
+    on parent/child relationships. Implement rendering to ASCII (for CLI) and to image
+    (PNG/SVG) using matplotlib. Place core logic in graph_visualization.py.
+  files:
+  - graph_visualization.py
+  - core.py
+  acceptance: Given a spec file with sub-specs, the CLI can output a readable ASCII
+    tree and generate an image file representing the task tree. Handles cycles or
+    missing links gracefully.
+  estimated_effort: high
+  step_id: e9bfbf4b:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: high-effort task requiring breakdown'
+  progress: null
+  approvals: null
+- task: Integrate visualization features into CLI
+  details: Add CLI options to trigger ASCII or image visualization for any spec file.
+    Allow output file path specification for images. Ensure CLI remains automation-friendly
+    (no interactive prompts).
+  files:
+  - cli.py
+  - core.py
+  acceptance: CLI users can request task tree visualizations in both ASCII and image
+    formats, specifying output paths as needed. Commands are documented in CLI help.
+  estimated_effort: medium
+  step_id: e9bfbf4b:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: 'Testing: Unit and integration tests for metadata and visualization'
+  details: Write unit tests for metadata loading/rendering and for graph construction/visualization.
+    Add integration tests for CLI commands, using test spec files with varying complexity.
+  files:
+  - tests/test_graph_visualization.py
+  - tests/test_core.py
+  acceptance: All new features are covered by tests. Tests pass for specs with and
+    without enhanced metadata, and for various sub-spec tree structures.
+  estimated_effort: medium
+  step_id: e9bfbf4b:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: 'Documentation: Update user and developer docs'
+  details: Document new metadata fields, CLI commands, and visualization options in
+    README and inline code comments. Provide usage examples for solo developers.
+  files:
+  - README.md
+  - cli.py
+  - graph_visualization.py
+  acceptance: Documentation is clear, up-to-date, and includes practical examples
+    for all new features.
+  estimated_effort: low
+  step_id: e9bfbf4b:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- "The spec assumes Pydantic or dataclasses for models, but does not specify which\
+  \ is currently used. If switching between them, be aware of subtle differences in\
+  \ field defaults, validation, and YAML (de)serialization\u2014test both loading\
+  \ and saving for backward compatibility."
+- For task tree visualization, handling cycles and missing links in the graph is non-trivial.
+  Plan for explicit cycle detection and user-friendly error messages; networkx has
+  built-in cycle detection utilities that should be leveraged.
+- Rendering large graphs (up to 100 nodes) with matplotlib can be slow or produce
+  unreadable images. Consider using a hierarchical layout (e.g., networkx's graphviz_layout
+  if available) and test output on large specs early to avoid performance or clarity
+  issues.
+- Ensure CLI commands for visualization and metadata output are non-interactive and
+  accept all necessary parameters via flags. Typer supports this well, but double-check
+  help text and error handling for missing/invalid arguments.
+context_parameters: null
+feedback_history: []
+work_logs: null

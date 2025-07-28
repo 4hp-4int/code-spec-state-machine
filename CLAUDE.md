@@ -21,7 +21,9 @@ This project includes custom slash commands for Claude Code:
   - `/spec templates` - Create base templates
   - `/spec review` - List existing specifications
   - `/spec expand spec_id:step_index` - Expand an implementation step into a sub-specification
-  - `/spec graph` - Display specification dependency graph
+  - `/spec graph` - Display specification dependency graph with enhanced visualization options
+- `/spec spec-detail spec_id` - Show detailed metadata for a specification
+- `/spec task-tree spec_id` - Display hierarchical task tree for sub-specifications
   - `/spec workflow-status spec_id` - Show workflow status for a specification
   - `/spec task-start spec_id:step_index` - Start working on a task
   - `/spec task-complete spec_id:step_index` - Mark a task as completed
@@ -111,6 +113,22 @@ agentic-spec templates --templates-dir ./custom-templates
 ```bash
 agentic-spec graph
 agentic-spec graph --specs-dir ./specs
+agentic-spec graph --show-tasks  # Show individual tasks within specs
+agentic-spec graph --output graph.png  # Generate image output (PNG/SVG)
+agentic-spec graph --show-tasks --output detailed_graph.png  # Both options combined
+```
+
+**spec-detail** - Show detailed metadata and information for a specification
+```bash
+agentic-spec spec-detail spec_id
+agentic-spec spec-detail abc123 --specs-dir ./specs
+```
+
+**task-tree** - Display detailed task tree for a specification
+```bash
+agentic-spec task-tree spec_id  # ASCII tree output
+agentic-spec task-tree abc123 --output task_tree.png  # Image output
+agentic-spec task-tree spec_id --specs-dir ./custom-specs
 ```
 
 **expand** - Expand an implementation step into a detailed sub-specification
@@ -425,18 +443,210 @@ make lint-verbose
 make test-verbose
 ```
 
+## Installation and Setup
+
+### Quick Start
+
+For new users getting started with agentic-spec:
+
+1. **Install globally** (recommended for ease of use):
+   ```bash
+   pip install agentic-spec
+   ```
+
+2. **Initialize your project**:
+   ```bash
+   mkdir my-project && cd my-project
+   agentic-spec utils init
+   ```
+
+3. **Set up your OpenAI API key**:
+   ```bash
+   export OPENAI_API_KEY=your-api-key-here
+   ```
+
+4. **Generate your first specification**:
+   ```bash
+   agentic-spec generate "Build a REST API for user management"
+   ```
+
+### Installation Methods
+
+#### Global Installation (Recommended)
+```bash
+# Using pip
+pip install agentic-spec
+
+# Using pipx (isolated environment)
+pipx install agentic-spec
+```
+
+#### Development Installation
+```bash
+git clone https://github.com/yourusername/agentic-spec.git
+cd agentic-spec
+make install-dev
+```
+
+### Troubleshooting
+
+#### Common Installation Issues
+
+**1. Typer Choice Error during `agentic-spec init`**
+- **Symptom**: Error about typer choice with single option
+- **Solution**: This has been fixed in recent versions. Update to latest:
+  ```bash
+  pip install --upgrade agentic-spec
+  ```
+
+**2. Permission Errors during Init**
+- **Symptom**: "Permission denied" when creating config files
+- **Solution**: Run from a directory where you have write permissions:
+  ```bash
+  cd ~/projects/my-project  # or another writable directory
+  agentic-spec utils init
+  ```
+
+**3. API Key Not Found**
+- **Symptom**: "OpenAI API key not found" errors
+- **Solution**: Set your API key as an environment variable:
+  ```bash
+  # Linux/Mac
+  export OPENAI_API_KEY=your-key-here
+
+  # Windows
+  set OPENAI_API_KEY=your-key-here
+  ```
+  Or add it to your shell profile for persistence.
+
+**4. Non-Interactive Environment Issues**
+- **Symptom**: Init command hangs or fails in CI/automated environments
+- **Solution**: The init command now handles non-interactive environments gracefully:
+  ```bash
+  # Uses defaults and environment variables
+  agentic-spec utils init --force
+  ```
+
+**5. Config File Already Exists**
+- **Symptom**: Init stops because config file exists
+- **Solution**: Use the `--force` flag to overwrite:
+  ```bash
+  agentic-spec utils init --force
+  ```
+
+**6. Template Creation Failures**
+- **Symptom**: Warnings about template creation during init
+- **Solution**: These are usually non-critical. You can:
+  - Ignore warnings (templates are optional)
+  - Create templates manually later:
+    ```bash
+    agentic-spec template templates
+    agentic-spec sync-foundation
+    ```
+
+#### Environment Setup Verification
+
+After installation, verify your setup:
+
+```bash
+# Check installation
+agentic-spec --version
+
+# Check configuration
+agentic-spec utils config show
+
+# Test API connectivity (requires API key)
+agentic-spec generate "Hello world test" --dry-run
+```
+
+#### Cross-Platform Considerations
+
+- **Windows**: Use PowerShell or Command Prompt. Git Bash may have path issues.
+- **macOS**: May need to install Python 3.12+ via Homebrew if using system Python
+- **Linux**: Ensure you have Python 3.12+ and pip available
+
+#### Getting Help
+
+- Check the `--help` flag on any command: `agentic-spec COMMAND --help`
+- View configuration options: `agentic-spec utils config show`
+- For debugging, enable verbose logging in your config file
+
+## Enhanced Metadata and Visualization Features
+
+### Enhanced Specification Metadata
+
+All specifications now include enhanced metadata with additional tracking fields:
+
+- **Author**: Automatically captured from environment variables (USER/USERNAME)
+- **Last Modified**: Updated timestamp whenever specifications are saved
+- **Creation Date**: Original creation timestamp (existing)
+- **Parent/Child Relationships**: Hierarchical spec relationships (existing)
+- **Status**: Current specification status (existing)
+
+### Task Tree Visualization
+
+The tool now provides comprehensive visualization of specification task hierarchies:
+
+#### ASCII Tree Display
+- **Hierarchical Structure**: Shows parent specs, sub-specs, and their tasks
+- **Progress Indicators**: Visual status indicators for each task (⏳ pending, ✅ completed, etc.)
+- **Sub-specification Links**: Clear indication of tasks that have associated sub-specs
+- **Task Numbering**: Hierarchical numbering system (0, 1.0, 1.1, etc.)
+
+#### Image Generation
+- **PNG/SVG Output**: Generate publication-ready graphs of specification relationships
+- **Task Nodes**: Optional display of individual tasks within specifications
+- **Status Color Coding**: Visual distinction between draft, reviewed, approved, and implemented specs
+- **Hierarchical Layout**: Automatic layout optimization for complex specification trees
+
+### CLI Commands for Visualization
+
+#### Enhanced Graph Command
+```bash
+# Basic ASCII graph
+agentic-spec core graph
+
+# With task details
+agentic-spec core graph --show-tasks
+
+# Generate image
+agentic-spec core graph --output spec_graph.png --show-tasks
+```
+
+#### Task Tree Command
+```bash
+# Show detailed task breakdown for a specification
+agentic-spec core task-tree spec_id
+
+# Generate task tree image
+agentic-spec core task-tree spec_id --output task_tree.png
+```
+
+#### Spec Detail Command
+```bash
+# Show comprehensive metadata and task overview
+agentic-spec core spec-detail spec_id
+```
+
+### Backward Compatibility
+
+All enhancements maintain full backward compatibility:
+- Existing YAML files load without errors
+- Missing metadata fields default to sensible values (author: null, last_modified: null)
+- All existing CLI commands continue to work unchanged
+
 ## Architecture
 
 ### Core Components
 
 - **Main CLI Module** (`cli.py`): Main CLI entrypoint that aggregates sub-applications and provides backward compatibility
-- **Core CLI Commands** (`cli_core.py`): Core specification operations (generate, review, graph, expand, validate, render)
+- **Core CLI Commands** (`cli_core.py`): Core specification operations (generate, review, graph, expand, validate, render, spec-detail, task-tree)
 - **Workflow CLI Commands** (`cli_workflow.py`): Task tracking and workflow management commands
 - **Template CLI Commands** (`cli_template.py`): Template management and browsing commands
 - **Database CLI Commands** (`cli_db.py`): Database migration and management commands
 - **Utility CLI Commands** (`cli_utils.py`): Configuration and utility commands
 - **Core Engine** (`core.py`): Specification generation logic with AI integration, template inheritance, and database migration
-- **Data Models** (`models.py`): Enhanced dataclass and Pydantic definitions with workflow tracking, task management, and database support
+- **Data Models** (`models.py`): Enhanced dataclass and Pydantic definitions with workflow tracking, task management, enhanced metadata (author, last_modified), and database support
 - **Database Layer** (`async_db.py`): Async SQLite backend with comprehensive task and specification tracking
 - **Template System** (`templates/base.py`): Pre-built templates for common project patterns
 - **Workflow Manager**: Database-backed task tracking with strict mode enforcement and approval workflows
@@ -445,6 +655,8 @@ make test-verbose
 
 - **Template Inheritance**: Specifications can inherit from multiple base templates using deep merge strategy
 - **Database-Backed Workflow**: SQLite database with async operations, comprehensive indexing, and task tracking
+- **Enhanced Metadata Tracking**: Automatic author detection, last-modified timestamps, and relationship tracking
+- **Task Tree Visualization**: Hierarchical display of specifications and tasks with multiple output formats (ASCII, PNG, SVG)
 - **Workflow Status Management**: 10-state workflow lifecycle (created → in_progress → ready_for_review → completed, etc.)
 - **Task Management**: Individual task tracking with progress, approval workflows, and dependency management
 - **Strict Mode Enforcement**: Sequential task execution with approval gates and override capabilities
@@ -454,6 +666,7 @@ make test-verbose
 - **Foundation Sync**: Automated foundation specification syncing with codebase analysis
 - **Comprehensive Context**: Parent spec traversal and foundation context for complete awareness
 - **Migration System**: Automated YAML-to-database migration with change detection and validation
+- **Backward Compatibility**: Full compatibility with existing YAML files and CLI commands
 - **Error Handling**: Custom exception hierarchy with informative user messages
 - **Typer CLI**: Modern CLI framework with automatic help generation and type validation
 - **Modular CLI Architecture**: Commands organized into logical modules with both direct access (`agentic-spec generate`) and sub-app access (`agentic-spec core generate`)
@@ -515,13 +728,14 @@ Templates use YAML format and support deep merging. The inheritance system allow
 ### Specification Format
 
 Generated specs include:
-- **Metadata**: ID, inheritance chain, timestamps, version, parent/child relationships
+- **Enhanced Metadata**: ID, inheritance chain, timestamps, version, parent/child relationships, author, last_modified
 - **Context**: Project info, domain, dependencies, affected files
 - **Requirements**: Functional, non-functional, constraints
-- **Implementation**: Detailed steps with acceptance criteria, effort estimates, and progress tracking
+- **Implementation**: Detailed steps with acceptance criteria, effort estimates, progress tracking, and sub-specification links
 - **Review Notes**: AI-generated feedback and recommendations
 - **Workflow Tracking**: Status, completion percentage, approval workflows, work logs
 - **Database Fields**: Enhanced tracking with 25 fields including priority, assignee, lifecycle timestamps
+- **Task Tree Support**: Hierarchical task visualization with progress indicators and sub-spec relationships
 
 ### Database Schema
 
@@ -568,6 +782,12 @@ The SQLite database includes:
 - All 39 existing specifications have been marked as completed in the database
 - **TEMPLATE INHERITANCE**: Ensure generated specs inherit from the correct templates
 - **🆕 CONFIGURABLE SYNC-FOUNDATION**: The sync-foundation command is now configurable for any project type via YAML files. Use `sync_foundation_config.yaml` for custom file categorization, dependency detection, and project analysis patterns. Auto-discovery enabled.
+- **🛠️ IMPROVED PORTABILITY**: The `agentic-spec utils init` command has been enhanced for better cross-platform compatibility:
+  - Fixed typer choice errors with single provider options
+  - Added graceful handling of non-interactive environments (CI/automated workflows)
+  - Improved error messages and recovery guidance for permission issues
+  - Enhanced API key detection and environment variable handling
+  - Added comprehensive test coverage for global installation scenarios
 
 ## Interactive Workflow Usage
 

@@ -1,0 +1,169 @@
+metadata:
+  id: d6182a16
+  title: Fix portability issues with agentic-spec init command to ensure global instal...
+  inherits: []
+  created: '2025-07-28T08:30:36.035586'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+  author: Khalen
+  last_modified: '2025-07-28T08:40:20.925908'
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: typer
+    version: 0.12.0
+    description: 'Core dependency: CLI framework'
+  - name: openai
+    version: 1.97.1
+    description: 'Core dependency: AI API'
+  - name: pyyaml
+    version: 6.0.2
+    description: 'Core dependency: YAML parsing'
+  - name: networkx
+    version: '3.3'
+    description: 'Core dependency: Graph operations'
+  - name: matplotlib
+    version: 3.9.2
+    description: 'Core dependency: Visualization'
+  - name: jinja2
+    version: 3.1.0
+    description: 'Core dependency: Templating'
+  - name: pytest-cov
+    version: 6.2.1
+    description: 'Core dependency: Test coverage'
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  - tests/test_cli.py
+  - README.md
+requirements:
+  functional:
+  - Ensure 'agentic-spec init' command works correctly when installed globally via
+    pip or pipx.
+  - Prevent Typer choice errors on fresh installs and in diverse environments.
+  - Detect and handle missing or misconfigured environments gracefully during initialization.
+  - Provide clear, actionable error messages for environment/setup issues.
+  - Verify that initialization creates all required config and template files in a
+    cross-platform manner.
+  non_functional:
+  - Maintain compatibility with Windows and Unix-like systems (CRLF/LF handling).
+  - Ensure robust error handling and user guidance for setup issues.
+  - Support solo developer workflows with minimal manual intervention.
+  - Maintain lint and code quality standards as per pre-commit configuration.
+  - Do not introduce new dependencies unless absolutely necessary.
+  constraints:
+  - Do not break existing CLI workflows or automation scripts.
+  - Do not require external databases or services for initialization.
+  - All changes must be covered by unit tests.
+  - Follow current codebase structure and coding standards.
+  - All user-facing messages must be clear and actionable.
+  - No hard-coded paths; use pathlib.Path and config-driven locations.
+implementation:
+- task: Audit and reproduce 'agentic-spec init' portability issues on global installs
+  details: Test the 'init' command after global installation (pip, pipx) on both Windows
+    and Unix-like systems. Document any Typer choice errors, missing environment variables,
+    or file permission issues encountered.
+  files:
+  - agentic_spec/cli.py
+  acceptance: A reproducible list of issues with clear steps for each platform; root
+    causes identified for Typer choice errors and environment setup failures.
+  estimated_effort: medium
+  step_id: d6182a16:0
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Refactor CLI initialization logic to avoid Typer choice errors and improve
+    environment detection
+  details: Update 'agentic_spec/cli.py' to ensure Typer commands do not fail due to
+    missing choices or environment assumptions. Implement robust detection of user
+    environment (home directory, permissions, config locations) using pathlib and
+    config-driven patterns.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  acceptance: CLI 'init' command runs without Typer errors on fresh global installs;
+    environment is detected and handled gracefully on all supported platforms.
+  estimated_effort: high
+  step_id: d6182a16:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: spans CLI command logic, environment detection,
+    and config file handling'
+  progress: null
+  approvals: null
+- task: Improve error handling and user messaging for initialization failures
+  details: Add comprehensive try/except blocks around environment and file operations
+    in the 'init' command. Ensure all error messages are actionable and platform-appropriate,
+    following coding standards for exception formatting.
+  files:
+  - agentic_spec/cli.py
+  acceptance: All initialization errors provide clear, actionable feedback to the
+    user, with no unhandled exceptions.
+  estimated_effort: medium
+  step_id: d6182a16:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Ensure cross-platform creation of config and template files during initialization
+  details: Verify and update file creation logic to use pathlib.Path and handle CRLF/LF
+    normalization. Ensure all files are created in user-writable locations regardless
+    of OS, and that no hard-coded paths are used.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/config.py
+  acceptance: All required files are created in the correct locations on both Windows
+    and Unix-like systems, with proper line endings and permissions.
+  estimated_effort: medium
+  step_id: d6182a16:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add and update unit tests for CLI initialization under global install scenarios
+  details: Expand 'tests/test_cli.py' to cover global install edge cases, including
+    missing environment variables, permission errors, and Typer choice handling. Mock
+    file system and environment as needed.
+  files:
+  - tests/test_cli.py
+  acceptance: Tests reliably reproduce and validate fixes for all identified portability
+    and initialization issues.
+  estimated_effort: medium
+  step_id: d6182a16:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Update documentation to guide users on global installation and troubleshooting
+  details: Revise 'README.md' to include clear instructions for global installation
+    (pip, pipx), common issues, and troubleshooting steps for environment setup and
+    permissions.
+  files:
+  - README.md
+  acceptance: Documentation provides step-by-step guidance for new users and addresses
+    common pitfalls with actionable solutions.
+  estimated_effort: low
+  step_id: d6182a16:5
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec does not clarify how config file locations
+  are determined (e.g., XDG_CONFIG_HOME, APPDATA, HOME fallback). Explicit logic for
+  cross-platform config discovery should be defined before coding.'
+- 'Technical Gotchas: Typer''s handling of choices and prompts can behave differently
+  in non-interactive shells or when environment variables are missing. Test with both
+  pip and pipx, and ensure all Typer prompts have sensible defaults or fallbacks.'
+- 'Integration Points: If existing CLI commands or config logic assume hard-coded
+  paths or OS-specific behavior, refactoring to pathlib and config-driven patterns
+  may introduce subtle bugs. Audit all path usage in agentic_spec/config.py and cli.py.'
+- "Quick Wins: Use Python's built-in os and pathlib modules for all file and directory\
+  \ operations, and leverage platform module for OS detection\u2014avoid custom logic\
+  \ where possible to minimize edge cases."
+context_parameters: null
+feedback_history: []
+work_logs: null
