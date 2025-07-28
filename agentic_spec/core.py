@@ -4,6 +4,7 @@ from dataclasses import asdict
 from datetime import datetime
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any
@@ -1447,6 +1448,9 @@ class SpecGenerator:
                 inherits=inherits or [],
                 created=datetime.now().isoformat(),
                 version="1.0",
+                author=os.environ.get("USER")
+                or os.environ.get("USERNAME")
+                or "unknown",
             ),
             context=SpecContext(**spec_data.get("context", {})),
             requirements=SpecRequirement(**spec_data.get("requirements", {})),
@@ -1631,6 +1635,9 @@ Return ONLY valid JSON matching this structure:
         filename = f"{spec.metadata.created[:10]}-{spec.metadata.id}.yaml"
         spec_path = self.specs_dir / filename
 
+        # Update last_modified timestamp
+        spec.metadata.last_modified = datetime.now().isoformat()
+
         with spec_path.open("w") as f:
             yaml.dump(asdict(spec), f, default_flow_style=False, sort_keys=False)
 
@@ -1645,6 +1652,11 @@ Return ONLY valid JSON matching this structure:
         metadata = data["metadata"]
         if "title" not in metadata:
             metadata["title"] = f"Specification {metadata['id']}"
+        # Handle backward compatibility for new fields
+        if "author" not in metadata:
+            metadata["author"] = None
+        if "last_modified" not in metadata:
+            metadata["last_modified"] = None
 
         # Fix null decomposition_hints in loaded specs
         implementation_steps = []

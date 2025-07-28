@@ -14,15 +14,15 @@
 
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
     <div>
-      <div style="font-size: 0.875rem; color: #6b7280;">Created</div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Created:</div>
       <div style="font-weight: 600;">{{ spec.created.strftime('%Y-%m-%d %H:%M') }}</div>
     </div>
     <div>
-      <div style="font-size: 0.875rem; color: #6b7280;">Last Updated</div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Last Updated:</div>
       <div style="font-weight: 600;">{{ spec.updated.strftime('%Y-%m-%d %H:%M') }}</div>
     </div>
     <div>
-      <div style="font-size: 0.875rem; color: #6b7280;">Completion</div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Completion:</div>
       <div style="font-weight: 600;">{{ "%.1f"|format(completion_percentage) }}%</div>
       <div class="progress-bar" style="margin-top: 0.25rem;">
         <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>

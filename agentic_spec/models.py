@@ -77,6 +77,8 @@ class SpecMetadata:
     status: str = "draft"  # Will migrate to SpecStatus enum
     parent_spec_id: str | None = None
     child_spec_ids: list[str] | None = None
+    author: str | None = None
+    last_modified: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for YAML serialization."""
@@ -89,6 +91,8 @@ class SpecMetadata:
             "status": self.status,
             "parent_spec_id": self.parent_spec_id,
             "child_spec_ids": self.child_spec_ids,
+            "author": self.author,
+            "last_modified": self.last_modified,
         }
 
 

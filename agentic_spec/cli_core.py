@@ -417,6 +417,14 @@ def generate_spec(
                 print("=" * 60)
                 print(f"📋 Title: {spec.metadata.title}")
                 print(f"🆔 ID: {spec.metadata.id}")
+                print(f"👤 Author: {spec.metadata.author or 'N/A'}")
+                print(f"📅 Created: {spec.metadata.created}")
+                print(f"🔄 Last Modified: {spec.metadata.last_modified or 'N/A'}")
+                print(f"📊 Status: {spec.metadata.status}")
+                if spec.metadata.parent_spec_id:
+                    print(f"⬆️  Parent Spec: {spec.metadata.parent_spec_id}")
+                if spec.metadata.child_spec_ids:
+                    print(f"⬇️  Child Specs: {', '.join(spec.metadata.child_spec_ids)}")
                 print(f"📁 Project: {spec.context.project}")
                 print(f"🏷️  Domain: {spec.context.domain}")
                 print(f"📦 Dependencies: {len(spec.context.dependencies)}")
@@ -462,6 +470,8 @@ def generate_spec(
 
                 print(f"✅ Specification generated: {spec_path}")
                 print(f"📋 Spec ID: {spec.metadata.id}")
+                print(f"👤 Author: {spec.metadata.author or 'N/A'}")
+                print(f"📅 Created: {spec.metadata.created}")
                 print("💾 Saved to database")
 
             # Auto-review if enabled in config (but skip in dry-run)
@@ -587,6 +597,91 @@ def review_specs(
     except Exception:
         logger.exception("Error listing specifications")
         print("❌ Failed to list specifications")
+        raise typer.Exit(1) from None
+
+
+@core_app.command("spec-detail")
+def show_spec_detail(
+    spec_id: str = Argument(..., help="Specification ID to show details for"),
+    specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    templates_dir: str = Option(
+        "templates", "--templates-dir", help="Templates directory"
+    ),
+):
+    """Show detailed metadata and information for a specification.
+
+    Displays enhanced metadata including author, timestamps, relationships,
+    and task tree for sub-specifications.
+    """
+    logger = logging.getLogger("agentic_spec")
+
+    try:
+        specs_dir_path = Path(specs_dir)
+
+        # Find the spec file
+        spec_files = list(specs_dir_path.glob(f"*{spec_id}*.yaml"))
+        if not spec_files:
+            print(f"❌ Specification {spec_id} not found")
+            raise typer.Exit(1)
+
+        # Load the spec
+        spec_gen = SpecGenerator(Path(templates_dir), specs_dir_path)
+        spec = spec_gen.load_spec(spec_files[0])
+
+        # Display enhanced metadata
+        print(f"📋 Specification Details: {spec.metadata.id}")
+        print("=" * 60)
+        print(f"📄 Title: {spec.metadata.title}")
+        print(f"👤 Author: {spec.metadata.author or 'N/A'}")
+        print(f"📅 Created: {spec.metadata.created}")
+        print(f"🔄 Last Modified: {spec.metadata.last_modified or 'N/A'}")
+        print(f"📊 Status: {spec.metadata.status}")
+        print(f"🔖 Version: {spec.metadata.version}")
+
+        # Show inheritance
+        if spec.metadata.inherits:
+            print(f"🧬 Inherits from: {', '.join(spec.metadata.inherits)}")
+
+        # Show relationships
+        if spec.metadata.parent_spec_id:
+            print(f"⬆️  Parent Spec: {spec.metadata.parent_spec_id}")
+        if spec.metadata.child_spec_ids:
+            print("⬇️  Child Specs:")
+            for child_id in spec.metadata.child_spec_ids:
+                print(f"    - {child_id}")
+
+        print("\n📁 Context:")
+        print(f"   Project: {spec.context.project}")
+        print(f"   Domain: {spec.context.domain}")
+        print(f"   Dependencies: {len(spec.context.dependencies)}")
+        if spec.context.files_involved:
+            print(f"   Files Involved: {len(spec.context.files_involved)}")
+
+        print("\n📋 Requirements:")
+        print(f"   Functional: {len(spec.requirements.functional)}")
+        print(f"   Non-functional: {len(spec.requirements.non_functional)}")
+        if spec.requirements.constraints:
+            print(f"   Constraints: {len(spec.requirements.constraints)}")
+
+        print("\n⚙️  Implementation:")
+        print(f"   Total Steps: {len(spec.implementation)}")
+
+        # Show implementation steps with sub-spec indicators
+        for i, step in enumerate(spec.implementation):
+            status_icon = "📦" if step.sub_spec_id else "📄"
+            print(f"   {i}. {status_icon} {step.task}")
+            if step.sub_spec_id:
+                print(f"      └─ Sub-spec: {step.sub_spec_id}")
+
+        # Show review notes if present
+        if spec.review_notes:
+            print(f"\n🔍 Review Notes: {len(spec.review_notes)} items")
+
+        print("=" * 60)
+
+    except Exception as e:
+        logger.exception("Error showing spec details")
+        print(f"❌ Failed to show spec details: {e}")
         raise typer.Exit(1) from None
 
 

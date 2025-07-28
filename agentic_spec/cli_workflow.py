@@ -300,6 +300,11 @@ def show_workflow_status(
 
             return {
                 "spec_title": spec.title,
+                "spec_author": getattr(spec, "created_by", None),
+                "spec_created": spec.created,
+                "spec_updated": spec.updated,
+                "spec_parent_id": spec.parent_spec_id,
+                "spec_child_ids": spec.child_spec_ids,
                 "workflow_status": spec.workflow_status.value,
                 "is_completed": spec.is_completed,
                 "completion_percentage": completion_percentage,
@@ -331,6 +336,15 @@ def show_workflow_status(
 
         print(f"📊 Workflow Status: {spec_id}")
         print(f"   Title: {status['spec_title']}")
+        print(f"   Author: {status.get('spec_author', 'N/A')}")
+        print(f"   Created: {status['spec_created'].strftime('%Y-%m-%d %H:%M:%S')}")
+        print(
+            f"   Last Updated: {status['spec_updated'].strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        if status.get("spec_parent_id"):
+            print(f"   Parent Spec: {status['spec_parent_id']}")
+        if status.get("spec_child_ids"):
+            print(f"   Child Specs: {', '.join(status['spec_child_ids'])}")
         print(f"   Total Tasks: {status['total_tasks']}")
         print(f"   Completion: {status['completion_percentage']}%")
         print(
