@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">{{ spec.title[:80] }}{% if spec.title|length > 80 %}...{% endif %}</h2>
+      <div class="card-subtitle">ID: {{ spec.id }}</div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <span class="status-badge {{ spec.status.value }}">{{ spec.status.value }}</span>
+      <span class="workflow-badge {{ spec.workflow_status.value }}">{{ spec.workflow_status.value }}</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Created</div>
+      <div style="font-weight: 600;">{{ spec.created.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+    <div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Last Updated</div>
+      <div style="font-weight: 600;">{{ spec.updated.strftime('%Y-%m-%d %H:%M') }}</div>
+    </div>
+    <div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Completion</div>
+      <div style="font-weight: 600;">{{ "%.1f"|format(completion_percentage) }}%</div>
+      <div class="progress-bar" style="margin-top: 0.25rem;">
+        <div class="progress-fill" style="width: {{ completion_percentage }}%"></div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size: 0.875rem; color: #6b7280;">Priority</div>
+      <div style="font-weight: 600;">
+        {% if spec.priority %}
+        <span class="priority-indicator priority-{{ spec.priority.value }}"></span>
+        {{ spec.priority.value|title }}
+        {% else %}
+        Normal
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow State Machine Visualization -->
+<div class="state-machine-container">
+  <h3 class="card-title" style="margin-bottom: 1.5rem;">Workflow State Machine</h3>
+  <div id="state-machine" class="state-machine"></div>
+  <div class="state-machine-legend">
+    <div class="legend-item">
+      <div class="legend-icon" style="background: #3b82f6;"></div>
+      <span>Current State</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon" style="background: #f3f4f6; border: 2px solid #d1d5db;"></div>
+      <span>Other States</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Tasks</h3>
+    <div id="task-summary" style="font-size: 0.875rem; color: #6b7280;"></div>
+  </div>
+
+  {% if tasks %}
+  <table>
+    <caption class="sr-only">Tasks for this specification</caption>
+    <thead>
+      <tr>
+        <th style="width: 50px;">#</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tasks %}
+      <tr>
+        <td>{{ t.step_index }}</td>
+        <td>
+          <a href="/tasks/{{ t.id }}">{{ t.task }}</a>
+          {% if t.details %}
+          <div class="card-subtitle">{{ t.details[:100] }}{% if t.details|length > 100 %}...{% endif %}</div>
+          {% endif %}
+        </td>
+        <td>
+          <span class="status-badge {{ t.status.value }}">{{ t.status.value }}</span>
+        </td>
+        <td>
+          {% if t.progress_percentage %}
+          <div class="progress-bar" style="width: 100px;">
+            <div class="progress-fill" style="width: {{ t.progress_percentage }}%"></div>
+          </div>
+          {% else %}
+          <span style="color: #9ca3af;">-</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/tasks/{{ t.id }}" style="font-size: 0.875rem; color: #3b82f6;">View →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color: #6b7280; text-align: center; padding: 2rem 0;">No tasks defined for this specification.</p>
+  {% endif %}
+</div>
+
+<script>
+// Fetch and render workflow visualization
+async function renderWorkflow() {
+  try {
+    const response = await fetch(`/api/specs/{{ spec.id }}/workflow`);
+    const data = await response.json();
+
+    const container = document.getElementById('state-machine');
+    container.innerHTML = '';
+
+    // Create state nodes
+    data.states.forEach(state => {
+      const node = document.createElement('div');
+      node.className = 'state-node';
+      if (state.id === data.current_state) {
+        node.classList.add('active');
+      }
+      node.style.left = `${state.x}px`;
+      node.style.top = `${state.y}px`;
+      node.innerHTML = `
+        <div class="label">${state.label}</div>
+        ${state.id === 'implementing' ? `<div class="count">${data.task_stats.completed}/${data.task_stats.total} tasks</div>` : ''}
+      `;
+      node.onclick = () => showStateDetails(state, data);
+      container.appendChild(node);
+    });
+
+    // Create transitions
+    data.transitions.forEach(transition => {
+      const fromState = data.states.find(s => s.id === transition.from);
+      const toState = data.states.find(s => s.id === transition.to);
+
+      const line = document.createElement('div');
+      line.className = 'state-transition';
+
+      const dx = toState.x - fromState.x - 120;
+      const dy = toState.y - fromState.y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+      line.style.left = `${fromState.x + 120}px`;
+      line.style.top = `${fromState.y + 35}px`;
+      line.style.width = `${length}px`;
+      line.style.transform = `rotate(${angle}deg)`;
+
+      container.appendChild(line);
+    });
+
+    // Update task summary
+    const summary = document.getElementById('task-summary');
+    summary.textContent = `${data.task_stats.completed} completed, ${data.task_stats.in_progress} in progress, ${data.task_stats.blocked} blocked, ${data.task_stats.pending} pending`;
+  } catch (error) {
+    console.error('Failed to load workflow visualization:', error);
+  }
+}
+
+function showStateDetails(state, data) {
+  let details = `State: ${state.label}\n`;
+  if (state.id === data.current_state) {
+    details += 'This is the current state.\n';
+  }
+  if (state.id === 'implementing') {
+    details += `\nTask Progress:\n`;
+    details += `- Completed: ${data.task_stats.completed}\n`;
+    details += `- In Progress: ${data.task_stats.in_progress}\n`;
+    details += `- Blocked: ${data.task_stats.blocked}\n`;
+    details += `- Pending: ${data.task_stats.pending}\n`;
+    details += `- Total: ${data.task_stats.total}`;
+  }
+  alert(details);
+}
+
+// Load visualization on page load
+renderWorkflow();
+</script>
+{% endblock %}

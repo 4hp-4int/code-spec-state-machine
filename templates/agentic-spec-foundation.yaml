@@ -1,41 +1,395 @@
-version: "1.0.0"
-name: "agentic-spec-foundation"
-description: "Foundation specification automatically synced with codebase state"
-
 context:
   project: agentic-spec
-  domain: Python CLI tool for AI-powered specification generation
+  domain: Full-stack Python application with CLI, web UI, and database components
   dependencies:
   - name: openai
-    version: 1.97.1
-    description: 'Core dependency: openai'
+    version: '>=1.97.1'
+    description: 'AI integration: openai'
+    category: ai
+    source: pyproject.toml
+    usage_context:
+    - general
+    import_frequency: 1
+    transitive_dependencies:
+    - anyio<5,
+    - distro<2,
+    - httpx<1,
+    - jiter<1,
+    - pydantic<3,
+    - sniffio
+    - tqdm
+    - typing-extensions<5,
+    - aiohttp;
+    - httpx-aiohttp
   - name: pyyaml
-    version: 6.0.2
-    description: 'Core dependency: pyyaml'
+    version: '>=6.0.2'
+    description: 'Configuration parsing: pyyaml'
+    category: config
+    source: pyproject.toml
   - name: networkx
-    version: '3.3'
-    description: 'Core dependency: networkx'
+    version: '>=3.3'
+    description: 'Graph/visualization: networkx'
+    category: visualization
+    source: pyproject.toml
+    usage_context:
+    - general
+    import_frequency: 1
+    transitive_dependencies:
+    - numpy
+    - scipy
+    - matplotlib
+    - pandas
+    - pre-commit
+    - mypy
+    - sphinx
+    - pydata-sphinx-theme
+    - sphinx-gallery
+    - numpydoc
   - name: matplotlib
-    version: 3.9.2
-    description: 'Core dependency: matplotlib'
+    version: '>=3.9.2'
+    description: 'Graph/visualization: matplotlib'
+    category: visualization
+    source: pyproject.toml
+    usage_context:
+    - general
+    import_frequency: 1
+    transitive_dependencies:
+    - contourpy
+    - cycler
+    - fonttools
+    - kiwisolver
+    - numpy
+    - packaging
+    - pillow
+    - pyparsing
+    - python-dateutil
+    - meson-python<0.17.0,
   - name: jinja2
-    version: 3.1.0
-    description: 'Core dependency: jinja2'
+    version: '>=3.1.0'
+    description: 'Template engine: jinja2'
+    category: templates
+    source: pyproject.toml
+    usage_context:
+    - general
+    import_frequency: 4
+    transitive_dependencies:
+    - MarkupSafe
+    - Babel
   - name: typer
-    version: 0.12.0
-    description: 'Core dependency: typer'
+    version: '>=0.12.0'
+    description: 'CLI framework: typer'
+    category: cli
+    source: pyproject.toml
+    usage_context:
+    - cli
+    - testing
+    import_frequency: 5
+    transitive_dependencies:
+    - click
+    - typing-extensions
+    - shellingham
+    - rich
   - name: pytest-cov
-    version: 6.2.1
-    description: 'Core dependency: pytest-cov'
+    version: '>=6.2.1'
+    description: 'Testing framework: pytest-cov'
+    category: testing
+    source: pyproject.toml
+    transitive_dependencies:
+    - pytest
+    - coverage[toml]
+    - pluggy
+    - fields;
+    - hunter;
+    - process-tests;
+    - pytest-xdist;
+    - virtualenv;
+  - name: aiosqlite
+    version: '>=0.21.0'
+    description: 'Database: aiosqlite'
+    category: database
+    source: pyproject.toml
+    usage_context:
+    - database
+    import_frequency: 1
+    transitive_dependencies:
+    - typing_extensions
+    - attribution
+    - black
+    - build
+    - coverage[toml]
+    - flake8
+    - flake8-bugbear
+    - flit
+    - mypy
+    - ufmt
+  - name: fastapi
+    version: '>=0.116.1'
+    description: 'Web framework: fastapi'
+    category: web
+    source: pyproject.toml
+    usage_context:
+    - web_ui
+    import_frequency: 5
+    transitive_dependencies:
+    - starlette<0.48.0,
+    - pydantic
+    - typing-extensions
+    - fastapi-cli[standard]
+    - httpx
+    - jinja2
+    - python-multipart
+    - email-validator
+    - uvicorn[standard]
+    - fastapi-cli[standard-no-fastapi-cloud-cli]
+  - name: uvicorn
+    version: '>=0.35.0'
+    description: 'Web framework: uvicorn'
+    category: web
+    source: pyproject.toml
+    usage_context:
+    - web_ui
+    import_frequency: 1
+    transitive_dependencies:
+    - click
+    - h11
+    - typing-extensions
+    - colorama
+    - httptools
+    - python-dotenv
+    - pyyaml
+    - uvloop
+    - watchfiles
+    - websockets
+  - name: yaml
+    version: unknown
+    description: 'Core dependency: yaml'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    - cli
+    - core_logic
+    - database
+    - testing
+    import_frequency: 11
+  - name: __future__
+    version: unknown
+    description: 'Core dependency: __future__'
+    category: core
+    source: import_analysis
+    usage_context:
+    - database
+    - general
+    import_frequency: 5
+  - name: abc
+    version: unknown
+    description: 'Core dependency: abc'
+    category: core
+    source: import_analysis
+    usage_context:
+    - database
+    - general
+    import_frequency: 2
+  - name: ''
+    version: unknown
+    description: 'Core dependency: '
+    category: core
+    source: import_analysis
+    usage_context:
+    - database
+    - cli
+    - core_logic
+    - general
+    - web_ui
+    import_frequency: 50
+  - name: dataclasses
+    version: unknown
+    description: 'Core dependency: dataclasses'
+    category: core
+    source: import_analysis
+    usage_context:
+    - cli
+    - core_logic
+    - general
+    import_frequency: 6
+  - name: pydantic
+    version: unknown
+    description: 'Core dependency: pydantic'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    import_frequency: 2
+    transitive_dependencies:
+    - annotated-types
+    - pydantic-core
+    - typing-extensions
+    - typing-inspection
+    - email-validator
+    - tzdata;
+  - name: enum
+    version: unknown
+    description: 'Core dependency: enum'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    import_frequency: 1
+  - name: platform
+    version: unknown
+    description: 'Core dependency: platform'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    import_frequency: 1
+  - name: agentic_spec
+    version: unknown
+    description: 'Core dependency: agentic_spec'
+    category: core
+    source: import_analysis
+    usage_context:
+    - general
+    - testing
+    - web_ui
+    import_frequency: 23
+    transitive_dependencies:
+    - openai
+    - pyyaml
+    - networkx
+    - matplotlib
+    - jinja2
+    - typer
+    - pytest-cov
+    - aiosqlite
+    - fastapi
+    - uvicorn
+  - name: pytest
+    version: unknown
+    description: 'Testing framework: pytest'
+    category: testing
+    source: import_analysis
+    usage_context:
+    - testing
+    - web_ui
+    import_frequency: 9
+    transitive_dependencies:
+    - colorama
+    - exceptiongroup
+    - iniconfig
+    - packaging
+    - pluggy<2,
+    - pygments
+    - tomli
+    - argcomplete;
+    - attrs
+    - hypothesis
+  - name: pytest_asyncio
+    version: unknown
+    description: 'Core dependency: pytest_asyncio'
+    category: core
+    source: import_analysis
+    usage_context:
+    - testing
+    import_frequency: 1
+    transitive_dependencies:
+    - pytest
+    - sphinx
+    - sphinx-rtd-theme
+    - coverage
+    - hypothesis
+  - name: builtins
+    version: unknown
+    description: 'Core dependency: builtins'
+    category: core
+    source: import_analysis
+    usage_context:
+    - testing
+    import_frequency: 1
   architecture_overview: agentic-spec is a Python CLI tool that generates detailed
-    programming specifications using AI with template inheritance and review workflows.
-  current_codebase_structure: "agentic_spec/\n\u251C\u2500\u2500 cli.py\n\u251C\u2500\
-    \u2500 config.py\n\u251C\u2500\u2500 core.py\n\u251C\u2500\u2500 exceptions.py\n\
+    programming specifications using AI with a FastAPI web interface for workflow
+    visualization and SQLite database backend for task tracking featuring template
+    inheritance and automated review workflows.
+  current_codebase_structure: "agentic_spec/\n\u251C\u2500\u2500 async_db.py  # Database\n\
+    \u251C\u2500\u2500 cli.py  # Database\n\u251C\u2500\u2500 config.py\n\u251C\u2500\
+    \u2500 core.py\n\u251C\u2500\u2500 db.py  # Database\n\u251C\u2500\u2500 exceptions.py\n\
     \u251C\u2500\u2500 graph_visualization.py\n\u251C\u2500\u2500 models.py\n\u251C\
-    \u2500\u2500 prompt_engineering.py\n\u251C\u2500\u2500 template_loader.py\n\u251C\
-    \u2500\u2500 template_validator.py\ntemplates/              # YAML template files\n\
-    specs/                  # Generated specification files\ntests/              \
-    \    # Test files"
+    \u2500\u2500 models_backup.py\n\u251C\u2500\u2500 prompt_editor.py\n\u251C\u2500\
+    \u2500 prompt_engineering.py\n\u251C\u2500\u2500 prompt_template_loader.py\n\u251C\
+    \u2500\u2500 template_loader.py\n\u251C\u2500\u2500 template_validator.py\n\u251C\
+    \u2500\u2500 web_ui.py  # Web UI\n\u251C\u2500\u2500 workflow.py\n\u251C\u2500\
+    \u2500 web_templates/      # Jinja2 HTML templates and static assets\n\u251C\u2500\
+    \u2500 migrations/         # Database migration scripts\ntemplates/          \
+    \    # YAML specification templates\nspecs/                  # Generated specifications\
+    \ and SQLite database\ntests/                  # Unit and integration tests\n\
+    tools/                  # Utility scripts and automation"
+  file_categorization:
+    cli_files:
+    - tests\test_cli.py
+    - tests\test_typer_integration.py
+    web_ui_files: &id001
+    - agentic_spec\web_ui.py
+    - tests\test_web_ui_endpoints.py
+    - agentic_spec\templates\base.py
+    - agentic_spec\templates\__init__.py
+    - agentic_spec\templates\base_template.html
+    - agentic_spec\templates\child_template.html
+    - agentic_spec\web_templates\base.html
+    - agentic_spec\web_templates\error.html
+    - agentic_spec\web_templates\index.html
+    - agentic_spec\web_templates\project_list.html
+    - agentic_spec\web_templates\specs_list.html
+    - agentic_spec\web_templates\spec_detail.html
+    - agentic_spec\web_templates\task_detail.html
+    - agentic_spec\web_templates\task_list.html
+    - agentic_spec\web_templates\static\styles.css
+    api_files: []
+    database_files: &id002
+    - agentic_spec\async_db.py
+    - agentic_spec\cli.py
+    - agentic_spec\db.py
+    - tests\test_async_db.py
+    - tests\test_models_db.py
+    - tests\test_simple_async_db.py
+    - agentic_spec\ai_providers\base.py
+    - agentic_spec\ai_providers\openai_provider.py
+    - agentic_spec\migrations\002_add_enhanced_tracking_fields.py
+    - agentic_spec.db
+    - specs\specifications.db
+    - archive\specs-archive-2025-07-27-184732\specifications.db
+    migration_files:
+    - analyze_yaml_schema.py
+    - agentic_spec\models.py
+    - agentic_spec\migrations\001_add_tracking_fields.py
+    - agentic_spec\migrations\migration_manager.py
+    - agentic_spec\migrations\__init__.py
+    test_files: &id003
+    - tests\test_error_handling.py
+    - tests\test_prompt_engineering.py
+    - tests\test_workflow.py
+    config_files:
+    - pyproject.toml
+    template_files: []
+    documentation_files: []
+    build_files:
+    - Makefile
+    data_files: []
+    statistics:
+      python_files: 40
+      web_ui_files: 15
+      database_files: 12
+      test_files: 3
+      config_files: 1
+      template_files: 0
+      migration_files: 5
+      cli_files: 2
+      api_files: 0
+      data_files: 0
+      documentation_files: 0
+      build_files: 1
+  web_ui_components: *id001
+  database_components: *id002
+  test_coverage: *id003
 requirements:
   functional:
   - Generate detailed specifications from high-level prompts
@@ -53,9 +407,6 @@ requirements:
   - Maintain CLI interface for automation and scripting
   - Store all data in human-readable YAML format
   - Avoid external databases to keep deployment simple
-  - Maintain Windows compatibility (CRLF/LF handling)
-  - Keep lint error count minimal (currently <30 from original 134)
-  - Use non-blocking pre-commit hooks to show warnings without stopping commits
 coding_standards:
 - Use dataclasses and Pydantic models for data structures
 - Implement async/await for AI API calls
@@ -64,12 +415,6 @@ coding_standards:
 - Implement comprehensive error handling with informative messages
 - Write unit tests for all new functionality
 - Use configuration-driven behavior over hard-coded values
-- Maintain lint compliance using ruff with configured ignore rules
-- Follow pre-commit hooks for automated code quality checks
-- Use CRLF/LF line ending normalization via .gitattributes
-- Avoid mutable default arguments in function signatures (use None pattern)
-- Handle string vs Path parameter conversion consistently
-- Use proper exception message formatting without string literals in raise statements
 key_design_patterns:
 - Template inheritance with deep merging strategy
 - Context-aware AI prompting with parameter injection
@@ -77,44 +422,19 @@ key_design_patterns:
 - Graph-based specification relationships
 - Graceful AI fallback mechanisms
 - Step-based implementation tracking with unique IDs
-development_workflows:
-- Use make commands for all development tasks (make lint, make test, make format)
-- Run make quality-gate for comprehensive quality checks before commits
-- Use make spec-complete for automated specification workflow (commit + publish)
-- Always run make lint before generating specifications to provide context
-- Follow git pre-commit hooks with non-blocking lint warnings
-- Use agentic-spec tool to generate implementation specifications
-- Sync foundation spec regularly with agentic-spec sync-foundation
-- Maintain TodoWrite tracking for complex multi-step tasks
-code_quality_config:
-  ruff_ignored_rules:
-    - E501  # line too long (handled by formatter)
-    - B008  # function calls in argument defaults (Typer CLI pattern)
-    - TRY300  # consider moving to else block
-    - TRY301  # abstract raise to inner function
-    - ARG001  # unused function argument (CLI patterns)
-    - ARG002  # unused method argument (interface implementations)
-    - PLR0912  # too many branches (CLI functions)
-    - PLR0913  # too many arguments (CLI functions)
-    - PLR0915  # too many statements (CLI functions)
-  pre_commit_hooks:
-    - ruff (linting with --fix --exit-zero)
-    - ruff-format (code formatting)
-    - trim-trailing-whitespace
-    - end-of-file-fixer
-    - check-yaml
-    - check-toml
-current_project_status:
-  lint_compliance: Significantly improved (134 → <30 errors, 85% reduction)
-  test_suite: Passing with proper async handling and mocking
-  git_hooks: Configured for non-blocking warnings with automatic formatting
-  line_endings: Properly configured via .gitattributes for Windows development
-  recent_improvements:
-    - Fixed mutable default arguments pattern (B008 errors)
-    - Resolved string vs Path parameter handling issues
-    - Implemented proper exception message formatting
-    - Added comprehensive .gitattributes for cross-platform compatibility
-    - Updated pre-commit configuration for developer-friendly workflow
-    - Reduced complexity in CLI functions while maintaining functionality
-_last_synced: '2025-07-26T21:24:47.352183'
-_sync_version: '1.1'
+- Database-backed workflow state management
+- Async/await pattern for database operations
+- YAML-to-database migration pipeline
+- FastAPI REST API with async endpoints
+- Jinja2 template rendering with context injection
+- Client-side JavaScript for interactive components
+- CSS-based visual hierarchy and status indicators
+- Comprehensive async/await architecture
+- Dataclass and Pydantic model-driven data structures
+architectural_patterns:
+- Web UI with FastAPI/Jinja2 templates
+- Database-backed workflow with async operations
+- Asynchronous database operations
+- Database migrations
+_last_synced: '2025-07-27T19:25:10.015186'
+_sync_version: '2.0'

@@ -1,0 +1,219 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Specifications{% if current_status %} – {{ current_status }}{% endif %}</h2>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/specs" class="status-badge {% if not current_status %}draft{% endif %}" style="text-decoration: none;">All</a>
+      <a href="/specs?status=draft" class="status-badge draft" style="text-decoration: none;">Draft</a>
+      <a href="/specs?status=approved" class="status-badge approved" style="text-decoration: none;">Approved</a>
+      <a href="/specs?status=implemented" class="status-badge implemented" style="text-decoration: none;">Implemented</a>
+    </div>
+  </div>
+
+  <!-- Filter and Sort Controls -->
+  <div style="display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid #e5e7eb; flex-wrap: wrap;">
+    <div>
+      <label for="workflow-filter" style="display: block; font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Workflow Status</label>
+      <select id="workflow-filter" style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem;">
+        <option value="">All Workflows</option>
+        <option value="created">Created</option>
+        <option value="planning">Planning</option>
+        <option value="implementing">Implementing</option>
+        <option value="reviewing">Reviewing</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+    <div>
+      <label for="priority-filter" style="display: block; font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Priority</label>
+      <select id="priority-filter" style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem;">
+        <option value="">All Priorities</option>
+        <option value="high">High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+    <div>
+      <label for="sort-by" style="display: block; font-size: 0.875rem; color: #6b7280; margin-bottom: 0.25rem;">Sort By</label>
+      <select id="sort-by" style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem;">
+        <option value="created-desc">Newest First</option>
+        <option value="created-asc">Oldest First</option>
+        <option value="updated-desc">Recently Updated</option>
+        <option value="title-asc">Title (A-Z)</option>
+        <option value="title-desc">Title (Z-A)</option>
+        <option value="progress-desc">Progress (High to Low)</option>
+        <option value="progress-asc">Progress (Low to High)</option>
+      </select>
+    </div>
+    <div style="margin-left: auto; display: flex; align-items: flex-end;">
+      <button id="clear-filters" style="padding: 0.5rem 1rem; background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer;">Clear Filters</button>
+    </div>
+  </div>
+
+  {% if specs %}
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Workflow</th>
+        <th>Progress</th>
+        <th>Priority</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in specs %}
+      <tr>
+        <td>
+          <a href="/specs/{{ s.id }}">{{ s.title[:60] }}{% if s.title|length > 60 %}...{% endif %}</a>
+          <div class="card-subtitle">ID: {{ s.id }}</div>
+        </td>
+        <td>
+          <span class="status-badge {{ s.status.value }}">{{ s.status.value }}</span>
+        </td>
+        <td>
+          <span class="workflow-badge {{ s.workflow_status.value }}">{{ s.workflow_status.value }}</span>
+        </td>
+        <td>
+          <div class="progress-label">
+            <span>Progress</span>
+            <span>{{ s.completion_percentage }}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ s.completion_percentage }}%"></div>
+          </div>
+        </td>
+        <td>
+          {% if s.priority %}
+          <span class="priority-indicator priority-{{ s.priority.value }}"></span>
+          {{ s.priority.value|title }}
+          {% else %}
+          <span style="color: #9ca3af;">-</span>
+          {% endif %}
+        </td>
+        <td style="font-size: 0.875rem; color: #6b7280;">
+          {{ s.created.strftime('%Y-%m-%d') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color: #6b7280; text-align: center; padding: 3rem 0;">
+    No specifications found{% if current_status %} with status "{{ current_status }}"{% endif %}.
+  </p>
+  {% endif %}
+</div>
+
+<script>
+// Store original specs data
+const specsData = [
+  {% for s in specs %}
+  {
+    id: '{{ s.id }}',
+    title: {{ s.title|tojson|safe }},
+    status: '{{ s.status.value }}',
+    workflowStatus: '{{ s.workflow_status.value }}',
+    priority: '{{ s.priority.value if s.priority else "" }}',
+    completion: {{ s.completion_percentage }},
+    created: '{{ s.created.isoformat() }}',
+    updated: '{{ s.updated.isoformat() }}',
+    element: null
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+// Get table body and store row elements
+const tbody = document.querySelector('tbody');
+if (tbody) {
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.forEach((row, index) => {
+    if (specsData[index]) {
+      specsData[index].element = row;
+    }
+  });
+}
+
+// Filter and sort functions
+function filterSpecs() {
+  const workflowFilter = document.getElementById('workflow-filter').value;
+  const priorityFilter = document.getElementById('priority-filter').value;
+
+  const filteredSpecs = specsData.filter(spec => {
+    if (workflowFilter && spec.workflowStatus !== workflowFilter) return false;
+    if (priorityFilter && spec.priority !== priorityFilter) return false;
+    return true;
+  });
+
+  return filteredSpecs;
+}
+
+function sortSpecs(specs, sortBy) {
+  const sorted = [...specs];
+
+  switch(sortBy) {
+    case 'created-desc':
+      sorted.sort((a, b) => new Date(b.created) - new Date(a.created));
+      break;
+    case 'created-asc':
+      sorted.sort((a, b) => new Date(a.created) - new Date(b.created));
+      break;
+    case 'updated-desc':
+      sorted.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+      break;
+    case 'title-asc':
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+      break;
+    case 'title-desc':
+      sorted.sort((a, b) => b.title.localeCompare(a.title));
+      break;
+    case 'progress-desc':
+      sorted.sort((a, b) => b.completion - a.completion);
+      break;
+    case 'progress-asc':
+      sorted.sort((a, b) => a.completion - b.completion);
+      break;
+  }
+
+  return sorted;
+}
+
+function updateTable() {
+  if (!tbody) return;
+
+  const sortBy = document.getElementById('sort-by').value;
+  const filtered = filterSpecs();
+  const sorted = sortSpecs(filtered, sortBy);
+
+  // Clear table
+  tbody.innerHTML = '';
+
+  // Add filtered and sorted rows
+  if (sorted.length > 0) {
+    sorted.forEach(spec => {
+      if (spec.element) {
+        tbody.appendChild(spec.element);
+      }
+    });
+  } else {
+    // Show no results message
+    const noResultsRow = document.createElement('tr');
+    noResultsRow.innerHTML = '<td colspan="6" style="text-align: center; padding: 2rem; color: #6b7280;">No specifications match the selected filters.</td>';
+    tbody.appendChild(noResultsRow);
+  }
+}
+
+// Event listeners
+document.getElementById('workflow-filter').addEventListener('change', updateTable);
+document.getElementById('priority-filter').addEventListener('change', updateTable);
+document.getElementById('sort-by').addEventListener('change', updateTable);
+
+document.getElementById('clear-filters').addEventListener('click', () => {
+  document.getElementById('workflow-filter').value = '';
+  document.getElementById('priority-filter').value = '';
+  document.getElementById('sort-by').value = 'created-desc';
+  updateTable();
+});
+</script>
+{% endblock %}

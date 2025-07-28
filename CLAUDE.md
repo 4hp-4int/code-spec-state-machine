@@ -207,6 +207,14 @@ agentic-spec sync-foundation
 agentic-spec sync-foundation --force  # Force sync even if current
 ```
 
+The foundation sync command now includes enhanced analysis capabilities:
+- **Multi-source dependency detection**: Extracts dependencies from pyproject.toml, requirements.txt, and setup.py
+- **Transitive dependency resolution**: Uses importlib.metadata to detect transitive dependencies
+- **Advanced file categorization**: Automatically categorizes files into CLI, web UI, database, API, test, config, documentation, build, and migration files
+- **Content-based analysis**: Analyzes file content to improve categorization accuracy
+- **Architectural pattern detection**: Identifies FastAPI applications, async operations, database migrations
+- **Smart filtering**: Excludes virtual environments (.venv), build artifacts, and cache directories
+
 **check-foundation** - Check if foundation specification needs to be synced
 ```bash
 agentic-spec check-foundation
@@ -428,8 +436,9 @@ The SQLite database includes:
 - **MIGRATION**: Use `agentic-spec migrate-bulk` to sync YAML files with database
 - Memorize the doc/location structure, keep docs up to date
 - Relay the current spec graph after completing sub-specifications or the parent specification
-- Always decompose composite task to build full spec trees, unless theres 3 levels of nested decomposition, then get approval
+- **DECOMPOSITION RULE**: Whenever you encounter a composite task, decompose using the expand command, go 3 levels of nesting deep, if you need to go further, ask for approval.
 - All 39 existing specifications have been marked as completed in the database
+- **TEMPLATE INHERITANCE**: Ensure generated specs inherit from the correct templates
 
 ## Interactive Workflow Usage
 
@@ -451,22 +460,3 @@ The SQLite database includes:
 - **Task Approval**: `/spec task-approve spec_id:step --level peer`
 - **Block/Unblock**: `/spec task-block spec_id:step --reason "dependency"`
 - **Override Strict Mode**: `/spec task-override spec_id:step --reason "urgent"`
-
-```
-
-### Claude Code Memories
-
-- Always use the agentic-spec tool to generate new specs to follow when working on the project.
-- Run project commands through make and the Makefile
-- **DATABASE-BACKED WORKFLOW**: All specifications are now tracked in SQLite database at `specs/specifications.db`
-- **WORKFLOW COMMANDS**: Use task workflow commands to track progress:
-  - `agentic-spec task-start spec_id:step` - Start working on a task
-  - `agentic-spec task-complete spec_id:step` - Mark task as completed
-  - `agentic-spec workflow-status spec_id` - Check specification progress
-  - `agentic-spec migration-status` - Check database migration status
-- **AUTOMATIC WORKFLOW**: When completing a specification or declaring it done, ALWAYS run `make spec-complete` to commit changes and publish completed specifications.
-- **MIGRATION**: Use `agentic-spec migrate-bulk` to sync YAML files with database
-- Memorize the doc/location structure, keep docs up to date
-- Relay the current spec graph after completing sub-specifications or the parent specification
-- **DECOMPOSITION RULE**: Whenever you encounter a composite task, decompose using the expand command, go 3 levels of nesting deep, if you need to go further, ask for approval.
-- All 39 existing specifications have been marked as completed in the database

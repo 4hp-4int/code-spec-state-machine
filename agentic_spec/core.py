@@ -241,23 +241,41 @@ class SpecGenerator:
         # Get project root (go up from agentic_spec directory)
         project_root = self.spec_templates_dir.parent
 
-        # Analyze Python files
-        python_files = list(project_root.rglob("*.py"))
+        # Categorize and analyze files
+        file_analysis = self._categorize_files(project_root)
+        python_files = file_analysis["python_files"]
 
-        # Analyze dependencies from pyproject.toml
-        dependencies = self._extract_dependencies(project_root)
+        # Analyze dependencies from pyproject.toml and imports
+        dependencies = self._extract_dependencies(project_root, python_files)
 
-        # Analyze architecture from file structure
-        architecture = self._analyze_architecture(project_root)
+        # Analyze architecture from file structure and content
+        architecture = self._analyze_architecture(project_root, file_analysis)
 
         # Generate foundation data
         return {
             "context": {
                 "project": "agentic-spec",
-                "domain": "Python CLI tool for AI-powered specification generation",
+                "domain": self._infer_domain(file_analysis),
                 "dependencies": dependencies,
                 "architecture_overview": architecture["overview"],
                 "current_codebase_structure": architecture["structure"],
+                "file_categorization": {
+                    "cli_files": file_analysis["cli_files"],
+                    "web_ui_files": file_analysis["web_ui_files"],
+                    "api_files": file_analysis["api_files"],
+                    "database_files": file_analysis["database_files"],
+                    "migration_files": file_analysis["migration_files"],
+                    "test_files": file_analysis["test_files"],
+                    "config_files": file_analysis["config_files"],
+                    "template_files": file_analysis["template_files"],
+                    "documentation_files": file_analysis["documentation_files"],
+                    "build_files": file_analysis["build_files"],
+                    "data_files": file_analysis["data_files"],
+                    "statistics": file_analysis["statistics"],
+                },
+                "web_ui_components": file_analysis["web_ui_files"],
+                "database_components": file_analysis["database_files"],
+                "test_coverage": file_analysis["test_files"],
             },
             "requirements": {
                 "functional": architecture["functional_requirements"],
@@ -265,13 +283,341 @@ class SpecGenerator:
                 "constraints": architecture["constraints"],
             },
             "coding_standards": self._extract_coding_standards(python_files),
-            "key_design_patterns": self._extract_design_patterns(python_files),
+            "key_design_patterns": self._extract_design_patterns(
+                python_files, file_analysis
+            ),
+            "architectural_patterns": self._detect_architectural_patterns(
+                file_analysis
+            ),
             "_last_synced": datetime.now().isoformat(),
-            "_sync_version": "1.0",
+            "_sync_version": "2.0",
         }
 
-    def _extract_dependencies(self, project_root: Path) -> list[dict[str, str]]:
+    def _categorize_files(self, project_root: Path) -> dict[str, Any]:
+        """Categorize files by type and purpose for enhanced analysis."""
+        categorization = {
+            "python_files": [],
+            "web_ui_files": [],
+            "database_files": [],
+            "test_files": [],
+            "config_files": [],
+            "template_files": [],
+            "migration_files": [],
+            "cli_files": [],
+            "api_files": [],
+            "data_files": [],
+            "documentation_files": [],
+            "build_files": [],
+        }
+
+        # Define skip patterns for better organization (use both forward and backslashes for Windows)
+        skip_patterns = [
+            ".venv\\",
+            ".venv/",
+            "venv\\",
+            "venv/",
+            "build\\",
+            "build/",
+            "dist\\",
+            "dist/",
+            "__pycache__\\",
+            "__pycache__/",
+            ".git\\",
+            ".git/",
+            ".pytest_cache\\",
+            ".pytest_cache/",
+            ".mypy_cache\\",
+            ".mypy_cache/",
+            "node_modules\\",
+            "node_modules/",
+        ]
+
+        # Categorize Python files with enhanced detection
+        for py_file in project_root.rglob("*.py"):
+            file_path = str(py_file.relative_to(project_root))
+
+            # Skip virtual environment and build directories
+            if any(skip_dir in file_path for skip_dir in skip_patterns):
+                continue
+
+            categorization["python_files"].append(py_file)
+
+            # Read file content for better categorization
+            content_indicators = self._analyze_file_content(py_file)
+
+            # Migration files (check first to avoid being categorized as database files)
+            if (
+                any(
+                    indicator in file_path.lower()
+                    for indicator in ["migration", "migrate"]
+                )
+                or "migration" in content_indicators
+            ):
+                categorization["migration_files"].append(file_path)
+
+            # Web UI files (enhanced detection)
+            elif any(
+                indicator in file_path.lower()
+                for indicator in ["web_ui", "webui", "fastapi", "templates"]
+            ) or any(
+                indicator in content_indicators
+                for indicator in ["fastapi", "starlette", "@app.route", "HTMLResponse"]
+            ):
+                categorization["web_ui_files"].append(file_path)
+
+            # API files
+            elif any(
+                indicator in file_path.lower()
+                for indicator in ["api", "routes", "endpoints"]
+            ) or any(
+                indicator in content_indicators
+                for indicator in ["@app.", "APIRouter", "FastAPI"]
+            ):
+                categorization["api_files"].append(file_path)
+
+            # Database files (enhanced detection)
+            elif any(
+                indicator in file_path.lower()
+                for indicator in ["db", "database", "sqlite", "async_db"]
+            ) or any(
+                indicator in content_indicators
+                for indicator in ["sqlite", "aiosqlite", "CREATE TABLE", "async def"]
+            ):
+                categorization["database_files"].append(file_path)
+
+            # CLI files
+            elif any(
+                indicator in file_path.lower()
+                for indicator in ["cli", "command", "main"]
+            ) or any(
+                indicator in content_indicators
+                for indicator in ["typer", "click", "argparse", "@app.command"]
+            ):
+                categorization["cli_files"].append(file_path)
+
+            # Test files (enhanced detection)
+            elif any(
+                indicator in file_path.lower()
+                for indicator in ["test_", "_test", "tests/", "conftest"]
+            ) or any(
+                indicator in content_indicators
+                for indicator in ["pytest", "def test_", "class Test"]
+            ):
+                categorization["test_files"].append(file_path)
+
+        # Enhanced non-Python file categorization
+        file_mappings = {
+            "*.toml": ("config_files", ["pyproject.toml", "*.toml"]),
+            "*.yaml": ("template_files", ["templates/", "specs/"]),
+            "*.yml": ("config_files", [".github/"]),
+            "*.html": ("web_ui_files", []),
+            "*.css": ("web_ui_files", []),
+            "*.js": ("web_ui_files", []),
+            "*.json": ("config_files", ["package.json", "tsconfig.json"]),
+            "*.md": ("documentation_files", ["README", "CHANGELOG", "docs/"]),
+            "*.rst": ("documentation_files", ["docs/"]),
+            "*.txt": ("data_files", ["requirements", "LICENSE"]),
+            "*.sql": ("database_files", []),
+            "*.db": ("database_files", []),
+            "*.sqlite": ("database_files", []),
+            "Makefile": ("build_files", []),
+            "Dockerfile": ("build_files", []),
+            "*.dockerfile": ("build_files", []),
+        }
+
+        for pattern, (category, context_indicators) in file_mappings.items():
+            for file_obj in project_root.rglob(pattern):
+                file_path = str(file_obj.relative_to(project_root))
+
+                # Skip virtual environment and build directories
+                if any(skip_dir in file_path for skip_dir in skip_patterns):
+                    continue
+
+                # Apply context-based filtering
+                if context_indicators:
+                    if any(
+                        indicator in file_path.lower()
+                        for indicator in context_indicators
+                    ):
+                        categorization[category].append(file_path)
+                else:
+                    categorization[category].append(file_path)
+
+        # Add file count statistics
+        categorization["statistics"] = {
+            category: len(files)
+            for category, files in categorization.items()
+            if category != "statistics"
+        }
+
+        return categorization
+
+    def _analyze_file_content(self, file_path: Path) -> list[str]:
+        """Analyze file content to extract key indicators for categorization."""
+        indicators = []
+
+        try:
+            with file_path.open("r", encoding="utf-8") as f:
+                # Read first few lines for performance
+                content = f.read(2000)  # First 2KB
+
+            content_lower = content.lower()
+
+            # Web framework indicators
+            if any(
+                term in content_lower for term in ["fastapi", "starlette", "uvicorn"]
+            ):
+                indicators.append("fastapi")
+            if any(term in content for term in ["@app.route", "@app.get", "@app.post"]):
+                indicators.append("@app.route")
+            if "HTMLResponse" in content:
+                indicators.append("HTMLResponse")
+
+            # Database indicators
+            if any(term in content_lower for term in ["sqlite", "aiosqlite"]):
+                indicators.append("sqlite")
+            if "CREATE TABLE" in content.upper():
+                indicators.append("CREATE TABLE")
+            if "async def" in content:
+                indicators.append("async def")
+
+            # CLI indicators
+            if any(term in content_lower for term in ["typer", "click"]):
+                indicators.append("typer" if "typer" in content_lower else "click")
+            if "@app.command" in content:
+                indicators.append("@app.command")
+            if "argparse" in content_lower:
+                indicators.append("argparse")
+
+            # Testing indicators
+            if any(term in content_lower for term in ["pytest", "unittest"]):
+                indicators.append("pytest" if "pytest" in content_lower else "unittest")
+            if any(term in content for term in ["def test_", "class Test"]):
+                indicators.append(
+                    "def test_" if "def test_" in content else "class Test"
+                )
+
+            # Migration indicators
+            if any(
+                term in content_lower for term in ["migration", "migrate", "schema"]
+            ):
+                indicators.append("migration")
+
+        except (OSError, UnicodeDecodeError, PermissionError):
+            pass
+
+        return indicators
+
+    def _infer_domain(self, file_analysis: dict[str, Any]) -> str:
+        """Infer project domain from file analysis."""
+        if file_analysis["web_ui_files"]:
+            if file_analysis["database_files"]:
+                return "Full-stack Python application with CLI, web UI, and database components"
+            return "Python CLI tool with web UI for AI-powered specification generation"
+        if file_analysis["database_files"]:
+            return "Python CLI tool with database backend for AI-powered specification generation"
+        return "Python CLI tool for AI-powered specification generation"
+
+    def _detect_architectural_patterns(
+        self, file_analysis: dict[str, Any]
+    ) -> list[str]:
+        """Detect architectural patterns from file analysis."""
+        patterns = []
+
+        if file_analysis["web_ui_files"]:
+            patterns.append("Web UI with FastAPI/Jinja2 templates")
+        if file_analysis["database_files"]:
+            patterns.append("Database-backed workflow with async operations")
+        if any("async" in f for f in file_analysis["database_files"]):
+            patterns.append("Asynchronous database operations")
+        if file_analysis["template_files"]:
+            patterns.append("Template inheritance system")
+        if len(file_analysis["test_files"]) > 5:
+            patterns.append("Comprehensive test coverage")
+        if any("migration" in f for f in file_analysis["database_files"]):
+            patterns.append("Database migrations")
+
+        return patterns
+
+    def _extract_dependencies(
+        self, project_root: Path, python_files: list[Path]
+    ) -> list[dict[str, str]]:
+        """Extract dependencies from multiple sources including transitive dependencies."""
+        dependencies = []
+
+        # Extract from pyproject.toml (main dependencies)
+        dependencies.extend(self._extract_from_pyproject(project_root))
+
+        # Extract from requirements.txt files if present
+        dependencies.extend(self._extract_from_requirements(project_root))
+
+        # Extract from setup.py if present
+        dependencies.extend(self._extract_from_setup_py(project_root))
+
+        # Analyze import statements for additional context and transitive deps
+        import_analysis = self._analyze_imports(python_files)
+
+        # Add dependencies found in imports but not in config files
+        for module_name, usage_data in import_analysis.items():
+            if not any(
+                dep["name"].lower() == module_name.lower() for dep in dependencies
+            ):
+                # Check if this is a known package (not stdlib)
+                if self._is_third_party_package(module_name):
+                    dep_info = self._categorize_dependency(module_name)
+                    dependencies.append(
+                        {
+                            "name": module_name,
+                            "version": "unknown",
+                            "description": dep_info["description"],
+                            "category": dep_info["category"],
+                            "source": "import_analysis",
+                            "usage_context": usage_data["context"],
+                            "import_frequency": usage_data["frequency"],
+                        }
+                    )
+
+        # Enhance dependency descriptions with usage context
+        for dep in dependencies:
+            if dep["name"] in import_analysis:
+                usage = import_analysis[dep["name"]]
+                dep["usage_context"] = usage["context"]
+                dep["import_frequency"] = usage["frequency"]
+
+            # Add transitive dependency information where possible
+            transitive_deps = self._detect_transitive_dependencies(dep["name"])
+            if transitive_deps:
+                dep["transitive_dependencies"] = transitive_deps
+
+        # Fallback if no dependencies found
+        if not dependencies:
+            dependencies = [
+                {
+                    "name": "Python",
+                    "version": "3.12+",
+                    "description": "Core programming language",
+                    "category": "runtime",
+                },
+                {
+                    "name": "PyYAML",
+                    "version": "6.0+",
+                    "description": "YAML parsing and generation",
+                    "category": "core",
+                },
+                {
+                    "name": "OpenAI",
+                    "version": "1.97+",
+                    "description": "AI integration",
+                    "category": "ai",
+                },
+            ]
+
+        return dependencies
+
+    def _extract_from_pyproject(self, project_root: Path) -> list[dict[str, Any]]:
         """Extract dependencies from pyproject.toml."""
+        dependencies = []
+
         try:
             import tomllib
 
@@ -280,61 +626,358 @@ class SpecGenerator:
                 with pyproject_path.open("rb") as f:
                     data = tomllib.load(f)
 
-                dependencies = []
                 # Main dependencies
                 for dep in data.get("project", {}).get("dependencies", []):
-                    name = dep.split(">=")[0].split(">")[0].split("==")[0]
-                    version = dep.split(">=")[1] if ">=" in dep else "latest"
+                    name, version = self._parse_dependency_spec(dep)
+                    dep_info = self._categorize_dependency(name)
                     dependencies.append(
                         {
                             "name": name,
                             "version": version,
-                            "description": f"Core dependency: {name}",
+                            "description": dep_info["description"],
+                            "category": dep_info["category"],
+                            "source": "pyproject.toml",
                         }
                     )
 
-                return dependencies
+                # Optional dependencies
+                optional_deps = data.get("project", {}).get("optional-dependencies", {})
+                for group_name, deps in optional_deps.items():
+                    for dep in deps:
+                        name, version = self._parse_dependency_spec(dep)
+                        dep_info = self._categorize_dependency(name)
+                        dependencies.append(
+                            {
+                                "name": name,
+                                "version": version,
+                                "description": dep_info["description"],
+                                "category": dep_info["category"],
+                                "source": f"pyproject.toml (optional-{group_name})",
+                            }
+                        )
+
         except (OSError, ImportError, KeyError, ValueError, TypeError):
             pass
 
-        # Fallback basic dependencies
-        return [
-            {
-                "name": "Python",
-                "version": "3.12+",
-                "description": "Core programming language",
-            },
-            {
-                "name": "PyYAML",
-                "version": "6.0+",
-                "description": "YAML parsing and generation",
-            },
-            {"name": "OpenAI", "version": "1.97+", "description": "AI integration"},
-        ]
+        return dependencies
 
-    def _analyze_architecture(self, project_root: Path) -> dict[str, Any]:
-        """Analyze project architecture from file structure."""
+    def _extract_from_requirements(self, project_root: Path) -> list[dict[str, Any]]:
+        """Extract dependencies from requirements files."""
+        dependencies = []
+
+        # Common requirements file patterns
+        req_patterns = ["requirements.txt", "requirements/*.txt", "requirements-*.txt"]
+
+        for pattern in req_patterns:
+            for req_file in project_root.glob(pattern):
+                try:
+                    with req_file.open("r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if (
+                                line
+                                and not line.startswith("#")
+                                and not line.startswith("-")
+                            ):
+                                name, version = self._parse_dependency_spec(line)
+                                if name:
+                                    dep_info = self._categorize_dependency(name)
+                                    dependencies.append(
+                                        {
+                                            "name": name,
+                                            "version": version,
+                                            "description": dep_info["description"],
+                                            "category": dep_info["category"],
+                                            "source": str(req_file.name),
+                                        }
+                                    )
+                except (OSError, UnicodeDecodeError):
+                    continue
+
+        return dependencies
+
+    def _extract_from_setup_py(self, project_root: Path) -> list[dict[str, Any]]:
+        """Extract dependencies from setup.py."""
+        dependencies = []
+
+        setup_py = project_root / "setup.py"
+        if setup_py.exists():
+            try:
+                with setup_py.open("r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Simple regex to find install_requires
+                import re
+
+                install_requires_match = re.search(
+                    r"install_requires\s*=\s*\[(.*?)\]", content, re.DOTALL
+                )
+                if install_requires_match:
+                    deps_str = install_requires_match.group(1)
+                    # Extract quoted dependencies
+                    for match in re.finditer(r'["\']([^"\']+)["\']', deps_str):
+                        dep_spec = match.group(1)
+                        name, version = self._parse_dependency_spec(dep_spec)
+                        if name:
+                            dep_info = self._categorize_dependency(name)
+                            dependencies.append(
+                                {
+                                    "name": name,
+                                    "version": version,
+                                    "description": dep_info["description"],
+                                    "category": dep_info["category"],
+                                    "source": "setup.py",
+                                }
+                            )
+
+            except (OSError, UnicodeDecodeError):
+                pass
+
+        return dependencies
+
+    def _parse_dependency_spec(self, dep_spec: str) -> tuple[str, str]:
+        """Parse dependency specification to extract name and version."""
+        import re
+
+        # Remove comments and whitespace
+        dep_spec = dep_spec.split("#")[0].strip()
+
+        # Handle package name with optional extras like package[extra1,extra2]
+        # Pattern matches: package_name[extras]version_spec or package_nameversion_spec
+        pattern = r"^([a-zA-Z0-9_\-\.]+)(?:\[[^\]]+\])?([>=<~!,\s]+.+)?$"
+        match = re.match(pattern, dep_spec)
+
+        if match:
+            name = match.group(1)
+            version_spec = match.group(2)
+            if version_spec:
+                return name, version_spec.strip()
+            return name, "latest"
+        # Fallback: try to extract just alphanumeric name
+        name_match = re.match(r"^([a-zA-Z0-9_\-\.]+)", dep_spec)
+        if name_match:
+            return name_match.group(1), "latest"
+        return dep_spec, "latest"
+
+    def _is_third_party_package(self, module_name: str) -> bool:
+        """Check if a module is likely a third-party package (not stdlib)."""
+        # Common stdlib modules to exclude
+        stdlib_modules = {
+            "os",
+            "sys",
+            "re",
+            "json",
+            "urllib",
+            "http",
+            "pathlib",
+            "typing",
+            "asyncio",
+            "logging",
+            "datetime",
+            "collections",
+            "itertools",
+            "functools",
+            "inspect",
+            "importlib",
+            "unittest",
+            "sqlite3",
+            "csv",
+            "xml",
+            "email",
+            "html",
+            "math",
+            "random",
+            "string",
+            "threading",
+            "multiprocessing",
+            "subprocess",
+            "shutil",
+            "tempfile",
+            "glob",
+            "fnmatch",
+            "warnings",
+            "traceback",
+            "io",
+            "contextlib",
+            "copy",
+            "pickle",
+            "struct",
+            "zlib",
+            "hashlib",
+            "hmac",
+            "secrets",
+            "base64",
+            "binascii",
+            "uuid",
+            "time",
+            "calendar",
+            "argparse",
+            "configparser",
+            "tomllib",
+        }
+
+        return module_name.lower() not in stdlib_modules
+
+    def _detect_transitive_dependencies(self, package_name: str) -> list[str]:
+        """Detect transitive dependencies using importlib.metadata if available."""
+        try:
+            from importlib import metadata
+
+            # Get distribution for the package
+            dist = metadata.distribution(package_name)
+            requires = dist.requires or []
+
+            transitive = []
+            for req in requires:
+                # Parse requirement string to get package name
+                req_name = (
+                    req.split()[0]
+                    .split(">=")[0]
+                    .split(">")[0]
+                    .split("==")[0]
+                    .split("!=")[0]
+                )
+                if req_name != package_name:
+                    transitive.append(req_name)
+
+            return transitive[:10]  # Limit to prevent excessive output
+
+        except (ImportError, metadata.PackageNotFoundError, Exception):
+            return []
+
+    def _categorize_dependency(self, name: str) -> dict[str, str]:
+        """Categorize dependency by type and provide enhanced description."""
+        name_lower = name.lower()
+
+        if name_lower in ["fastapi", "uvicorn", "starlette"]:
+            return {"category": "web", "description": f"Web framework: {name}"}
+        if name_lower in ["aiosqlite", "sqlite3", "sqlalchemy"]:
+            return {"category": "database", "description": f"Database: {name}"}
+        if name_lower in ["jinja2", "mako"]:
+            return {"category": "templates", "description": f"Template engine: {name}"}
+        if name_lower in ["pytest", "pytest-cov", "pytest-asyncio"]:
+            return {"category": "testing", "description": f"Testing framework: {name}"}
+        if name_lower in ["openai", "anthropic"]:
+            return {"category": "ai", "description": f"AI integration: {name}"}
+        if name_lower in ["pyyaml", "toml", "tomllib"]:
+            return {
+                "category": "config",
+                "description": f"Configuration parsing: {name}",
+            }
+        if name_lower in ["typer", "click", "argparse"]:
+            return {"category": "cli", "description": f"CLI framework: {name}"}
+        if name_lower in ["networkx", "matplotlib"]:
+            return {
+                "category": "visualization",
+                "description": f"Graph/visualization: {name}",
+            }
+        return {"category": "core", "description": f"Core dependency: {name}"}
+
+    def _analyze_imports(self, python_files: list[Path]) -> dict[str, dict[str, Any]]:
+        """Analyze import statements to understand dependency usage."""
+        import_analysis = {}
+
+        for py_file in python_files:
+            try:
+                with py_file.open("r", encoding="utf-8") as f:
+                    content = f.read()
+
+                # Simple import detection
+                import_lines = [
+                    line.strip()
+                    for line in content.split("\n")
+                    if line.strip().startswith(("import ", "from "))
+                ]
+
+                for line in import_lines:
+                    # Extract module name
+                    if line.startswith("from "):
+                        module = line.split()[1].split(".")[0]
+                    else:
+                        module = line.split()[1].split(".")[0]
+
+                    if module not in import_analysis:
+                        import_analysis[module] = {"frequency": 0, "context": []}
+
+                    import_analysis[module]["frequency"] += 1
+
+                    # Add context based on file type
+                    file_context = self._get_file_context(py_file)
+                    if file_context not in import_analysis[module]["context"]:
+                        import_analysis[module]["context"].append(file_context)
+
+            except (OSError, UnicodeDecodeError):
+                continue
+
+        return import_analysis
+
+    def _get_file_context(self, py_file: Path) -> str:
+        """Get context description for a Python file."""
+        file_name = py_file.name.lower()
+        file_path = str(py_file).lower()
+
+        if "web_ui" in file_path or "fastapi" in file_path:
+            return "web_ui"
+        if "test" in file_path:
+            return "testing"
+        if "db" in file_name or "database" in file_name:
+            return "database"
+        if "cli" in file_name:
+            return "cli"
+        if "core" in file_name:
+            return "core_logic"
+        return "general"
+
+    def _analyze_architecture(
+        self, project_root: Path, file_analysis: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Analyze project architecture from file structure and categorization."""
         src_dir = project_root / "agentic_spec"
 
+        # Enhanced structure based on categorization
         structure_lines = ["agentic_spec/"]
         if src_dir.exists():
             for py_file in sorted(src_dir.glob("*.py")):
                 if py_file.name != "__init__.py":
-                    structure_lines.append(f"├── {py_file.name}")
+                    # Add context indicators
+                    file_path = str(py_file.relative_to(project_root))
+                    if file_path in file_analysis["web_ui_files"]:
+                        structure_lines.append(f"├── {py_file.name}  # Web UI")
+                    elif file_path in file_analysis["database_files"]:
+                        structure_lines.append(f"├── {py_file.name}  # Database")
+                    else:
+                        structure_lines.append(f"├── {py_file.name}")
 
+        # Add other directories with enhanced descriptions
         structure_lines.extend(
             [
-                "templates/              # YAML template files",
-                "specs/                  # Generated specification files",
-                "tests/                  # Test files",
+                "├── web_templates/      # Jinja2 HTML templates and static assets",
+                "├── migrations/         # Database migration scripts",
+                "templates/              # YAML specification templates",
+                "specs/                  # Generated specifications and SQLite database",
+                "tests/                  # Unit and integration tests",
+                "tools/                  # Utility scripts and automation",
             ]
         )
 
+        # Enhanced overview based on detected components
+        overview_parts = [
+            "agentic-spec is a Python CLI tool that generates detailed programming specifications using AI"
+        ]
+
+        if file_analysis["web_ui_files"]:
+            overview_parts.append(
+                "with a FastAPI web interface for workflow visualization"
+            )
+        if file_analysis["database_files"]:
+            overview_parts.append("and SQLite database backend for task tracking")
+
+        overview_parts.append(
+            "featuring template inheritance and automated review workflows"
+        )
+
         return {
-            "overview": (
-                "agentic-spec is a Python CLI tool that generates detailed programming "
-                "specifications using AI with template inheritance and review workflows."
-            ),
+            "overview": " ".join(overview_parts) + ".",
             "structure": "\n".join(structure_lines),
             "functional_requirements": [
                 "Generate detailed specifications from high-level prompts",
@@ -369,9 +1012,11 @@ class SpecGenerator:
             "Use configuration-driven behavior over hard-coded values",
         ]
 
-    def _extract_design_patterns(self, _python_files: list[Path]) -> list[str]:
-        """Extract key design patterns from codebase."""
-        return [
+    def _extract_design_patterns(
+        self, python_files: list[Path], file_analysis: dict[str, Any]
+    ) -> list[str]:
+        """Extract key design patterns from codebase analysis."""
+        patterns = [
             "Template inheritance with deep merging strategy",
             "Context-aware AI prompting with parameter injection",
             "Configuration-driven workflow behavior",
@@ -379,6 +1024,58 @@ class SpecGenerator:
             "Graceful AI fallback mechanisms",
             "Step-based implementation tracking with unique IDs",
         ]
+
+        # Add patterns based on detected components
+        if file_analysis["database_files"]:
+            patterns.extend(
+                [
+                    "Database-backed workflow state management",
+                    "Async/await pattern for database operations",
+                    "YAML-to-database migration pipeline",
+                ]
+            )
+
+        if file_analysis["web_ui_files"]:
+            patterns.extend(
+                [
+                    "FastAPI REST API with async endpoints",
+                    "Jinja2 template rendering with context injection",
+                    "Client-side JavaScript for interactive components",
+                    "CSS-based visual hierarchy and status indicators",
+                ]
+            )
+
+        # Detect async patterns
+        async_pattern_found = False
+        for py_file in python_files:
+            try:
+                with py_file.open("r", encoding="utf-8") as f:
+                    content = f.read()
+                    if "async def" in content and not async_pattern_found:
+                        patterns.append("Comprehensive async/await architecture")
+                        async_pattern_found = True
+                        break
+            except (OSError, UnicodeDecodeError):
+                continue
+
+        # Detect dataclass/pydantic patterns
+        dataclass_pattern_found = False
+        for py_file in python_files:
+            try:
+                with py_file.open("r", encoding="utf-8") as f:
+                    content = f.read()
+                    if (
+                        "@dataclass" in content or "BaseModel" in content
+                    ) and not dataclass_pattern_found:
+                        patterns.append(
+                            "Dataclass and Pydantic model-driven data structures"
+                        )
+                        dataclass_pattern_found = True
+                        break
+            except (OSError, UnicodeDecodeError):
+                continue
+
+        return patterns
 
     def check_foundation_sync_needed(self) -> bool:
         """Check if foundation spec needs to be synced with current codebase."""

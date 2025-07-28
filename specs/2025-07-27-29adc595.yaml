@@ -1,0 +1,165 @@
+metadata:
+  id: 29adc595
+  title: Enhance foundation spec analysis to better identify database components,
+    web ...
+  inherits: []
+  created: '2025-07-27T19:12:58.087386'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec-foundation
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+  - agentic_spec/cli.py
+  - tests/
+requirements:
+  functional:
+  - Automatically analyze the codebase to identify database-related components, web
+    UI files, and modern architecture patterns (e.g., async APIs, template inheritance,
+    configuration-driven design).
+  - Enhance dependency detection to capture both direct and transitive dependencies,
+    including version information.
+  - Improve file categorization logic to distinguish between core logic, configuration,
+    templates, tests, and UI/database layers.
+  - Generate a more comprehensive foundation template that reflects the enhanced analysis
+    and categorization.
+  non_functional:
+  - Maintain compatibility with Python 3.12+ and existing project dependencies.
+  - Ensure all enhancements are covered by unit tests.
+  - "Preserve performance for codebase analysis on small to medium projects (\u2264\
+    500 files)."
+  - Maintain human-readable YAML output for generated templates.
+  - Provide clear, actionable error messages for unsupported or ambiguous file types.
+  constraints:
+  - Do not introduce new dependencies unless absolutely necessary and justified.
+  - Do not require external databases or services for analysis.
+  - All enhancements must be configuration-driven where possible.
+  - Follow established coding standards and pre-commit hook requirements.
+  - Ensure Windows compatibility (CRLF/LF handling).
+implementation:
+- task: Refactor codebase analysis logic to detect database components, web UI files,
+    and modern architecture patterns.
+  details: Update the analysis routines in core.py and supporting modules to scan
+    for common database libraries (e.g., SQLAlchemy, sqlite3), ORM models, migration
+    scripts, and web UI files (e.g., HTML, JS, CSS, frontend frameworks). Add pattern
+    recognition for async APIs, template inheritance, and configuration-driven design.
+    Use file naming conventions and import analysis to improve accuracy.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: Analysis correctly identifies and categorizes database, web UI, and
+    modern architecture files in a variety of representative codebase structures.
+    Unit tests cover detection logic for each category.
+  estimated_effort: high
+  step_id: 29adc595:0
+  sub_spec_id: null
+  decomposition_hint: 'composite: This task spans multiple detection strategies (database,
+    UI, architecture patterns) and should be split into subtasks for each category.'
+  progress: null
+  approvals: null
+- task: Enhance dependency detection to include transitive dependencies and version
+    information.
+  details: Extend the dependency scanning logic to parse requirements files, setup.py,
+    pyproject.toml, and import statements. Capture both direct and transitive dependencies,
+    extracting version constraints where available. Integrate results into the foundation
+    template output.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: Dependency analysis outputs a complete list of direct and transitive
+    dependencies with version info for a sample project. Unit tests verify detection
+    accuracy.
+  estimated_effort: medium
+  step_id: 29adc595:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into direct dependency detection, transitive
+    resolution, and version extraction.'
+  progress: null
+  approvals: null
+- task: Improve file categorization logic for foundation template generation.
+  details: Refine file scanning and classification routines to distinguish between
+    core logic, configuration, templates, tests, UI, and database layers. Use heuristics
+    based on file paths, extensions, and content signatures. Ensure results are reflected
+    in the generated YAML template.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/template_loader.py
+  - agentic_spec/template_validator.py
+  acceptance: File categorization is accurate for a variety of codebase layouts, and
+    the generated foundation template clearly separates each category. Unit tests
+    validate categorization logic.
+  estimated_effort: medium
+  step_id: 29adc595:2
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into heuristics for each file type/category.'
+  progress: null
+  approvals: null
+- task: Update CLI and documentation to reflect enhanced analysis and template generation
+    features.
+  details: Modify CLI help text and usage examples to describe new analysis capabilities.
+    Update README and inline documentation to guide users on interpreting enhanced
+    foundation templates.
+  files:
+  - agentic_spec/cli.py
+  - README.md
+  acceptance: CLI help and documentation accurately describe new features. User can
+    discover and use enhanced analysis via CLI.
+  estimated_effort: low
+  step_id: 29adc595:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add and update unit tests for all new detection and categorization logic.
+  details: Write comprehensive tests for database, UI, architecture pattern detection,
+    dependency analysis, and file categorization. Ensure tests cover edge cases and
+    ambiguous scenarios.
+  files:
+  - tests/
+  acceptance: All new logic is covered by passing unit tests. Test coverage reports
+    show no significant gaps.
+  estimated_effort: medium
+  step_id: 29adc595:4
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split by detection/categorization area.'
+  progress: null
+  approvals: null
+review_notes:
+- "The spec assumes accurate detection of async APIs, template inheritance, and configuration-driven\
+  \ design, but lacks concrete heuristics or patterns for these\u2014define explicit\
+  \ detection rules (e.g., look for 'async def', 'extends' in templates, or config\
+  \ file imports) to avoid ambiguity during implementation."
+- Transitive dependency detection from import statements is non-trivial and may require
+  parsing installed package metadata (e.g., using pip or importlib.metadata); clarify
+  if this is in-scope or if only requirements/pyproject files should be parsed for
+  transitive dependencies.
+- File categorization based on naming and import analysis can be error-prone for unconventional
+  codebases; provide a way for users to override or correct misclassifications via
+  configuration to avoid false positives/negatives.
+- "Unit test coverage for ambiguous or edge-case file structures will be challenging\u2014\
+  define a minimal set of representative test fixtures up front to avoid scope creep\
+  \ and ensure coverage is practical for a solo developer."
+context_parameters: null
+feedback_history: []
+work_logs: null

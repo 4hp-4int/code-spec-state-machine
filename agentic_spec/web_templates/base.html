@@ -6,22 +6,28 @@
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
 <body>
-    <header>
-        <h1><a href="/">Agentic Spec</a></h1>
-        <nav>
-            <a href="/projects">Projects</a> |
-            <a href="/tasks">Tasks</a>
-        </nav>
-        <hr />
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header class="site-header" role="banner">
+        <div class="container">
+            <h1 class="logo"><a href="/">Agentic&nbsp;Spec</a></h1>
+            <nav class="primary-nav" aria-label="Primary">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/specs" class="nav-link">Specs</a>
+                <a href="/projects" class="nav-link">Projects</a>
+                <a href="/tasks" class="nav-link">Tasks</a>
+                <a href="/about" class="nav-link">About</a>
+            </nav>
+        </div>
     </header>
 
-    <main>
+    <main id="main-content" class="container" role="main">
         {% block content %}{% endblock %}
     </main>
 
-    <footer>
-        <hr />
-        <p>Generated {{ now().strftime('%Y-%m-%d') }}</p>
+    <footer class="site-footer" role="contentinfo">
+        <div class="container">
+            <p>&copy; {{ now().year }} Agentic Spec &middot; Generated {{ now().strftime('%Y-%m-%d') }}</p>
+        </div>
     </footer>
 </body>
 </html>

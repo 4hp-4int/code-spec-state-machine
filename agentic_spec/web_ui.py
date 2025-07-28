@@ -33,6 +33,40 @@ templates = Jinja2Templates(directory="agentic_spec/web_templates")
 # Provide `now()` to templates
 templates.env.globals["now"] = datetime.now
 
+# -----------------
+# Helper utilities
+# -----------------
+
+
+async def build_nav_stats(manager: AsyncSpecManager) -> dict[str, int]:
+    """Aggregate quick stats for primary navigation badges (spec and task counts)."""
+    specs: list[SpecificationDB] = await manager.backend.list_specifications()
+    total_specs = len(specs)
+    pending_specs = sum(1 for s in specs if not s.is_completed)
+
+    tasks: list[TaskDB] = []
+    for spec in specs:
+        tasks.extend(await manager.backend.get_tasks_for_spec(spec.id))
+
+    pending_tasks = sum(
+        1 for t in tasks if t.status not in {TaskStatus.COMPLETED, TaskStatus.APPROVED}
+    )
+
+    return {
+        "total_specs": total_specs,
+        "pending_specs": pending_specs,
+        "pending_tasks": pending_tasks,
+    }
+
+
+def base_context(request: Request, title: str | None = None) -> dict[str, object]:
+    """Return base template context shared across all pages."""
+    return {
+        "request": request,
+        "title": title or "Agentic Spec",
+    }
+
+
 # ----------------------
 # Error handling helpers
 # ----------------------
@@ -87,7 +121,7 @@ async def get_db_manager() -> AsyncSpecManager:
 async def index(request: Request):
     """Home page showing overview of specifications."""
     async with await get_db_manager() as manager:
-        specs = await manager.backend.list_specifications(limit=20)
+        specs = await manager.backend.list_specifications()
 
         # Calculate summary statistics
         total_specs = len(specs)
@@ -96,16 +130,21 @@ async def index(request: Request):
             1 for s in specs if s.workflow_status == WorkflowStatus.IMPLEMENTING
         )
 
-        return templates.TemplateResponse(
-            "index.html",
+        # Exclude sub-specifications (those with a parent_spec_id)
+        top_level_specs = [s for s in specs if not s.parent_spec_id]
+        # Sort by updated descending for recency
+        top_level_specs.sort(key=lambda s: s.updated, reverse=True)
+
+        ctx = base_context(request, title="Overview")
+        ctx.update(
             {
-                "request": request,
                 "total_specs": total_specs,
                 "completed_specs": completed_specs,
                 "in_progress_specs": in_progress_specs,
-                "recent_specs": specs[:10],
-            },
+                "recent_specs": top_level_specs[:10],
+            }
         )
+        return templates.TemplateResponse("index.html", ctx)
 
 
 @app.get("/projects", response_class=HTMLResponse)
@@ -132,13 +171,9 @@ async def list_projects(request: Request):
                 }
             )
 
-        return templates.TemplateResponse(
-            "project_list.html",
-            {
-                "request": request,
-                "projects": projects,
-            },
-        )
+        ctx = base_context(request, title="Projects")
+        ctx["projects"] = projects
+        return templates.TemplateResponse("project_list.html", ctx)
 
 
 @app.get("/specs", response_class=HTMLResponse)
@@ -152,14 +187,9 @@ async def list_specifications(request: Request, status: str | None = None):
         else:
             specs = await manager.backend.list_specifications()
 
-        return templates.TemplateResponse(
-            "specs_list.html",
-            {
-                "request": request,
-                "specs": specs,
-                "current_status": status,
-            },
-        )
+        ctx = base_context(request, title="Specifications")
+        ctx.update({"specs": specs, "current_status": status})
+        return templates.TemplateResponse("specs_list.html", ctx)
 
 
 @app.get("/specs/{spec_id}", response_class=HTMLResponse)
@@ -181,15 +211,15 @@ async def view_specification(request: Request, spec_id: str):
             (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
         )
 
-        return templates.TemplateResponse(
-            "spec_detail.html",
+        ctx = base_context(request, title=f"Spec {spec.id}")
+        ctx.update(
             {
-                "request": request,
                 "spec": spec,
                 "tasks": tasks,
                 "completion_percentage": completion_percentage,
-            },
+            }
         )
+        return templates.TemplateResponse("spec_detail.html", ctx)
 
 
 @app.get("/tasks", response_class=HTMLResponse)
@@ -261,10 +291,9 @@ async def list_tasks(
         # Sort tasks by started_at desc for convenience
         candidate_tasks.sort(key=lambda t: t.started_at or datetime.min, reverse=True)
 
-        return templates.TemplateResponse(
-            "task_list.html",
+        ctx = base_context(request, title="Tasks")
+        ctx.update(
             {
-                "request": request,
                 "tasks": candidate_tasks,
                 "filters": {
                     "status": status,
@@ -273,8 +302,9 @@ async def list_tasks(
                     "start_date": start_date,
                     "end_date": end_date,
                 },
-            },
+            }
         )
+        return templates.TemplateResponse("task_list.html", ctx)
 
 
 @app.get("/tasks/{task_id}", response_class=HTMLResponse)
@@ -297,16 +327,16 @@ async def view_task(request: Request, task_id: str):
         # Get the parent specification
         spec = await manager.get_specification(task.spec_id)
 
-        return templates.TemplateResponse(
-            "task_detail.html",
+        ctx = base_context(request, title=f"Task {task.id}")
+        ctx.update(
             {
-                "request": request,
                 "task": task,
                 "spec": spec,
                 "approvals": approvals,
                 "work_logs": work_logs,
-            },
+            }
         )
+        return templates.TemplateResponse("task_detail.html", ctx)
 
 
 @app.get("/api/stats")
@@ -334,6 +364,59 @@ async def get_stats():
             "status_breakdown": status_counts,
             "workflow_breakdown": workflow_counts,
             "updated_at": datetime.now().isoformat(),
+        }
+
+
+@app.get("/api/specs/{spec_id}/workflow")
+async def get_workflow_visualization(spec_id: str):
+    """API endpoint for workflow state machine visualization data."""
+    async with await get_db_manager() as manager:
+        spec = await manager.get_specification(spec_id)
+        if not spec:
+            raise HTTPException(status_code=404, detail="Specification not found")
+
+        tasks = await manager.backend.get_tasks_for_spec(spec_id)
+
+        # Define workflow states and transitions
+        states = [
+            {"id": "created", "label": "Created", "x": 100, "y": 100},
+            {"id": "planning", "label": "Planning", "x": 300, "y": 100},
+            {"id": "implementing", "label": "Implementing", "x": 500, "y": 100},
+            {"id": "reviewing", "label": "Reviewing", "x": 700, "y": 100},
+            {"id": "completed", "label": "Completed", "x": 900, "y": 100},
+        ]
+
+        # Define transitions between states
+        transitions = [
+            {"from": "created", "to": "planning"},
+            {"from": "planning", "to": "implementing"},
+            {"from": "implementing", "to": "reviewing"},
+            {"from": "reviewing", "to": "completed"},
+            {"from": "reviewing", "to": "implementing"},  # Feedback loop
+        ]
+
+        # Current state and task progress
+        current_state = spec.workflow_status.value
+
+        # Task breakdown by status
+        task_stats = {
+            "total": len(tasks),
+            "completed": sum(
+                1
+                for t in tasks
+                if t.status in [TaskStatus.COMPLETED, TaskStatus.APPROVED]
+            ),
+            "in_progress": sum(1 for t in tasks if t.status == TaskStatus.IN_PROGRESS),
+            "blocked": sum(1 for t in tasks if t.status == TaskStatus.BLOCKED),
+            "pending": sum(1 for t in tasks if t.status == TaskStatus.PENDING),
+        }
+
+        return {
+            "states": states,
+            "transitions": transitions,
+            "current_state": current_state,
+            "task_stats": task_stats,
+            "completion_percentage": spec.completion_percentage,
         }
 
 

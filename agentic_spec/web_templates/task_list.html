@@ -1,30 +1,178 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Tasks{% if filters.status %} – {{ filters.status|capitalize }}{% endif %}</h2>
-<table>
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Spec</th>
-      <th>Task</th>
-      <th>Status</th>
-      <th>Started</th>
-      <th>Completed</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for t in tasks %}
-    <tr>
-      <td><a href="/tasks/{{ t.id }}">{{ t.id.split(':')[-1] }}</a></td>
-      <td><a href="/specs/{{ t.spec_id }}">{{ t.spec_id }}</a></td>
-      <td>{{ t.task }}</td>
-      <td>{{ t.status.value }}</td>
-      <td>{{ t.started_at }}</td>
-      <td>{{ t.completed_at }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="6">No tasks found.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title">Tasks{% if filters.status %} – {{ filters.status|capitalize }}{% endif %}</h2>
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+      <a href="/tasks" class="status-badge {% if not filters.status %}pending{% endif %}" style="text-decoration: none;">All</a>
+      <a href="/tasks?status=pending" class="status-badge pending" style="text-decoration: none;">Pending</a>
+      <a href="/tasks?status=in_progress" class="status-badge in_progress" style="text-decoration: none;">In Progress</a>
+      <a href="/tasks?status=completed" class="status-badge completed" style="text-decoration: none;">Completed</a>
+      <a href="/tasks?status=blocked" class="status-badge blocked" style="text-decoration: none;">Blocked</a>
+    </div>
+  </div>
+
+  <!-- Sort Controls -->
+  <div style="display: flex; gap: 1rem; padding: 1rem; border-bottom: 1px solid #e5e7eb; align-items: center;">
+    <label for="task-sort-by" style="font-size: 0.875rem; color: #6b7280;">Sort By:</label>
+    <select id="task-sort-by" style="padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.875rem;">
+      <option value="default">Default Order</option>
+      <option value="status">Status</option>
+      <option value="started-desc">Recently Started</option>
+      <option value="started-asc">Oldest Started</option>
+      <option value="progress-desc">Progress (High to Low)</option>
+      <option value="progress-asc">Progress (Low to High)</option>
+      <option value="spec">Specification</option>
+    </select>
+  </div>
+
+  {% if tasks %}
+  <table>
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th>Specification</th>
+        <th>Status</th>
+        <th>Progress</th>
+        <th>Started</th>
+        <th>Duration</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tasks %}
+      <tr>
+        <td>
+          <a href="/tasks/{{ t.id }}">{{ t.task[:50] }}{% if t.task|length > 50 %}...{% endif %}</a>
+          <div class="card-subtitle">Step {{ t.id.split(':')[-1] }}</div>
+        </td>
+        <td>
+          <a href="/specs/{{ t.spec_id }}" style="font-size: 0.875rem;">{{ t.spec_id }}</a>
+        </td>
+        <td>
+          <span class="status-badge {{ t.status.value }}">{{ t.status.value }}</span>
+        </td>
+        <td>
+          {% if t.progress_percentage %}
+          <div class="progress-bar" style="width: 100px;">
+            <div class="progress-fill" style="width: {{ t.progress_percentage }}%"></div>
+          </div>
+          <span style="font-size: 0.75rem; color: #6b7280;">{{ t.progress_percentage }}%</span>
+          {% else %}
+          <span style="color: #9ca3af;">-</span>
+          {% endif %}
+        </td>
+        <td style="font-size: 0.875rem; color: #6b7280;">
+          {% if t.started_at %}
+          {{ t.started_at.strftime('%Y-%m-%d %H:%M') }}
+          {% else %}
+          <span style="color: #9ca3af;">Not started</span>
+          {% endif %}
+        </td>
+        <td style="font-size: 0.875rem; color: #6b7280;">
+          {% if t.started_at and t.completed_at %}
+          {{ (t.completed_at - t.started_at).total_seconds() // 3600 }}h {{ ((t.completed_at - t.started_at).total_seconds() % 3600) // 60 }}m
+          {% elif t.started_at %}
+          <span style="color: #3b82f6;">In progress</span>
+          {% else %}
+          <span style="color: #9ca3af;">-</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color: #6b7280; text-align: center; padding: 3rem 0;">
+    No tasks found{% if filters.status %} with status "{{ filters.status }}"{% endif %}.
+  </p>
+  {% endif %}
+</div>
+
+{% if filters.status or filters.spec_id or filters.project %}
+<div style="margin-top: 1rem; font-size: 0.875rem; color: #6b7280;">
+  Active filters:
+  {% if filters.status %}<span class="status-badge {{ filters.status }}" style="margin: 0 0.25rem;">{{ filters.status }}</span>{% endif %}
+  {% if filters.spec_id %}<span style="margin: 0 0.25rem;">Spec: {{ filters.spec_id }}</span>{% endif %}
+  {% if filters.project %}<span style="margin: 0 0.25rem;">Project: {{ filters.project }}</span>{% endif %}
+  <a href="/tasks" style="color: #3b82f6; margin-left: 0.5rem;">Clear filters</a>
+</div>
+{% endif %}
+
+<script>
+// Store task data
+const tasksData = [
+  {% for t in tasks %}
+  {
+    id: '{{ t.id }}',
+    task: {{ t.task|tojson|safe }},
+    specId: '{{ t.spec_id }}',
+    status: '{{ t.status.value }}',
+    progress: {{ t.progress_percentage or 0 }},
+    startedAt: {% if t.started_at %}'{{ t.started_at.isoformat() }}'{% else %}null{% endif %},
+    element: null
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+// Get table body and store row elements
+const tbody = document.querySelector('tbody');
+if (tbody) {
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.forEach((row, index) => {
+    if (tasksData[index]) {
+      tasksData[index].element = row;
+    }
+  });
+}
+
+// Sort function
+function sortTasks(sortBy) {
+  if (!tbody) return;
+
+  const sorted = [...tasksData];
+
+  switch(sortBy) {
+    case 'status':
+      const statusOrder = ['in_progress', 'blocked', 'pending', 'completed', 'approved', 'rejected'];
+      sorted.sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+      break;
+    case 'started-desc':
+      sorted.sort((a, b) => {
+        if (!a.startedAt) return 1;
+        if (!b.startedAt) return -1;
+        return new Date(b.startedAt) - new Date(a.startedAt);
+      });
+      break;
+    case 'started-asc':
+      sorted.sort((a, b) => {
+        if (!a.startedAt) return 1;
+        if (!b.startedAt) return -1;
+        return new Date(a.startedAt) - new Date(b.startedAt);
+      });
+      break;
+    case 'progress-desc':
+      sorted.sort((a, b) => b.progress - a.progress);
+      break;
+    case 'progress-asc':
+      sorted.sort((a, b) => a.progress - b.progress);
+      break;
+    case 'spec':
+      sorted.sort((a, b) => a.specId.localeCompare(b.specId));
+      break;
+  }
+
+  // Clear and repopulate table
+  tbody.innerHTML = '';
+  sorted.forEach(task => {
+    if (task.element) {
+      tbody.appendChild(task.element);
+    }
+  });
+}
+
+// Event listener
+document.getElementById('task-sort-by').addEventListener('change', (e) => {
+  sortTasks(e.target.value);
+});
+</script>
 {% endblock %}

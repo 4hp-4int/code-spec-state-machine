@@ -1,0 +1,188 @@
+metadata:
+  id: ed67766b
+  title: Improve the Agentic Spec web UI with quick UX wins to make it more valuable
+    f...
+  inherits: []
+  created: '2025-07-27T18:51:23.003274'
+  version: '1.0'
+  status: implemented
+  parent_spec_id: null
+  child_spec_ids: null
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - webui/
+  - webui/components/
+  - webui/pages/
+  - webui/static/
+  - webui/templates/
+  - webui/state_machine.py
+  - webui/project_tracker.py
+  - webui/__init__.py
+  - tests/test_webui.py
+requirements:
+  functional:
+  - Display a clear visual hierarchy for project state and workflow steps in the web
+    UI.
+  - Show real-time or near-real-time updates of coding project state (e.g., 'In Progress',
+    'Blocked', 'Complete').
+  - Provide a lightweight, interactive workflow tracker (state machine visualization)
+    for agentic development steps.
+  - Enable users to quickly see which specification steps are pending, active, or
+    completed.
+  - Allow filtering and sorting of project steps/specifications by status, priority,
+    or type.
+  - Highlight recent changes or updates to project state for better workflow visibility.
+  - Ensure all enhancements are non-intrusive and maintain fast UI performance.
+  non_functional:
+  - Enhancements must be lightweight and not introduce significant load time or complexity.
+  - UI must remain responsive and usable on typical solo developer hardware.
+  - All new UI elements must be accessible and visually clear.
+  - Changes must be configuration-driven where possible (no hard-coded values).
+  - Maintain compatibility with existing file-based YAML storage and CLI workflows.
+  - Comprehensive error handling for UI state and data loading failures.
+  constraints:
+  - Do not introduce new major dependencies without strong justification.
+  - All UI changes must be backward compatible with current CLI and YAML workflows.
+  - Follow established coding standards and file organization.
+  - Use Python 3.12+ features where appropriate.
+  - Maintain Windows compatibility (CRLF/LF handling).
+  - All new code must be covered by unit tests.
+  - Lint compliance must be maintained (ruff, pre-commit hooks).
+implementation:
+- task: Add visual hierarchy and workflow state indicators to the web UI
+  details: Introduce clear headings, section dividers, and status badges for each
+    project step/specification. Use color and iconography to distinguish between 'Pending',
+    'Active', 'Blocked', and 'Complete' states. Ensure visual cues are accessible
+    (color contrast, ARIA labels).
+  files:
+  - webui/components/StatusBadge.py
+  - webui/components/WorkflowStepCard.py
+  - webui/pages/ProjectDashboard.py
+  - webui/static/styles.css
+  acceptance: Project dashboard displays all steps/specs with clear, accessible status
+    indicators and visual separation. Color and icon use passes accessibility checks.
+  estimated_effort: medium
+  step_id: ed67766b:0
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into UI component creation, styling,
+    and accessibility review.'
+  progress: null
+  approvals: null
+- task: Implement a lightweight, interactive state machine visualization for workflow
+    tracking
+  details: Add a component that visualizes the current project workflow as a state
+    machine graph. Use existing networkx/matplotlib for backend state modeling, and
+    a simple JS or Python-based frontend for rendering. Allow users to click on states
+    to view details.
+  files:
+  - webui/components/StateMachineGraph.py
+  - webui/state_machine.py
+  - webui/pages/ProjectDashboard.py
+  - webui/static/state_machine.js
+  acceptance: State machine graph is visible on the dashboard, accurately reflects
+    project state, and supports basic interactivity (hover/click for details).
+  estimated_effort: medium
+  step_id: ed67766b:1
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split into backend state modeling, frontend
+    rendering, and interactivity.'
+  progress: null
+  approvals: null
+- task: Enable filtering and sorting of project steps/specifications in the UI
+  details: Add controls to filter steps/specs by status, priority, or type. Implement
+    sorting options (e.g., by last updated, alphabetical). Ensure UI updates efficiently
+    and maintains state.
+  files:
+  - webui/components/FilterSortControls.py
+  - webui/pages/ProjectDashboard.py
+  acceptance: User can filter and sort steps/specs; UI updates instantly and correctly
+    reflects filter/sort criteria.
+  estimated_effort: low
+  step_id: ed67766b:2
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Highlight recent changes or updates to project state
+  details: Visually mark steps/specs that have changed state or been updated recently
+    (e.g., within the last 24 hours). Use subtle highlights or badges to avoid clutter.
+  files:
+  - webui/components/RecentChangeBadge.py
+  - webui/pages/ProjectDashboard.py
+  - webui/project_tracker.py
+  acceptance: Recently updated steps/specs are visually highlighted; highlights fade
+    or clear after a configurable period.
+  estimated_effort: low
+  step_id: ed67766b:3
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Ensure all enhancements are configuration-driven and maintain CLI/YAML compatibility
+  details: Refactor new UI features to read from configuration files where appropriate.
+    Ensure all state and workflow data is sourced from existing YAML files and CLI
+    outputs, not hard-coded.
+  files:
+  - webui/__init__.py
+  - webui/project_tracker.py
+  - webui/pages/ProjectDashboard.py
+  acceptance: All new UI features can be toggled/configured via YAML or CLI flags;
+    no hard-coded values for workflow/state logic.
+  estimated_effort: low
+  step_id: ed67766b:4
+  sub_spec_id: null
+  decomposition_hint: atomic
+  progress: null
+  approvals: null
+- task: Add unit tests for all new UI components and state logic
+  details: Write tests covering rendering, interactivity, filtering, and state transitions
+    for all new components and logic. Use existing test frameworks and follow codebase
+    standards.
+  files:
+  - tests/test_webui.py
+  acceptance: All new code paths are covered by tests; tests pass and maintain lint
+    compliance.
+  estimated_effort: medium
+  step_id: ed67766b:5
+  sub_spec_id: null
+  decomposition_hint: 'composite: Can be split by component/feature.'
+  progress: null
+  approvals: null
+review_notes:
+- 'Missing Implementation Details: The spec assumes a Python-based web UI but does
+  not clarify the web framework (e.g., Flask, FastAPI, or a custom solution). This
+  is critical for implementing interactive components and integrating JS for state
+  machine visualization. Clarify the frontend-backend integration pattern.'
+- 'Technical Gotchas: Rendering interactive state machine graphs with networkx/matplotlib
+  and exposing them to the frontend (with click/hover interactivity) is non-trivial.
+  Consider using matplotlib to generate SVGs and layering JS for interactivity, or
+  evaluate lightweight JS graph libraries if Python-side interactivity proves too
+  limited.'
+- 'Integration Points: Ensure that all state and workflow data is loaded from YAML/CLI
+  outputs at runtime, not cached or hard-coded. Watch for race conditions or stale
+  data if supporting near-real-time updates, especially if multiple sources can update
+  the YAML.'
+- 'Current Best Practices: All listed dependencies are current and well-maintained
+  as of mid-2024. However, for accessibility (color contrast, ARIA), consider using
+  a tool like axe-core or pa11y during development to catch issues early, since manual
+  checks are easy to miss.'
+context_parameters: null
+feedback_history: []
+work_logs: null

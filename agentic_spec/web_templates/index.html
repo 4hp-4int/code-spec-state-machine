@@ -1,15 +1,165 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Dashboard</h2>
-<ul>
-  <li>Total specs: {{ total_specs }}</li>
-  <li>Completed specs: {{ completed_specs }}</li>
-  <li>In-progress specs: {{ in_progress_specs }}</li>
-</ul>
-<h3>Recent Specifications</h3>
-<ul>
-{% for s in recent_specs %}
-  <li><a href="/specs/{{ s.id }}">{{ s.title }}</a> ({{ s.status.value }})</li>
-{% endfor %}
-</ul>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ total_specs }}</div>
+    <div class="stat-label">Total Specifications</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ completed_specs }}</div>
+    <div class="stat-label">Completed</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ in_progress_specs }}</div>
+    <div class="stat-label">In Progress</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">{{ total_specs - completed_specs - in_progress_specs }}</div>
+    <div class="stat-label">Pending</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Recent Specifications</h3>
+    <a href="/specs" style="font-size: 0.875rem; color: #3b82f6;">View all →</a>
+  </div>
+  {% if recent_specs %}
+  <table>
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Status</th>
+        <th>Workflow</th>
+        <th>Progress</th>
+        <th>Updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in recent_specs %}
+      {% set hours_since_update = ((now() - s.updated).total_seconds() / 3600)|int %}
+      <tr {% if hours_since_update < 24 %}class="recent-row"{% endif %}>
+        <td>
+          {% if s.priority %}
+          <span class="priority-indicator priority-{{ s.priority.value }}"></span>
+          {% endif %}
+          <a href="/specs/{{ s.id }}">{{ s.title[:60] }}{% if s.title|length > 60 %}...{% endif %}</a>
+          {% if hours_since_update < 1 %}
+          <span class="recent-indicator">Just now</span>
+          {% elif hours_since_update < 24 %}
+          <span class="recent-indicator">{{ hours_since_update }}h ago</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="status-badge {{ s.status.value }}">{{ s.status.value }}</span>
+        </td>
+        <td>
+          <span class="workflow-badge {{ s.workflow_status.value }}">{{ s.workflow_status.value }}</span>
+        </td>
+        <td>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: {{ s.completion_percentage }}%"></div>
+          </div>
+          <span style="font-size: 0.75rem; color: #6b7280;">{{ s.completion_percentage }}%</span>
+        </td>
+        <td style="font-size: 0.875rem; color: #6b7280;">
+          {{ s.updated.strftime('%Y-%m-%d %H:%M') }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color: #6b7280; text-align: center; padding: 2rem 0;">No specifications yet. Create your first specification to get started.</p>
+  {% endif %}
+</div>
+
+<!-- Recent Activity Timeline -->
+<div class="activity-timeline">
+  <h3 class="card-title" style="margin-bottom: 1rem;">Recent Activity</h3>
+  <div id="activity-container">
+    <p style="text-align: center; color: #6b7280;">Loading recent activity...</p>
+  </div>
+</div>
+
+<script>
+// Highlight recently updated rows
+document.addEventListener('DOMContentLoaded', () => {
+  // Add pulse animation to very recent items
+  const recentIndicators = document.querySelectorAll('.recent-indicator');
+  recentIndicators.forEach(indicator => {
+    if (indicator.textContent === 'Just now') {
+      indicator.style.animation = 'pulse 2s infinite';
+    }
+  });
+});
+
+// CSS animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+`;
+document.head.appendChild(style);
+
+// Load recent activity
+async function loadRecentActivity() {
+  try {
+    const response = await fetch('/api/stats');
+    const data = await response.json();
+
+    // Simulate recent activity based on specs
+    const container = document.getElementById('activity-container');
+    const activities = [];
+
+    {% for s in recent_specs[:5] %}
+    {% set hours_since = ((now() - s.updated).total_seconds() / 3600)|int %}
+    activities.push({
+      type: '{{ s.workflow_status.value }}',
+      title: {{ (s.title[:50] + ("..." if s.title|length > 50 else ""))|tojson|safe }},
+      description: 'Specification {{ s.workflow_status.value }}',
+      time: {% if hours_since < 1 %}'Just now'{% elif hours_since < 24 %}'{{ hours_since }} hours ago'{% else %}'{{ (hours_since / 24)|int }} days ago'{% endif %},
+      link: '/specs/{{ s.id }}'
+    });
+    {% endfor %}
+
+    if (activities.length > 0) {
+      container.innerHTML = activities.map(activity => {
+        const iconClass = activity.type === 'completed' ? 'completed' :
+                         activity.type === 'implementing' ? 'started' :
+                         activity.type === 'created' ? 'created' : 'updated';
+        const icon = iconClass === 'completed' ? '✓' :
+                    iconClass === 'started' ? '▶' :
+                    iconClass === 'created' ? '+' : '↻';
+
+        return `
+          <div class="timeline-item">
+            <div class="timeline-icon ${iconClass}">${icon}</div>
+            <div class="timeline-content">
+              <div class="timeline-title">
+                <a href="${activity.link}" style="color: inherit; text-decoration: none;">
+                  ${activity.title}
+                </a>
+              </div>
+              <div class="timeline-description">${activity.description}</div>
+              <div class="timeline-time">${activity.time}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      container.innerHTML = '<p style="text-align: center; color: #6b7280;">No recent activity</p>';
+    }
+  } catch (error) {
+    console.error('Failed to load activity:', error);
+  }
+}
+
+loadRecentActivity();
+</script>
 {% endblock %}
