@@ -1,0 +1,131 @@
+metadata:
+  id: 26977a84
+  title: 'Expanded: Extend workflow graph model to support dynamic task injection
+    and parent-child tracking.'
+  inherits: []
+  created: '2025-07-28T16:51:12.728416'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 0a5fd786
+  author: Khalen
+  last_modified: '2025-07-28T16:51:12.743436'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+requirements:
+  functional:
+  - Allow insertion of new tasks into the workflow graph at runtime.
+  - Each task node must have a unique identifier.
+  - Each task node must maintain references to its parent and child nodes.
+  - Injected tasks must be distinguishable from original tasks via metadata fields.
+  - Graph structure must update parent-child relationships correctly when tasks are
+    injected.
+  non_functional:
+  - Task injection must not degrade workflow execution performance beyond O(log n)
+    per insertion.
+  - The system must handle concurrent task injections safely (single-threaded, but
+    robust against rapid sequential calls).
+  - "Code must be clear, maintainable, and covered by automated tests (\u226590% coverage\
+    \ for new logic)."
+  constraints:
+  - Must use networkx for graph operations.
+  - No breaking changes to existing workflow graph APIs unless justified.
+  - All new fields and methods must be documented with docstrings.
+  - All changes must be compatible with Python 3.9+.
+implementation:
+- task: Define and document new/updated TaskNode data model to support unique IDs,
+    parent/child references, and injected metadata.
+  details: 'In agentic_spec/models.py, extend the TaskNode (or equivalent) class to
+    include: (a) a unique ID (UUID or incrementing int), (b) explicit parent and child
+    references (list of IDs), (c) a metadata field (dict) with at least an ''injected''
+    boolean flag and optional source info. Add docstrings for all new/modified fields.'
+  files:
+  - agentic_spec/models.py
+  acceptance: TaskNode supports unique IDs, parent/child references, and metadata.
+    Unit tests confirm correct instantiation and field behavior.
+  estimated_effort: medium
+  step_id: 26977a84:0
+  decomposition_hint: 'composite: involves both data model changes and documentation/testing'
+- task: Update workflow graph structure and methods to support runtime task injection
+    and parent-child tracking.
+  details: 'In agentic_spec/core.py, update the workflow graph class to: (a) allow
+    insertion of new TaskNodes at runtime, (b) update parent/child links when injecting
+    tasks, (c) ensure injected tasks are marked in metadata, (d) expose a method inject_task(parent_id,
+    task_data) that inserts a new node as a child of the given parent, updating all
+    references.'
+  files:
+  - agentic_spec/core.py
+  acceptance: Graph can accept new tasks at runtime, with correct parent/child relationships
+    and metadata. Unit tests cover task injection, parent/child updates, and metadata
+    correctness.
+  estimated_effort: high
+  step_id: 26977a84:1
+  decomposition_hint: 'composite: spans graph structure, runtime mutation logic, and
+    API surface'
+- task: Implement error handling and edge case management for task injection.
+  details: Handle cases such as duplicate IDs, invalid parent references, circular
+    dependencies, and injection into non-existent nodes. Raise descriptive exceptions
+    and ensure graph integrity is maintained after failed injections.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: All edge cases are covered by tests. Invalid injections do not corrupt
+    the graph. Exceptions are raised with clear messages.
+  estimated_effort: medium
+  step_id: 26977a84:2
+  decomposition_hint: 'composite: requires coordination between data model validation
+    and graph mutation logic'
+- task: Write and organize automated tests for dynamic task injection and parent-child
+    tracking.
+  details: 'In tests/ (or equivalent), add unit and integration tests for: (a) successful
+    task injection, (b) correct parent/child linkage, (c) metadata marking, (d) error/edge
+    cases (invalid parent, duplicate ID, etc.), (e) graph integrity after multiple
+    injections.'
+  files:
+  - tests/test_core.py
+  - tests/test_models.py
+  acceptance: "\u226590% coverage for new logic. All acceptance criteria from above\
+    \ tasks are validated by tests."
+  estimated_effort: medium
+  step_id: 26977a84:3
+  decomposition_hint: 'composite: covers multiple scenarios and files'
+- task: Document new/updated APIs and usage patterns for dynamic task injection.
+  details: Update docstrings and, if present, user/developer documentation to describe
+    new fields, methods, and usage examples for runtime task injection and parent-child
+    tracking.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - README.md
+  acceptance: All new/modified APIs are documented. Usage examples are present and
+    accurate.
+  estimated_effort: low
+  step_id: 26977a84:4
+  decomposition_hint: atomic
+review_notes: []
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  custom_parameters: {}
+feedback_history: []

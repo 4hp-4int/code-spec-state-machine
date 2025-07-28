@@ -1,0 +1,143 @@
+metadata:
+  id: ae5b46f8
+  title: 'Expanded: Implement in-memory workflow graph update logic for task injection.'
+  inherits: []
+  created: '2025-07-28T16:51:37.790939'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 0a5fd786
+  author: Khalen
+  last_modified: '2025-07-28T16:51:37.802989'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - tests/test_core.py
+requirements:
+  functional:
+  - Enable injection of new tasks into the active in-memory workflow graph at runtime.
+  - Ensure atomicity of graph updates during task injection.
+  - Maintain workflow graph consistency after injection.
+  - Detect and handle duplicate task IDs.
+  - Detect and prevent circular dependencies.
+  - Validate parent references for injected tasks.
+  - Provide clear error messages for all edge cases.
+  non_functional:
+  - Updates must not degrade workflow execution performance.
+  - Error handling must not crash the system; all exceptions should be handled gracefully.
+  - "Code must be covered by automated tests (\u226590% coverage for new logic)."
+  constraints:
+  - All logic must reside in agentic_spec/core.py.
+  - Testing must be implemented in tests/test_core.py.
+  - Must use networkx for graph operations.
+  - No external state persistence; all updates are in-memory only.
+implementation:
+- task: Define API for task injection in agentic_spec/core.py
+  details: Design and document a function (e.g., inject_task) that accepts parameters
+    for the new task (ID, metadata, parent references, etc.) and injects it into the
+    active workflow graph. Specify expected input types and return values. Ensure
+    the API is clear and extensible.
+  files:
+  - agentic_spec/core.py
+  acceptance: Function signature and docstring are clear; parameters cover all necessary
+    task attributes; API is discoverable and testable.
+  estimated_effort: atomic
+  step_id: ae5b46f8:0
+  decomposition_hint: atomic
+- task: Implement atomic in-memory graph update logic for task injection
+  details: Use networkx to add the new task node and edges to the workflow graph in
+    a single, atomic operation. Ensure that either the entire update succeeds or the
+    graph remains unchanged. Use try/except and rollback strategies as needed.
+  files:
+  - agentic_spec/core.py
+  acceptance: Graph is updated atomically; partial updates are not possible; rollback
+    occurs on failure.
+  estimated_effort: atomic
+  step_id: ae5b46f8:1
+  decomposition_hint: atomic
+- task: Validate and handle duplicate task IDs
+  details: Before injection, check if the task ID already exists in the graph. If
+    so, raise a descriptive exception and do not modify the graph.
+  files:
+  - agentic_spec/core.py
+  acceptance: Duplicate IDs are detected and prevented; error message is clear; graph
+    remains unchanged.
+  estimated_effort: atomic
+  step_id: ae5b46f8:2
+  decomposition_hint: atomic
+- task: Detect and prevent circular dependencies during injection
+  details: After tentative edge addition, use networkx to check for cycles. If a cycle
+    is detected, abort the injection and raise a descriptive exception.
+  files:
+  - agentic_spec/core.py
+  acceptance: Circular dependencies are detected and prevented; error message is clear;
+    graph remains unchanged.
+  estimated_effort: atomic
+  step_id: ae5b46f8:3
+  decomposition_hint: atomic
+- task: Validate parent references for injected tasks
+  details: Ensure all specified parent task IDs exist in the current graph before
+    injection. If any parent is invalid, abort and raise a descriptive exception.
+  files:
+  - agentic_spec/core.py
+  acceptance: Invalid parent references are detected and prevented; error message
+    is clear; graph remains unchanged.
+  estimated_effort: atomic
+  step_id: ae5b46f8:4
+  decomposition_hint: atomic
+- task: Graceful error handling and rollback for all edge cases
+  details: Implement robust error handling for all injection failures (duplicate IDs,
+    cycles, invalid parents). Ensure that the workflow graph is never left in an inconsistent
+    state. All exceptions should be custom and informative.
+  files:
+  - agentic_spec/core.py
+  acceptance: All edge cases are handled gracefully; no partial updates; custom exceptions
+    are used.
+  estimated_effort: atomic
+  step_id: ae5b46f8:5
+  decomposition_hint: atomic
+- task: Write comprehensive unit tests for task injection logic
+  details: 'Create tests in tests/test_core.py covering: successful injection, duplicate
+    ID, circular dependency, invalid parent, and atomicity/rollback. Use pytest and
+    networkx for assertions.'
+  files:
+  - tests/test_core.py
+  acceptance: "All functional and edge cases are tested; \u226590% coverage for new\
+    \ logic; tests pass reliably."
+  estimated_effort: atomic
+  step_id: ae5b46f8:6
+  decomposition_hint: atomic
+- task: Document integration points and usage examples
+  details: Add docstrings and usage examples for the injection API in agentic_spec/core.py.
+    Optionally, update README or internal documentation if required by project standards.
+  files:
+  - agentic_spec/core.py
+  acceptance: Documentation is clear, accurate, and includes at least one usage example.
+  estimated_effort: atomic
+  step_id: ae5b46f8:7
+  decomposition_hint: atomic
+review_notes: []
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  custom_parameters: {}
+feedback_history: []

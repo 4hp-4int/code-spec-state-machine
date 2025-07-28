@@ -1,0 +1,174 @@
+metadata:
+  id: e42b7b72
+  title: Git-aware workflow system with branch-per-feature management and automatic
+    ta...
+  inherits: []
+  created: '2025-07-28T16:46:10.123698'
+  version: '1.0'
+  status: draft
+  child_spec_ids:
+  - 0a5fd786
+  author: Khalen
+  last_modified: '2025-07-28T16:49:41.505556'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/graph_visualization.py
+  - agentic_spec/exceptions.py
+  - agentic_spec/config.py
+  - tests/test_git_workflow.py
+  - tests/test_dynamic_task_injection.py
+requirements:
+  functional:
+  - Automatically create a new git feature branch when a workflow task is started,
+    using a consistent naming convention.
+  - Detect and inject new tasks into the active workflow in real-time when the AI
+    identifies scope gaps during execution.
+  - Update the workflow graph in real-time to reflect the current state, including
+    dynamically injected tasks and their relationships.
+  - Integrate git branch management and dynamic task injection seamlessly with the
+    existing agentic-spec CLI and workflow system.
+  - Provide clear CLI feedback and error messages for all git and workflow operations.
+  non_functional:
+  - Maintain backward compatibility with existing workflows for users not utilizing
+    the git-aware features.
+  - Ensure all git operations are atomic and provide informative error handling for
+    common git issues (e.g., uncommitted changes, merge conflicts).
+  - Minimize performance impact by using efficient git operations and in-memory graph
+    updates.
+  - Support Windows and Unix-like environments for all git and file operations.
+  - Provide unit and integration tests for all new functionality, including edge cases
+    for git and dynamic task injection.
+  constraints:
+  - Use only the existing dependencies or Python standard library (e.g., subprocess
+    for git operations); do not introduce new dependencies unless absolutely necessary.
+  - All new data and state must remain file-based and human-readable (YAML or plain
+    text).
+  - 'Follow established coding standards: async/await where appropriate, pathlib.Path
+    for file operations, type hints, dataclasses/Pydantic models, and comprehensive
+    error handling.'
+  - CLI interface must remain scriptable and automation-friendly.
+  - Do not require external databases or persistent services.
+implementation:
+- task: Implement git feature branch management integrated with workflow tasks.
+  details: Extend the workflow initiation logic to check for an active git repository.
+    When a new workflow task is started, automatically create and checkout a new feature
+    branch named using a convention such as 'feature/{task_id}_{task_slug}'. Ensure
+    atomicity and handle edge cases (e.g., uncommitted changes, branch already exists).
+    Integrate this logic into the CLI and core workflow engine.
+  files:
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  - agentic_spec/exceptions.py
+  acceptance: Starting a workflow task from the CLI creates a new git branch with
+    the correct name, switches to it, and provides clear feedback. Errors (e.g., dirty
+    working tree) are handled gracefully with informative messages.
+  estimated_effort: medium
+  step_id: e42b7b72:0
+  decomposition_hint: atomic
+- task: Enable real-time dynamic task injection during workflow execution.
+  details: Modify the workflow execution engine to allow the AI to inject new tasks
+    when scope gaps are detected. Dynamically update the in-memory workflow graph
+    and persist changes to the YAML spec files. Ensure injected tasks are tracked
+    with unique IDs and proper parent-child relationships. Provide CLI feedback when
+    tasks are injected.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/cli.py
+  acceptance: When the AI identifies a missing task, it is injected into the active
+    workflow, the graph is updated, and the user is notified via CLI. Injected tasks
+    appear in the YAML spec and workflow graph.
+  estimated_effort: high
+  step_id: e42b7b72:1
+  sub_spec_id: 0a5fd786
+  decomposition_hint: 'composite: high-effort task requiring breakdown'
+- task: Maintain real-time workflow graph updates reflecting current development state.
+  details: Extend the graph_visualization module to support real-time updates as tasks
+    are added, completed, or injected. Ensure the graph accurately reflects the current
+    state, including dynamically injected tasks and their relationships. Provide CLI
+    commands to visualize the current workflow graph.
+  files:
+  - agentic_spec/graph_visualization.py
+  - agentic_spec/core.py
+  - agentic_spec/cli.py
+  acceptance: The workflow graph updates in real-time as tasks are added or injected.
+    CLI command displays the up-to-date graph, including new and injected tasks.
+  estimated_effort: medium
+  step_id: e42b7b72:2
+  decomposition_hint: atomic
+- task: Comprehensive error handling and user feedback for git and workflow operations.
+  details: Implement robust error handling for all git operations (e.g., branch creation,
+    checkout, merge conflicts) and workflow updates. Provide clear, actionable CLI
+    messages for all failure modes. Ensure errors do not leave the repository or workflow
+    in an inconsistent state.
+  files:
+  - agentic_spec/exceptions.py
+  - agentic_spec/cli.py
+  - agentic_spec/core.py
+  acceptance: All errors are caught and reported with informative messages. The system
+    remains stable and consistent after any failure.
+  estimated_effort: medium
+  step_id: e42b7b72:3
+  decomposition_hint: atomic
+- task: 'Testing: Unit and integration tests for git-aware workflow and dynamic task
+    injection.'
+  details: Develop unit tests for git branch management, task injection logic, and
+    workflow graph updates. Create integration tests simulating real-world usage,
+    including edge cases (e.g., injecting tasks mid-execution, git errors). Use pytest
+    and mock git operations where necessary.
+  files:
+  - tests/test_git_workflow.py
+  - tests/test_dynamic_task_injection.py
+  acceptance: All new tests pass, covering normal and edge cases for git and dynamic
+    workflow features. Test coverage is reported via pytest-cov.
+  estimated_effort: medium
+  step_id: e42b7b72:4
+  decomposition_hint: atomic
+- task: 'Documentation: Update CLI help, user docs, and inline comments for new features.'
+  details: Update CLI help output to describe git-aware workflow and dynamic task
+    injection. Add user documentation (README or docs/) explaining new workflows,
+    branch naming conventions, and troubleshooting. Add inline comments and docstrings
+    for all new logic.
+  files:
+  - agentic_spec/cli.py
+  - README.md
+  acceptance: Documentation is clear, up-to-date, and covers all new features. CLI
+    help reflects new commands and options.
+  estimated_effort: low
+  step_id: e42b7b72:5
+  decomposition_hint: atomic
+review_notes:
+- 'Missing Implementation Details: The spec does not specify how git operations will
+  be abstracted (e.g., direct subprocess calls vs. a helper module), nor how atomicity
+  will be enforced if multiple git commands are needed in sequence. Define a clear
+  git utility layer to encapsulate these operations and ensure rollback on failure.'
+- 'Technical Gotchas: Handling git on Windows vs. Unix can introduce subtle bugs (e.g.,
+  path handling, shell quoting, git executable location). Explicitly test subprocess
+  calls for cross-platform compatibility and document any OS-specific logic.'
+- "Integration Points: Real-time graph and YAML updates must be tightly coupled\u2014\
+  ensure that task injection updates both in-memory and persisted state atomically,\
+  \ or risk workflow desync. Consider a single update function that handles both."
+- 'Current Best Practices: All dependencies are current as of mid-2024, but ensure
+  that CLI feedback is both human- and machine-readable (e.g., use Typer''s rich output
+  and structured exit codes) to maintain scriptability and automation-friendliness.'
+feedback_history: []

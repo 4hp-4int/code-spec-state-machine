@@ -190,6 +190,12 @@ def complete_task(
     completed_by: str = Option("user", "--by", help="Who completed the task"),
     notes: str | None = Option(None, "--notes", help="Completion notes"),
     specs_dir: str = Option("specs", "--specs-dir", help="Generated specs directory"),
+    merge_branch: bool = Option(
+        False, "--merge/--no-merge", help="Merge feature branch back to main after completion"
+    ),
+    delete_branch: bool = Option(
+        True, "--delete-branch/--keep-branch", help="Delete feature branch after merge"
+    ),
 ):
     """Mark a task as completed."""
 
@@ -276,6 +282,32 @@ def complete_task(
                     duration = target_task.completed_at - target_task.started_at
                     hours = duration.total_seconds() / 3600
                     print(f"⌛ Duration: {hours:.1f} hours")
+
+                # Git merge management - attempt to merge feature branch
+                if merge_branch:
+                    try:
+                        if GitUtility.is_git_repo():
+                            current_branch = GitUtility.get_current_branch()
+                            if current_branch.startswith("feature/"):
+                                GitUtility.merge_feature_branch(step_id, delete_branch=delete_branch)
+                                print(f"🔀 Merged feature branch '{current_branch}' to main")
+                                if delete_branch:
+                                    print(f"🗑️  Deleted feature branch '{current_branch}'")
+                                else:
+                                    print(f"🌿 Kept feature branch '{current_branch}'")
+                            else:
+                                print("ℹ️  Not on a feature branch - skipping merge")
+                        else:
+                            print("ℹ️  Not in a git repository - skipping merge")
+                    except GitError as git_err:
+                        print(f"⚠️  Git merge failed: {git_err.message}")
+                        print("   Task completion succeeded, but merge failed")
+                        if git_err.details:
+                            print(f"   Details: {git_err.details}")
+                elif GitUtility.is_git_repo():
+                    current_branch = GitUtility.get_current_branch()
+                    if current_branch.startswith("feature/"):
+                        print(f"💡 Tip: Use --merge to automatically merge feature branch '{current_branch}' to main")
 
         except typer.BadParameter:
             raise

@@ -1,0 +1,136 @@
+metadata:
+  id: 0a5fd786
+  title: 'Expanded: Enable real-time dynamic task injection during workflow execution.'
+  inherits: []
+  created: '2025-07-28T16:49:41.500555'
+  version: '1.0'
+  status: draft
+  parent_spec_id: e42b7b72
+  child_spec_ids:
+  - 26977a84
+  - ae5b46f8
+  - 04361c3d
+  author: Khalen
+  last_modified: '2025-07-28T16:52:01.216916'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  - agentic_spec/cli.py
+requirements:
+  functional:
+  - Allow the AI to inject new tasks into the workflow during execution when scope
+    gaps are detected.
+  - Dynamically update the in-memory workflow graph to reflect injected tasks.
+  - Persist injected tasks and updated workflow structure to the YAML spec files.
+  - Assign unique IDs and maintain parent-child relationships for all injected tasks.
+  - Provide immediate CLI feedback to the user when a task is injected.
+  - Ensure injected tasks are visible in both the YAML spec and the workflow graph.
+  non_functional:
+  - Task injection must not introduce race conditions or corrupt the workflow state.
+  - CLI feedback must be clear, concise, and actionable.
+  - Updates to YAML files must be atomic to prevent data loss.
+  - System must handle injection latency gracefully (no CLI blocking).
+  - Injected tasks must be traceable for audit/debugging purposes.
+  constraints:
+  - All changes must be compatible with existing workflow and graph models.
+  - No breaking changes to the CLI or YAML schema.
+  - Maintain compatibility with Python 3.9+.
+  - Follow existing code style and architecture.
+implementation:
+- task: Extend workflow graph model to support dynamic task injection and parent-child
+    tracking.
+  details: Update the workflow graph data structure in agentic_spec/core.py and agentic_spec/models.py
+    to allow insertion of new tasks at runtime. Ensure each task node has a unique
+    ID and references to parent/child nodes. Add metadata fields to distinguish injected
+    tasks.
+  files:
+  - agentic_spec/core.py
+  - agentic_spec/models.py
+  acceptance: Graph can accept new tasks at runtime, each with unique ID and correct
+    parent-child links. Injected tasks are distinguishable in the graph structure.
+  estimated_effort: medium
+  step_id: 0a5fd786:0
+  sub_spec_id: 26977a84
+  decomposition_hint: 'composite: involves both data model changes and runtime graph
+    mutation logic'
+- task: Implement in-memory workflow graph update logic for task injection.
+  details: Add functions to agentic_spec/core.py to inject new tasks into the active
+    workflow graph. Ensure atomicity of updates and maintain graph consistency. Handle
+    edge cases such as duplicate IDs, circular dependencies, and invalid parent references.
+  files:
+  - agentic_spec/core.py
+  acceptance: New tasks can be injected without breaking the workflow graph. All edge
+    cases are handled gracefully.
+  estimated_effort: medium
+  step_id: 0a5fd786:1
+  sub_spec_id: ae5b46f8
+  decomposition_hint: 'composite: requires coordination between graph mutation and
+    validation logic'
+- task: Persist injected tasks and updated workflow to YAML spec files.
+  details: Modify YAML serialization/deserialization logic in agentic_spec/core.py
+    to support saving and loading injected tasks. Ensure atomic file writes and schema
+    compatibility. Add versioning or metadata to track injected tasks.
+  files:
+  - agentic_spec/core.py
+  acceptance: Injected tasks are saved to and loaded from YAML files without data
+    loss or schema errors. File writes are atomic.
+  estimated_effort: medium
+  step_id: 0a5fd786:2
+  decomposition_hint: 'composite: involves both serialization logic and file I/O safety'
+- task: Update CLI to provide real-time feedback on task injection events.
+  details: Enhance agentic_spec/cli.py to display clear notifications when tasks are
+    injected. Include task ID, summary, and parent relationship in the output. Ensure
+    CLI remains responsive during injection.
+  files:
+  - agentic_spec/cli.py
+  acceptance: User receives immediate, informative CLI feedback whenever a task is
+    injected.
+  estimated_effort: low
+  step_id: 0a5fd786:3
+  decomposition_hint: atomic
+- task: Integrate AI-driven scope gap detection and task proposal mechanism.
+  details: Implement or extend logic in agentic_spec/core.py to allow the AI to propose
+    new tasks when gaps are detected. Ensure proposals are validated before injection
+    and that rejected proposals are logged for audit.
+  files:
+  - agentic_spec/core.py
+  acceptance: AI can propose tasks, which are validated and injected if appropriate.
+    Invalid proposals are logged.
+  estimated_effort: medium
+  step_id: 0a5fd786:4
+  sub_spec_id: 04361c3d
+  decomposition_hint: 'composite: requires integration between AI, validation, and
+    injection subsystems'
+- task: Add and update tests for dynamic task injection, graph updates, YAML persistence,
+    and CLI feedback.
+  details: Write unit and integration tests covering task injection, graph integrity,
+    YAML file updates, and CLI output. Include tests for edge cases (e.g., duplicate
+    IDs, invalid parents, file write failures).
+  files:
+  - tests/test_core.py
+  - tests/test_cli.py
+  acceptance: All new and existing tests pass. Coverage includes all new logic and
+    edge cases.
+  estimated_effort: medium
+  step_id: 0a5fd786:5
+  decomposition_hint: 'composite: spans multiple modules and edge case scenarios'
+review_notes: []
+feedback_history: []

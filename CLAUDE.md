@@ -25,8 +25,9 @@ This project includes custom slash commands for Claude Code:
 - `/spec spec-detail spec_id` - Show detailed metadata for a specification
 - `/spec task-tree spec_id` - Display hierarchical task tree for sub-specifications
   - `/spec workflow-status spec_id` - Show workflow status for a specification
-  - `/spec task-start spec_id:step_index` - Start working on a task
+  - `/spec task-start spec_id:step_index` - Start working on a task (creates git feature branch)
   - `/spec task-complete spec_id:step_index` - Mark a task as completed
+  - `/spec task-complete spec_id:step_index --merge` - Complete task and merge feature branch
   - `/spec migrate-bulk` - Migrate all specifications to database
   - `/spec migration-status` - Check migration status
 
@@ -171,16 +172,28 @@ agentic-spec migration-report
 
 #### Task Workflow Commands
 
-**task-start** - Start working on a task
+**task-start** - Start working on a task (with automatic git feature branch creation)
 ```bash
-agentic-spec task-start spec_id:0  # Start first task
+agentic-spec task-start spec_id:0  # Start first task, creates feature branch
 agentic-spec task-start abc123:2   # Start third task of spec abc123
+# ⚠️  Warning: Uncommitted changes detected in repository
+# 🌿 Created and checked out feature branch: feature/abc123-2_task-name
+# ✅ Task abc123:2 started by user
+# 🔄 Working on feature branch for isolated development
 ```
 
-**task-complete** - Mark a task as completed
+**task-complete** - Mark a task as completed (with optional git merge)
 ```bash
+# Complete task only
 agentic-spec task-complete spec_id:0
 agentic-spec task-complete abc123:2 --notes "Implemented feature successfully"
+
+# Complete with automatic merge to main
+agentic-spec task-complete spec_id:0 --merge
+agentic-spec task-complete abc123:2 --merge --notes "Feature complete with tests"
+
+# Complete with merge but keep feature branch
+agentic-spec task-complete spec_id:0 --merge --keep-branch
 ```
 
 **task-approve** - Approve a completed task
@@ -387,8 +400,9 @@ agentic-spec core expand         # Expand implementation step
 
 #### Workflow Module (`agentic-spec workflow`)
 ```bash
-agentic-spec workflow task-start spec_id:step      # Start working on task
+agentic-spec workflow task-start spec_id:step      # Start working on task (creates git feature branch)
 agentic-spec workflow task-complete spec_id:step   # Mark task completed
+agentic-spec workflow task-complete spec_id:step --merge  # Complete and merge feature branch
 agentic-spec workflow task-approve spec_id:step    # Approve completed task
 agentic-spec workflow task-reject spec_id:step     # Reject task for rework
 agentic-spec workflow task-block spec_id:step      # Block task (dependencies)
@@ -829,9 +843,16 @@ The SQLite database includes:
 - Always use the agentic-spec tool to generate new specs to follow when working on the project.
 - Run project commands through make and the Makefile
 - **DATABASE-BACKED WORKFLOW**: All specifications are now tracked in SQLite database at `specs/specifications.db`
+- **GIT-AWARE WORKFLOW**: The system now provides comprehensive git integration:
+  - `agentic-spec task-start spec_id:step` - Start working on a task (creates feature branch automatically)
+  - `agentic-spec task-complete spec_id:step --merge` - Mark task as completed and merge feature branch
+  - Feature branches use naming convention: `feature/{task_id}_{task_slug}`
+  - Automatic branch creation, merge management, and cleanup capabilities
+  - Graceful fallback when not in git repository or when git operations fail
 - **WORKFLOW COMMANDS**: Use task workflow commands to track progress:
-  - `agentic-spec task-start spec_id:step` - Start working on a task
+  - `agentic-spec task-start spec_id:step` - Start working on a task (with git branch creation)
   - `agentic-spec task-complete spec_id:step` - Mark task as completed
+  - `agentic-spec task-complete spec_id:step --merge` - Complete and merge feature branch to main
   - `agentic-spec workflow-status spec_id` - Check specification progress
   - `agentic-spec migration-status` - Check database migration status
 - **AUTOMATIC WORKFLOW**: When completing a specification or declaring it done, ALWAYS run `make spec-complete` to commit changes and publish completed specifications.
@@ -849,13 +870,214 @@ The SQLite database includes:
   - Enhanced API key detection and environment variable handling
   - Added comprehensive test coverage for global installation scenarios
 
+## Git-Aware Workflow System
+
+The agentic-spec tool now features comprehensive git integration for branch-per-feature development workflows. This system automatically manages feature branches during task execution, providing isolated development environments and clean merge workflows.
+
+### Git Integration Features
+
+#### **Automatic Feature Branch Creation**
+When starting a task in a git repository, the system automatically:
+- ✅ **Creates feature branches** with standardized naming: `feature/{task_id}_{task_slug}`
+- ✅ **Validates git state** and warns about uncommitted changes
+- ✅ **Switches to feature branch** for isolated development
+- ✅ **Provides clear feedback** about git operations and any failures
+
+#### **Smart Branch Naming Convention**
+```bash
+# Examples of generated branch names:
+feature/e42b7b72-0_implement-git-feature-branch-management
+feature/0a5fd786-1_implement-in-memory-workflow-graph-updat
+feature/abc123-2_add-comprehensive-error-handling
+```
+
+#### **Merge Management**
+Comprehensive merge options for task completion:
+```bash
+# Complete task with automatic merge to main
+agentic-spec task-complete spec_id:step --merge
+
+# Merge and keep feature branch for reference
+agentic-spec task-complete spec_id:step --merge --keep-branch
+
+# Complete without merging (manual merge later)
+agentic-spec task-complete spec_id:step
+```
+
+### Git-Aware CLI Commands
+
+#### **Enhanced Task Management**
+All task commands now include git integration:
+
+**task-start** - Start working on a task with automatic feature branch creation
+```bash
+# Automatic branch creation and checkout
+agentic-spec task-start spec_id:0
+# ⚠️  Warning: Uncommitted changes detected in repository
+# 🌿 Created and checked out feature branch: feature/spec_id-0_task-name
+# ✅ Task spec_id:0 started by user
+# 🔄 Working on feature branch for isolated development
+
+# Works with sub-specifications
+agentic-spec task-start 0a5fd786:2
+
+# Git integration respects strict mode and task dependencies
+```
+
+**task-complete** - Mark task as completed with optional merge
+```bash
+# Complete task only
+agentic-spec task-complete spec_id:0
+# 💡 Tip: Use --merge to automatically merge feature branch 'feature/spec_id-0_task-name' to main
+
+# Complete with automatic merge and branch cleanup
+agentic-spec task-complete spec_id:0 --merge
+# 🔀 Merged feature branch 'feature/spec_id-0_task-name' to main
+# 🗑️  Deleted feature branch 'feature/spec_id-0_task-name'
+
+# Complete with merge but keep branch
+agentic-spec task-complete spec_id:0 --merge --keep-branch
+# 🔀 Merged feature branch 'feature/spec_id-0_task-name' to main
+# 🌿 Kept feature branch 'feature/spec_id-0_task-name'
+
+# Add completion notes
+agentic-spec task-complete spec_id:0 --merge --notes "Implemented with comprehensive tests"
+```
+
+### Git Workflow Patterns
+
+#### **1. Standard Feature Development**
+```bash
+# Start task → automatic feature branch creation
+agentic-spec task-start e42b7b72:0
+# Work on feature in isolated branch
+# Complete task → automatic merge to main
+agentic-spec task-complete e42b7b72:0 --merge
+```
+
+#### **2. Complex Feature with Multiple Tasks**
+```bash
+# Start parent task
+agentic-spec task-start e42b7b72:1
+
+# Expand into sub-tasks (creates sub-specifications)
+agentic-spec expand e42b7b72:1
+
+# Work on sub-tasks in their own feature branches
+agentic-spec task-start 0a5fd786:0  # Creates feature/0a5fd786-0_...
+agentic-spec task-complete 0a5fd786:0 --merge
+
+agentic-spec task-start 0a5fd786:1  # Creates feature/0a5fd786-1_...
+agentic-spec task-complete 0a5fd786:1 --merge
+
+# Complete parent task
+agentic-spec task-complete e42b7b72:1 --merge
+```
+
+#### **3. Experimental Development**
+```bash
+# Start task but keep branch for experimentation
+agentic-spec task-start spec_id:0
+# Work on feature
+agentic-spec task-complete spec_id:0 --merge --keep-branch
+# Branch remains for future reference or additional work
+```
+
+### Error Handling and Safety
+
+#### **Git State Validation**
+```bash
+# Uncommitted changes warning
+agentic-spec task-start spec_id:0
+# ⚠️  Warning: Uncommitted changes detected in repository
+# 🌿 Created and checked out feature branch: feature/spec_id-0_task-name
+
+# Non-git repository graceful handling
+agentic-spec task-start spec_id:0
+# ℹ️  Not in a git repository - skipping branch creation
+# ✅ Task spec_id:0 started by user
+```
+
+#### **Merge Conflict Handling**
+```bash
+# Failed merge with clear feedback
+agentic-spec task-complete spec_id:0 --merge
+# ⚠️  Git merge failed: Merge conflicts detected
+#    Task completion succeeded, but merge failed
+#    Details: Git command: git merge --no-ff feature/spec_id-0_task-name; Return code: 1
+```
+
+#### **Branch Name Conflicts**
+```bash
+# Duplicate branch protection
+agentic-spec task-start spec_id:0
+# ⚠️  Git branch creation failed: Branch 'feature/spec_id-0_task-name' already exists
+#    Task will continue without feature branch
+```
+
+### Git Utility Functions
+
+The system provides comprehensive git utilities through the `GitUtility` class:
+
+```python
+from agentic_spec.core import GitUtility
+
+# Repository validation
+GitUtility.is_git_repo()  # → bool
+GitUtility.has_uncommitted_changes()  # → bool
+GitUtility.get_current_branch()  # → str
+
+# Branch management
+GitUtility.generate_branch_name(task_id, task_title)  # → str
+GitUtility.create_and_checkout_branch(branch_name)  # → None
+GitUtility.merge_feature_branch(task_id, delete_branch=True)  # → None
+
+# Cleanup operations
+GitUtility.cleanup_completed_branches(spec_id, completed_tasks)  # → list[str]
+```
+
+### Configuration and Customization
+
+#### **Git Integration Settings**
+The git integration works automatically when:
+- ✅ Current directory is a git repository (contains `.git/`)
+- ✅ Git executable is available in system PATH
+- ✅ Repository is in a clean state (warnings for uncommitted changes)
+
+#### **Disabling Git Integration**
+Git integration can be bypassed by:
+- Working outside of git repositories
+- Using manual git commands for complex workflows
+- The system gracefully falls back when git operations fail
+
+### Best Practices
+
+#### **Recommended Workflow**
+1. **Start tasks** with automatic branch creation: `agentic-spec task-start spec_id:step`
+2. **Develop features** in isolated feature branches
+3. **Complete tasks** with merge: `agentic-spec task-complete spec_id:step --merge`
+4. **Use expansion** for complex features requiring multiple branches
+5. **Leverage merge tips** when working without `--merge` flag
+
+#### **Branch Naming Strategy**
+- **Consistent format**: `feature/{task_id}_{task_slug}`
+- **Task ID integration**: Includes full spec and step identifiers
+- **Readable slugs**: Task titles converted to git-safe branch names
+- **Length limits**: Branch names truncated to reasonable lengths
+
+#### **Merge Strategy**
+- **No-fast-forward merges**: Preserves feature branch history with `--no-ff`
+- **Automatic cleanup**: Default branch deletion after successful merge
+- **Branch preservation**: Optional `--keep-branch` for reference or continued work
+- **Error resilience**: Task completion succeeds even if merge fails
+
 ## Interactive Workflow Usage
 
 ### Basic Workflow
 1. **Generate Specification**: `/spec generate "task description"`
 2. **Check Status**: `/spec workflow-status spec_id`
-3. **Start Task**: `/spec task-start spec_id:0`
-4. **Complete Task**: `/spec task-complete spec_id:0`
+3. **Start Task**: `/spec task-start spec_id:0` (creates feature branch automatically)
+4. **Complete Task**: `/spec task-complete spec_id:0 --merge` (merges feature branch to main)
 5. **Check Progress**: `/spec workflow-status spec_id`
 
 ### Database Operations

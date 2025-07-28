@@ -1,0 +1,137 @@
+metadata:
+  id: 04361c3d
+  title: 'Expanded: Integrate AI-driven scope gap detection and task proposal mechanism.'
+  inherits: []
+  created: '2025-07-28T16:52:01.210883'
+  version: '1.0'
+  status: draft
+  parent_spec_id: 0a5fd786
+  author: Khalen
+  last_modified: '2025-07-28T16:52:01.221961'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation
+  dependencies:
+  - name: openai
+    version: 1.97.1
+  - name: pyyaml
+    version: 6.0.2
+  - name: networkx
+    version: '3.3'
+  - name: matplotlib
+    version: 3.9.2
+  - name: jinja2
+    version: 3.1.0
+  - name: typer
+    version: 0.12.0
+  - name: pytest-cov
+    version: 6.2.1
+  files_involved:
+  - agentic_spec/core.py
+  - tests/test_core.py
+requirements:
+  functional:
+  - Detect scope gaps in real-time during workflow execution.
+  - Enable the AI to propose new tasks when a gap is detected.
+  - Validate each proposed task before injection into the workflow.
+  - Log all rejected (invalid) proposals for audit purposes.
+  - Inject only validated tasks into the active workflow.
+  non_functional:
+  - "Task proposal and validation must not introduce significant latency (\u2264200ms\
+    \ per proposal)."
+  - Logging must be robust and not block workflow execution.
+  - System must be testable with deterministic outcomes for proposal/validation logic.
+  - Code must be modular to allow future extension of proposal and validation logic.
+  constraints:
+  - All changes must be limited to agentic_spec/core.py and associated test files.
+  - No new external dependencies unless strictly necessary.
+  - Maintain compatibility with existing CLI and workflow execution logic.
+implementation:
+- task: Refactor core workflow loop to support dynamic task injection points
+  details: Update the main workflow execution loop in agentic_spec/core.py to include
+    hooks or checkpoints where scope gap detection and task proposal can be triggered
+    in real-time. Ensure these hooks do not disrupt existing workflow logic.
+  files:
+  - agentic_spec/core.py
+  acceptance: Workflow loop includes clear, testable injection points for AI-driven
+    proposals without breaking existing functionality.
+  estimated_effort: medium
+  step_id: 04361c3d:0
+  decomposition_hint: 'composite: requires coordination between workflow control flow
+    and new AI-driven proposal logic'
+- task: Implement scope gap detection logic
+  details: Develop a function or class in agentic_spec/core.py that analyzes the current
+    workflow state and identifies potential scope gaps. This should be modular to
+    allow future improvements to detection heuristics.
+  files:
+  - agentic_spec/core.py
+  acceptance: Function/class reliably identifies scope gaps in test scenarios and
+    triggers proposal mechanism when appropriate.
+  estimated_effort: medium
+  step_id: 04361c3d:1
+  decomposition_hint: atomic
+- task: Integrate AI-driven task proposal mechanism
+  details: Implement logic to call the AI model (via openai dependency) with relevant
+    context when a gap is detected, and parse the AI's response into structured task
+    proposals. Ensure proposals are well-formed and include necessary metadata.
+  files:
+  - agentic_spec/core.py
+  acceptance: AI is called with correct context, and proposals are parsed and structured
+    as per system requirements.
+  estimated_effort: medium
+  step_id: 04361c3d:2
+  decomposition_hint: atomic
+- task: Implement task proposal validation logic
+  details: Develop a validation function that checks each proposed task for correctness,
+    feasibility, and duplication before injection. Validation criteria should be configurable
+    and testable.
+  files:
+  - agentic_spec/core.py
+  acceptance: Invalid proposals are reliably detected and not injected; valid proposals
+    pass all checks and are injected.
+  estimated_effort: medium
+  step_id: 04361c3d:3
+  decomposition_hint: atomic
+- task: Implement logging for rejected proposals
+  details: Add robust logging for all rejected (invalid) proposals, including reason
+    for rejection and relevant metadata, to a dedicated audit log (file or in-memory
+    structure). Logging must not block workflow execution.
+  files:
+  - agentic_spec/core.py
+  acceptance: All rejected proposals are logged with reasons; logging is non-blocking
+    and verifiable in tests.
+  estimated_effort: low
+  step_id: 04361c3d:4
+  decomposition_hint: atomic
+- task: Inject validated tasks into active workflow
+  details: Extend the workflow management logic to accept and schedule validated tasks
+    in real-time, ensuring correct ordering and state consistency.
+  files:
+  - agentic_spec/core.py
+  acceptance: Validated tasks are injected and executed as part of the workflow without
+    disrupting existing tasks.
+  estimated_effort: medium
+  step_id: 04361c3d:5
+  decomposition_hint: atomic
+- task: Write comprehensive tests for gap detection, proposal, validation, injection,
+    and logging
+  details: Develop unit and integration tests in tests/test_core.py to cover all new
+    logic, including edge cases (e.g., malformed proposals, simultaneous gaps, logging
+    failures). Use mocks/stubs for AI calls.
+  files:
+  - tests/test_core.py
+  acceptance: "Tests cover \u226590% of new logic, including all error and edge cases;\
+    \ tests pass reliably."
+  estimated_effort: medium
+  step_id: 04361c3d:6
+  decomposition_hint: 'composite: covers multiple subsystems (detection, AI, validation,
+    logging, workflow integration)'
+review_notes: []
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  custom_parameters: {}
+feedback_history: []

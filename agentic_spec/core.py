@@ -98,13 +98,65 @@ class GitUtility:
     @staticmethod
     def generate_branch_name(task_id: str, task_title: str) -> str:
         """Generate a standardized branch name from task ID and title."""
+        # Clean the task ID for git branch name (replace : with -)
+        task_id_clean = task_id.replace(":", "-")
+        
         # Clean the task title for use in branch name
         task_slug = re.sub(r"[^a-zA-Z0-9\s\-_]", "", task_title)
         task_slug = re.sub(r"\s+", "-", task_slug.strip())
-        task_slug = task_slug.lower()[:50]  # Limit length
+        task_slug = task_slug.lower()[:40]  # Limit length to allow for task_id
         task_slug = task_slug.rstrip("-")
 
-        return f"feature/{task_id}_{task_slug}"
+        return f"feature/{task_id_clean}_{task_slug}"
+
+    @staticmethod
+    def merge_feature_branch(task_id: str, directory: Path = None, delete_branch: bool = True) -> None:
+        """Merge feature branch back to main and optionally delete it."""
+        if not GitUtility.is_git_repo(directory):
+            raise GitError("Not in a git repository")
+        
+        current_branch = GitUtility.get_current_branch(directory)
+        
+        # Ensure we're on the feature branch
+        task_id_clean = task_id.replace(":", "-")
+        if not current_branch.startswith(f"feature/{task_id_clean}"):
+            raise GitError(f"Not on expected feature branch for task {task_id}")
+        
+        # Switch to main branch
+        GitUtility.run_git_command(["checkout", "main"], directory)
+        
+        # Merge feature branch
+        GitUtility.run_git_command(["merge", "--no-ff", current_branch], directory)
+        
+        # Optionally delete feature branch
+        if delete_branch:
+            GitUtility.run_git_command(["branch", "-d", current_branch], directory)
+
+    @staticmethod
+    def cleanup_completed_branches(spec_id: str, completed_tasks: list[str], directory: Path = None) -> list[str]:
+        """Clean up feature branches for completed tasks in a specification."""
+        if not GitUtility.is_git_repo(directory):
+            raise GitError("Not in a git repository")
+        
+        cleaned_branches = []
+        for task_id in completed_tasks:
+            task_id_clean = task_id.replace(":", "-")
+            branch_pattern = f"feature/{task_id_clean}_"
+            
+            # List all branches matching the pattern
+            result = GitUtility.run_git_command(["branch", "--list", f"{branch_pattern}*"], directory)
+            branches = [line.strip().lstrip('* ') for line in result.stdout.split('\n') if line.strip()]
+            
+            for branch in branches:
+                if branch and branch != "main":
+                    try:
+                        GitUtility.run_git_command(["branch", "-d", branch], directory)
+                        cleaned_branches.append(branch)
+                    except GitError:
+                        # Branch might have unmerged changes, skip
+                        pass
+        
+        return cleaned_branches
 
 
 class SpecGenerator:
