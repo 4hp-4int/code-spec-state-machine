@@ -50,17 +50,23 @@ class GitUtility:
         full_command = ["git"] + command
         try:
             result = subprocess.run(
-                full_command, 
-                cwd=directory, 
-                capture_output=True, 
-                text=True, 
+                full_command,
+                cwd=directory,
+                capture_output=True,
+                text=True,
                 check=check,
-                encoding='utf-8',
-                errors='replace'  # Handle encoding issues gracefully
+                encoding="utf-8",
+                errors="replace",  # Handle encoding issues gracefully
             )
             return result
         except subprocess.CalledProcessError as e:
-            error_msg = e.stderr.strip() if e.stderr else e.stdout.strip() if e.stdout else 'Unknown error'
+            error_msg = (
+                e.stderr.strip()
+                if e.stderr
+                else e.stdout.strip()
+                if e.stdout
+                else "Unknown error"
+            )
             raise GitError(
                 f"Git command failed: {error_msg}",
                 git_command=" ".join(full_command),
@@ -195,13 +201,16 @@ class GitUtility:
             except GitError as e:
                 error_str = str(e).lower()
                 # If pre-commit modified files, re-stage and retry
-                if ("files were modified" in error_str or "hook" in error_str) and attempt < max_retries - 1:
-                    print(f"   Pre-commit hooks modified files (attempt {attempt + 1}), re-staging...")
+                if (
+                    "files were modified" in error_str or "hook" in error_str
+                ) and attempt < max_retries - 1:
+                    print(
+                        f"   Pre-commit hooks modified files (attempt {attempt + 1}), re-staging..."
+                    )
                     GitUtility.run_git_command(["add", "."], directory)
                     continue
-                else:
-                    # Final attempt failed or non-hook error
-                    raise
+                # Final attempt failed or non-hook error
+                raise
 
     @staticmethod
     def merge_feature_branch(
