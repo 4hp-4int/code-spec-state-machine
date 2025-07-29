@@ -18,7 +18,8 @@
       "Bash(pytest:*)",
       "Bash(cp:*)",
       "Bash(ls:*)",
-      "Bash(timeout 10 agentic-spec web start:*)"
+      "Bash(timeout 10 agentic-spec web start:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": []
   }

@@ -1,0 +1,346 @@
+# Git-Aware Workflow Template for agentic-spec
+# This template provides comprehensive guidance for git-aware development workflows
+# when building specifications and implementing tasks.
+
+metadata:
+  id: "{{ spec_id | default('auto-generated') }}"
+  title: "{{ title | default('Git-Aware Specification') }}"
+  inherits: []
+  created: "{{ timestamp | default('auto-generated') }}"
+  version: "1.0"
+  status: "{{ status | default('draft') }}"
+  author: "{{ author | default('auto-detected') }}"
+  last_modified: "{{ timestamp | default('auto-generated') }}"
+
+context:
+  project: "{{ project_name | default('agentic-spec') }}"
+  domain: "{{ domain | default('Software Development with Git-Aware Workflows') }}"
+
+  # Git-specific context
+  git_workflow:
+    branch_strategy: "{{ branch_strategy | default('feature-per-task') }}"
+    branch_prefix: "{{ branch_prefix | default('feature/') }}"
+    commit_pattern: "{{ commit_pattern | default('{task_id}: {description}\\n\\n🤖 Generated with [Claude Code](https://claude.ai/code)\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>') }}"
+    merge_strategy: "{{ merge_strategy | default('--no-ff') }}"
+    pre_commit_hooks: "{{ pre_commit_hooks | default(true) }}"
+
+  dependencies:
+  - name: git
+    version: "{{ git_version | default('2.0+') }}"
+    purpose: "Version control and branch management"
+  - name: pre-commit
+    version: "{{ pre_commit_version | default('latest') }}"
+    purpose: "Code quality and consistency checks"
+
+  files_involved:
+  - "{{ primary_files | default(['.pre-commit-config.yaml', 'README.md']) | join('\\n  - ') }}"
+
+requirements:
+  functional:
+  - "{{ primary_requirement | default('Implement git-aware development workflow') }}"
+  - "Automatically create feature branches for each task using pattern: {{ branch_prefix }}{{ '{{ task_id }}' }}_{{ '{{ task_slug }}' }}"
+  - "Commit changes with standardized messages following pattern: {{ commit_pattern }}"
+  - "Integrate with pre-commit hooks for code quality enforcement"
+  - "Support merge functionality with conflict resolution guidance"
+  - "Provide clear CLI feedback for all git operations"
+
+  non_functional:
+  - "Maintain clean git history with meaningful commit messages"
+  - "Ensure cross-platform compatibility (Windows, macOS, Linux)"
+  - "Support both interactive and automated workflows"
+  - "Provide clear error messages and recovery guidance"
+  - "Maintain compatibility with existing agentic-spec workflows"
+
+  constraints:
+  - "All git operations must be atomic and reversible"
+  - "Repository must remain in consistent state after any failure"
+  - "Pre-commit hooks must not prevent legitimate commits"
+  - "Branch naming must be consistent and descriptive"
+  - "No external dependencies beyond git and standard tools"
+
+implementation:
+- task: "Set up git-aware workflow foundation"
+  details: |
+    Initialize git-aware workflow by:
+    1. Verifying git repository status and cleanliness
+    2. Configuring pre-commit hooks if not already set up
+    3. Setting up branch naming conventions
+    4. Establishing commit message templates
+
+    Git Workflow Steps (via agentic-spec CLI):
+    • Start task with branch creation: `agentic-spec task-start {{ '{{ task_id }}' }}`
+    • Work in feature branch (automatic): {{ branch_prefix }}{{ '{{ task_id }}' }}_{{ '{{ task_slug }}' }}
+    • Complete task with commit & merge: `agentic-spec task-complete {{ '{{ task_id }}' }} --merge`
+    • Alternative: Manual git operations if needed:
+      - Check status: `git status --porcelain`
+      - Stage changes: `git add <files>`
+      - Commit: `git commit -m "{{ commit_pattern }}"`
+  files:
+  - .pre-commit-config.yaml
+  - .gitignore
+  acceptance: |
+    Git repository is properly configured with:
+    ✅ Clean working directory
+    ✅ Pre-commit hooks installed and functional
+    ✅ Branch naming convention established
+    ✅ Commit message template configured
+  estimated_effort: "{{ setup_effort | default('low') }}"
+  step_id: "{{ spec_id | default('template') }}:0"
+  decomposition_hint: atomic
+  injected: false
+
+  # Git workflow guidance (agentic-spec integrated)
+  git_workflow_steps:
+    pre_task:
+    - "Check workflow status: `agentic-spec workflow-status {{ '{{ spec_id }}' }}`"
+    - "Ensure working directory is clean: `git status`"
+    - "Pull latest changes: `git pull origin main`"
+    - "Verify pre-commit hooks: `pre-commit run --all-files`"
+
+    during_task:
+    - "Start task automatically: `agentic-spec task-start {{ '{{ task_id }}' }}`"
+    - "Work on feature branch (auto-created): `{{ branch_prefix }}{{ '{{ task_id }}' }}_{{ '{{ task_slug }}' }}`"
+    - "Make incremental commits manually if needed: `git add . && git commit -m 'Progress on task'`"
+    - "Run tests frequently: `make test` or equivalent"
+    - "Lint code before completion: `make lint`"
+
+    post_task:
+    - "Complete with automated commit & merge: `agentic-spec task-complete {{ '{{ task_id }}' }} --merge`"
+    - "Alternative: Complete without merge: `agentic-spec task-complete {{ '{{ task_id }}' }}`"
+    - "Verify completion: `agentic-spec workflow-status {{ '{{ spec_id }}' }}`"
+    - "Push to remote if needed: `git push origin main`"
+
+- task: "{{ task_1_title | default('Implement core functionality') }}"
+  details: |
+    {{ task_1_details | default('Implement the main functionality for this specification.') }}
+
+    🔧 Git-Aware Development Process:
+
+    1. **Task Initiation**:
+       ```bash
+       agentic-spec task-start {{ spec_id | default('SPEC_ID') }}:1
+       # This automatically creates: {{ branch_prefix }}{{ spec_id | default('SPEC_ID') }}-1_{{ '{{ task_slug }}' }}
+       ```
+
+    2. **Development Cycle**:
+       - Make changes in small, logical increments
+       - Test changes: `{{ test_command | default('make test') }}`
+       - Lint code: `{{ lint_command | default('make lint') }}`
+       - Optional incremental commits: `git add . && git commit -m "Progress on {{ '{{ task_description }}' }}"`
+       - Note: Final commit happens automatically with `task-complete --merge`
+
+    3. **Task Completion with Auto-Commit & Merge**:
+       ```bash
+       # Preferred: Automatic commit, merge, and cleanup
+       agentic-spec task-complete {{ spec_id | default('SPEC_ID') }}:1 --merge
+
+       # Alternative: Complete without merge (manual git operations)
+       agentic-spec task-complete {{ spec_id | default('SPEC_ID') }}:1
+
+       # With completion notes
+       agentic-spec task-complete {{ spec_id | default('SPEC_ID') }}:1 --merge --notes "Core functionality implemented"
+       ```
+
+    4. **Verification**:
+       - Check workflow status: `agentic-spec workflow-status {{ spec_id | default('SPEC_ID') }}`
+       - Confirm git history: `git log --oneline -3`
+       - Run full tests: `{{ test_command | default('make test') }}`
+  files:
+  - "{{ task_1_files | default(['src/main.py', 'tests/test_main.py']) | join('\\n  - ') }}"
+  acceptance: |
+    {{ task_1_acceptance | default('Core functionality implemented and tested') }}
+
+    Git Workflow Verification:
+    ✅ Feature branch created and used for development
+    ✅ Incremental commits with clear messages
+    ✅ Pre-commit hooks passed on all commits
+    ✅ Branch successfully merged to main
+    ✅ Working directory clean after completion
+    ✅ All tests passing on main branch
+  estimated_effort: "{{ task_1_effort | default('medium') }}"
+  step_id: "{{ spec_id | default('template') }}:1"
+  decomposition_hint: "{{ task_1_decomposition | default('atomic') }}"
+  injected: false
+
+- task: "{{ task_2_title | default('Add comprehensive testing') }}"
+  details: |
+    {{ task_2_details | default('Create comprehensive tests for the implemented functionality.') }}
+
+    🧪 Git-Aware Testing Workflow:
+
+    1. **Test Development Branch**:
+       ```bash
+       agentic-spec task-start {{ spec_id | default('SPEC_ID') }}:2
+       # Creates: {{ branch_prefix }}{{ spec_id | default('SPEC_ID') }}-2_add-comprehensive-testing
+       ```
+
+    2. **Test-Driven Development with agentic-spec**:
+       - Write failing tests first
+       - Implement code to make tests pass
+       - Refactor with confidence
+       - Use `task-complete --merge` for final commit with all changes
+
+    3. **Testing Commands**:
+       ```bash
+       # Run specific tests
+       {{ test_specific_command | default('pytest tests/') }}
+
+       # Run with coverage
+       {{ test_coverage_command | default('pytest --cov=src tests/') }}
+
+       # Run all quality checks
+       {{ quality_command | default('make quality') }}
+       ```
+
+    4. **Task Completion with Testing**:
+       ```bash
+       # Complete task with automatic commit, merge, and cleanup
+       agentic-spec task-complete {{ spec_id | default('SPEC_ID') }}:2 --merge --notes "Tests implemented with {{ test_coverage_threshold | default('80%') }} coverage"
+
+       # Verify testing completion
+       agentic-spec workflow-status {{ spec_id | default('SPEC_ID') }}
+       ```
+
+    5. **Pre-commit Integration**:
+       - Tests run automatically via pre-commit hooks
+       - Coverage reports generated
+       - Quality gates enforced before final commit
+       - agentic-spec respects pre-commit hook results
+  files:
+  - "{{ task_2_files | default(['tests/test_core.py', 'tests/test_integration.py']) | join('\\n  - ') }}"
+  acceptance: |
+    {{ task_2_acceptance | default('Comprehensive test suite implemented with good coverage') }}
+
+    Testing Verification:
+    ✅ Unit tests cover all core functionality
+    ✅ Integration tests verify end-to-end workflows
+    ✅ Test coverage meets or exceeds {{ test_coverage_threshold | default('80%') }}
+    ✅ All tests pass in CI/pre-commit environment
+    ✅ Performance tests validate acceptable response times
+  estimated_effort: "{{ task_2_effort | default('medium') }}"
+  step_id: "{{ spec_id | default('template') }}:2"
+  decomposition_hint: atomic
+  injected: false
+
+- task: "{{ task_3_title | default('Documentation and finalization') }}"
+  details: |
+    {{ task_3_details | default('Create documentation and finalize the implementation.') }}
+
+    📚 Documentation Workflow:
+
+    1. **Documentation Branch**:
+       ```bash
+       agentic-spec task-start {{ spec_id | default('SPEC_ID') }}:3
+       # Creates: {{ branch_prefix }}{{ spec_id | default('SPEC_ID') }}-3_documentation-and-finalization
+       ```
+
+    2. **Documentation Types**:
+       - **README.md**: User-facing documentation
+       - **API Documentation**: Code-level documentation
+       - **Architecture Notes**: Design decisions and patterns
+       - **Git Workflow Guide**: How to contribute using git-aware workflows
+
+    3. **Finalization with agentic-spec**:
+       ```bash
+       # Verify all tasks completed
+       agentic-spec workflow-status {{ spec_id | default('SPEC_ID') }}
+
+       # Run comprehensive quality checks
+       {{ final_quality_command | default('make quality-gate') }}
+
+       # Generate final documentation
+       {{ doc_generation_command | default('make docs') }}
+
+       # Complete final task with commit and merge
+       agentic-spec task-complete {{ spec_id | default('SPEC_ID') }}:3 --merge --notes "Documentation complete, ready for release"
+
+       # Publish specification as implemented
+       agentic-spec publish {{ spec_id | default('SPEC_ID') }}
+
+       # Tag release if applicable (manual step)
+       git tag -a {{ release_tag | default('v1.0.0') }} -m "{{ release_message | default('Initial release') }}"
+       ```
+  files:
+  - "{{ task_3_files | default(['README.md', 'docs/', 'CHANGELOG.md']) | join('\\n  - ') }}"
+  acceptance: |
+    {{ task_3_acceptance | default('Complete documentation and finalized implementation') }}
+
+    Finalization Verification:
+    ✅ All specification tasks completed
+    ✅ Documentation is comprehensive and up-to-date
+    ✅ All quality gates pass
+    ✅ Git history is clean and meaningful
+    ✅ Release is tagged and documented
+    ✅ Project is ready for production use
+  estimated_effort: "{{ task_3_effort | default('low') }}"
+  step_id: "{{ spec_id | default('template') }}:3"
+  decomposition_hint: atomic
+  injected: false
+
+# Git-Aware Workflow Guidance (agentic-spec integrated)
+review_notes:
+- "🌿 **Automated Branch Strategy**: `agentic-spec task-start` creates feature branches using pattern {{ branch_prefix }}{{ '{{ task_id }}' }}_{{ '{{ task_slug }}' }}"
+- "📝 **Automated Commits**: `agentic-spec task-complete --merge` handles commits with standardized messages and Co-Authored-By Claude attribution"
+- "🔧 **Pre-commit Integration**: agentic-spec respects pre-commit hooks and ensures quality gates pass"
+- "🔄 **Automated Merge Strategy**: Uses {{ merge_strategy }} automatically with branch cleanup"
+- "✅ **Quality Gates**: All commits must pass linting, formatting, and testing requirements before merge"
+- "🚀 **Preferred Workflow**: Use `agentic-spec task-start` → develop → `agentic-spec task-complete --merge` cycle"
+- "⚙️ **Manual Override**: Manual git commands available when needed for complex scenarios"
+
+# Template Usage Examples
+template_usage:
+  cli_basic: |
+    # Generate specification with git-aware workflow
+    agentic-spec generate "Build user authentication system" --template git_aware_workflow_template
+
+  cli_with_params: |
+    # Generate with custom parameters
+    agentic-spec generate "Add API endpoints" \
+      --template git_aware_workflow_template \
+      --set branch_prefix="feature/" \
+      --set commit_pattern="feat: {description}" \
+      --set project_name="my-api"
+
+  programmatic: |
+    # Python API usage
+    from agentic_spec.core import SpecGenerator
+
+    generator = SpecGenerator()
+    spec = generator.generate_from_template(
+        prompt="Implement payment processing",
+        template="git_aware_workflow_template",
+        parameters={
+            "branch_prefix": "feat/",
+            "test_coverage_threshold": "90%",
+            "release_tag": "v2.1.0"
+        }
+    )
+
+# Workflow Best Practices
+workflow_best_practices:
+  branch_management:
+  - "Always start from a clean main branch"
+  - "Use descriptive branch names following the pattern"
+  - "Keep branches focused on single tasks"
+  - "Delete branches after successful merge"
+
+  commit_practices:
+  - "Make atomic commits with clear messages"
+  - "Include context and reasoning in commit messages"
+  - "Use conventional commit format when applicable"
+  - "Sign commits for security and authenticity"
+
+  pre_commit_hooks:
+  - "Configure hooks for code formatting (ruff, black, etc.)"
+  - "Include linting checks (pylint, flake8, etc.)"
+  - "Add security scanning (bandit, safety, etc.)"
+  - "Validate documentation (markdownlint, etc.)"
+
+  error_recovery:
+  - "Check workflow status: `agentic-spec workflow-status {{ '{{ spec_id }}' }}`"
+  - "Use `git status` to understand current state"
+  - "Complete tasks properly: `agentic-spec task-complete {{ '{{ task_id }}' }} --merge`"
+  - "Override strict mode for urgent fixes: `agentic-spec task-override {{ '{{ task_id }}' }} --reason 'urgent fix'`"
+  - "Manual git operations as fallback: `git stash`, `git reset --hard origin/main`"
+
+feedback_history: []

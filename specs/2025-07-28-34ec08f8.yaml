@@ -1,0 +1,157 @@
+metadata:
+  id: 34ec08f8
+  title: Comprehensive testing and debugging specification for the Developer Productiv...
+  inherits: []
+  created: '2025-07-28T22:49:29.337667'
+  version: '1.0'
+  status: draft
+  author: Khalen
+  last_modified: '2025-07-28T22:49:32.743359'
+context:
+  project: agentic-spec
+  domain: Python CLI tool for AI-powered specification generation; Developer Productivity
+    Dashboard (FastAPI/Uvicorn stack)
+  dependencies:
+  - name: uvicorn
+    purpose: ASGI server for running FastAPI app
+  - name: fastapi
+    purpose: API framework for dashboard endpoints
+  - name: pytest
+    purpose: Testing framework
+  - name: pytest-asyncio
+    purpose: Async test support
+  - name: httpx
+    purpose: Async HTTP client for endpoint testing
+  - name: websockets
+    purpose: WebSocket protocol support/testing
+  - name: jinja2
+    purpose: Template rendering
+  - name: starlette
+    purpose: Static file serving, WebSocket, and background tasks
+  files_involved:
+  - dashboard/api.py
+  - dashboard/main.py
+  - dashboard/templates/
+  - dashboard/static/
+  - tests/test_api.py
+  - tests/test_websockets.py
+  - tests/test_templates.py
+  - tests/test_static.py
+  - tests/conftest.py
+requirements:
+  functional:
+  - Systematically test all API endpoints for correct responses, error handling, and
+    edge cases
+  - Test data loading logic for correctness, error propagation, and resilience to
+    malformed data
+  - Test WebSocket connections for connect/disconnect, message exchange, and error
+    scenarios
+  - Test template rendering for all dashboard views, including context injection and
+    error fallback
+  - Test static file serving for correct MIME types, cache headers, and 404 handling
+  - Identify and document all bugs found during testing
+  - Implement minimal, targeted bug fixes for each identified issue
+  - Add regression tests for each fixed bug
+  non_functional:
+  - Ensure all tests are automated and runnable via `make test` or equivalent
+  - Maintain clear, actionable error messages for all failure cases
+  - Ensure all fixes are atomic and easily revertible
+  - Document all known issues and workarounds in developer docs
+  - Maintain cross-platform compatibility (Windows, macOS, Linux)
+  - Ensure test suite runs in CI and passes with zero failures
+  constraints:
+  - Do not introduce new features outside the scope of testing and bug fixing
+  - Do not change existing API contracts unless required to fix a bug
+  - Follow established coding standards and linting rules
+  - Use async/await for all async code and tests
+  - Do not introduce new dependencies unless strictly required for testing
+  - All bug fixes must include a corresponding regression test
+implementation:
+- task: Establish comprehensive test coverage for all dashboard components
+  details: Create or update test files for API endpoints, data loading, WebSocket
+    connections, template rendering, and static file serving. Use pytest and pytest-asyncio
+    for async tests. Use httpx for API and static file tests, and websockets for WebSocket
+    tests. Ensure all endpoints and views are covered, including error and edge cases.
+  files:
+  - tests/test_api.py
+  - tests/test_websockets.py
+  - tests/test_templates.py
+  - tests/test_static.py
+  - tests/conftest.py
+  acceptance: Test suite covers all major dashboard components and passes with zero
+    failures.
+  estimated_effort: medium
+  step_id: 34ec08f8:0
+  decomposition_hint: atomic
+  injected: false
+- task: Systematically identify and document all bugs found during testing
+  details: Log all test failures and unexpected behaviors. For each bug, document
+    the root cause, affected code, and steps to reproduce. Prioritize bugs by severity
+    and impact on production readiness.
+  files:
+  - tests/test_api.py
+  - tests/test_websockets.py
+  - tests/test_templates.py
+  - tests/test_static.py
+  - BUGS.md
+  acceptance: All discovered bugs are documented with reproduction steps and severity
+    in BUGS.md.
+  estimated_effort: low
+  step_id: 34ec08f8:1
+  decomposition_hint: atomic
+  injected: false
+- task: Implement minimal, targeted bug fixes for each identified issue
+  details: For each documented bug, apply the smallest possible code change to resolve
+    the root cause. Ensure fixes do not introduce regressions or alter unrelated functionality.
+    Update or add regression tests to cover each fix.
+  files:
+  - dashboard/api.py
+  - dashboard/main.py
+  - dashboard/templates/
+  - dashboard/static/
+  - tests/test_api.py
+  - tests/test_websockets.py
+  - tests/test_templates.py
+  - tests/test_static.py
+  acceptance: All critical and high-severity bugs are fixed, and regression tests
+    pass.
+  estimated_effort: medium
+  step_id: 34ec08f8:2
+  decomposition_hint: atomic
+  injected: false
+- task: Document known issues, workarounds, and troubleshooting steps
+  details: Update developer documentation with a summary of known issues, common troubleshooting
+    steps, and any temporary workarounds. Ensure documentation is clear and actionable
+    for solo developers.
+  files:
+  - BUGS.md
+  - docs/troubleshooting.md
+  acceptance: Documentation is up-to-date and provides clear guidance for resolving
+    common issues.
+  estimated_effort: low
+  step_id: 34ec08f8:3
+  decomposition_hint: atomic
+  injected: false
+review_notes:
+- 'Missing Implementation Details: The spec assumes all dashboard endpoints, templates,
+  and static files already exist and are discoverable for testing. If any are dynamically
+  generated or not explicitly listed, you’ll need to enumerate them or risk missing
+  coverage.'
+- 'Technical Gotchas: Testing WebSockets with the ''websockets'' library can be tricky—ensure
+  you handle async context management and server startup/teardown cleanly to avoid
+  flaky tests. Also, FastAPI/Starlette static file serving may behave differently
+  in dev vs. production; test both scenarios if possible.'
+- 'Integration Points: If dashboard/main.py includes app factory patterns or conditional
+  imports (common in FastAPI projects), make sure your test setup in conftest.py correctly
+  initializes the app context for all test types (API, WebSocket, templates, static).'
+- 'Current Best Practices: All listed libraries are current and well-maintained as
+  of mid-2024, but double-check that your pytest-asyncio and httpx versions are compatible
+  with your FastAPI/Starlette versions to avoid subtle async bugs.'
+context_parameters:
+  user_role: solo developer
+  target_audience: solo developer
+  desired_tone: practical
+  complexity_level: intermediate
+  time_constraints: production ready
+  custom_parameters: {}
+feedback_history: []
