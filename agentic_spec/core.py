@@ -335,6 +335,11 @@ class SpecGenerator:
                     )
 
             return template_data
+
+        # Ensure git-aware workflow template is always available
+        if template_name == "git_aware_workflow_template":
+            return self._get_builtin_git_workflow_template()
+
         return {}
 
     def _is_valid_semver(self, version: str) -> bool:
@@ -347,6 +352,78 @@ class SpecGenerator:
         # For this simplified implementation, we'll just log the version
         # In a full implementation, we could store last used versions and compare
         print(f"Template '{template_name}' version: {version}")
+
+    def _get_builtin_git_workflow_template(self) -> dict[str, Any]:
+        """Return the built-in git-aware workflow template if file doesn't exist."""
+        return {
+            "metadata": {
+                "id": "git_aware_workflow_template",
+                "title": "Git-Aware Workflow Template",
+                "inherits": [],
+                "created": datetime.now().isoformat(),
+                "version": "1.0",
+                "status": "template",
+                "author": "agentic-spec",
+                "last_modified": datetime.now().isoformat(),
+            },
+            "context": {
+                "project": "{{ project_name | default('agentic-spec') }}",
+                "domain": "{{ domain | default('Software Development with Git-Aware Workflows') }}",
+                "git_workflow": {
+                    "branch_strategy": "{{ branch_strategy | default('feature-per-task') }}",
+                    "branch_prefix": "{{ branch_prefix | default('feature/') }}",
+                    "commit_pattern": "{{ commit_pattern | default('{task_id}: {description}\\n\\n🤖 Generated with [Claude Code](https://claude.ai/code)\\n\\nCo-Authored-By: Claude <noreply@anthropic.com>') }}",
+                    "merge_strategy": "{{ merge_strategy | default('--no-ff') }}",
+                    "pre_commit_hooks": "{{ pre_commit_hooks | default(true) }}",
+                },
+                "dependencies": [
+                    {
+                        "name": "git",
+                        "version": "{{ git_version | default('2.0+') }}",
+                        "purpose": "Version control and branch management",
+                    }
+                ],
+            },
+            "requirements": {
+                "functional": [
+                    "{{ primary_requirement | default('Implement git-aware development workflow') }}",
+                    "Automatically create feature branches for each task using agentic-spec CLI",
+                    "Complete tasks with automated commit and merge using task-complete --merge",
+                    "Integrate with pre-commit hooks for code quality enforcement",
+                    "Provide clear CLI feedback for all git operations",
+                ],
+                "non_functional": [
+                    "Maintain clean git history with meaningful commit messages",
+                    "Ensure cross-platform compatibility (Windows, macOS, Linux)",
+                    "Support both interactive and automated workflows",
+                    "Provide clear error messages and recovery guidance",
+                ],
+                "constraints": [
+                    "All git operations must be atomic and reversible",
+                    "Repository must remain in consistent state after any failure",
+                    "Pre-commit hooks must not prevent legitimate commits",
+                ],
+            },
+            "implementation": [
+                {
+                    "task": "Set up git-aware workflow foundation",
+                    "details": "Initialize git-aware workflow using agentic-spec CLI commands:\n• Start task: `agentic-spec task-start {{ '{{ task_id }}' }}`\n• Work in auto-created feature branch\n• Complete with merge: `agentic-spec task-complete {{ '{{ task_id }}' }} --merge`",
+                    "files": [".pre-commit-config.yaml", ".gitignore"],
+                    "acceptance": "Git repository configured with agentic-spec workflow integration",
+                    "estimated_effort": "{{ setup_effort | default('low') }}",
+                    "step_id": "{{ spec_id | default('template') }}:0",
+                    "decomposition_hint": "atomic",
+                    "injected": False,
+                }
+            ],
+            "review_notes": [
+                "🌿 **Automated Branch Strategy**: `agentic-spec task-start` creates feature branches automatically",
+                "📝 **Automated Commits**: `agentic-spec task-complete --merge` handles commits with standardized messages",
+                "🚀 **Preferred Workflow**: Use `agentic-spec task-start` → develop → `agentic-spec task-complete --merge` cycle",
+                "⚙️ **Manual Override**: Manual git commands available when needed for complex scenarios",
+            ],
+            "feedback_history": [],
+        }
 
     def _generate_title_from_prompt(self, prompt: str) -> str:
         """Generate a human-readable title from the user prompt."""
@@ -395,6 +472,11 @@ class SpecGenerator:
     def resolve_inheritance(self, inherits: list[str]) -> dict[str, Any]:
         """Resolve inheritance chain and merge templates."""
         merged = {}
+
+        # Always include git-aware workflow template as base inheritance
+        git_workflow_template = self.load_template("git_aware_workflow_template")
+        if git_workflow_template:
+            merged = merge_configs(merged, git_workflow_template)
 
         for template_name in inherits:
             template = self.load_template(template_name)

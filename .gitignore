@@ -155,3 +155,4 @@ logs/
 agentic_spec_config.yaml
 test_render.html
 specs/specifications.db
+archive/
